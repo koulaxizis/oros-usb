@@ -26,7 +26,7 @@ jobs:
           apt-get install -y -q --no-install-recommends live-build golang-go git ca-certificates \
             debootstrap xorriso squashfs-tools dosfstools mtools grub-efi-amd64-bin grub-pc-bin \
             syslinux syslinux-common isolinux qemu-system-x86 qemu-utils ovmf socat netpbm \
-            fdisk parted e2fsprogs util-linux udev
+            fdisk parted e2fsprogs util-linux udev tesseract-ocr
       - uses: actions/checkout@v4
       - name: Version
         id: v
@@ -37,6 +37,13 @@ jobs:
           esac
       - name: Build image
         run: scripts/build.sh "${{ steps.v.outputs.version }}"
+      - name: Boot menus in the image
+        run: |
+          ISO="out/orOS-USB-${{ steps.v.outputs.version }}.iso"
+          for f in boot/grub/grub.cfg boot/grub/config.cfg isolinux/isolinux.cfg isolinux/menu.cfg; do
+            echo "== $f"; rm -f /tmp/menu
+            xorriso -osirrox on -indev "$ISO" -extract "/$f" /tmp/menu >/dev/null 2>&1 && head -60 /tmp/menu || echo "(none)"
+          done
       - name: Boot test (QEMU, UEFI Secure Boot, persistence)
         run: scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
       - name: Screenshots and logs

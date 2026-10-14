@@ -40,6 +40,13 @@ for _ in $(seq 1 60); do kill -0 "$QEMU" 2>/dev/null || break; sleep 2; done
 kill "$QEMU" 2>/dev/null || true
 wait "$QEMU" 2>/dev/null || true
 for f in "$OUT"/*.ppm; do [ -f "$f" ] && pnmtopng "$f" > "${f%.ppm}.png" && rm "$f"; done
+# Screen text in the log, so a failure can be read without the artifact.
+if command -v tesseract >/dev/null; then
+	for f in $(ls "$OUT"/screen-*.png | sort -V); do
+		echo "== $(basename "$f")"
+		tesseract "$f" - 2>/dev/null | grep -v '^\s*$' | head -15 || true
+	done
+fi
 
 read -r START SECTORS < <(partx -g -o START,SECTORS -n -1 "$IMG")
 LOOP="$(losetup -f --show -o $((START * 512)) --sizelimit $((SECTORS * 512)) "$IMG")"
