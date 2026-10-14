@@ -62,6 +62,6 @@ if [ "$OK" = 1 ]; then
 	echo "PASS: orOS started and its data is on the persistence partition"
 else
 	echo "FAIL: no orOS profile with a service worker on the persistence partition" >&2
-	tail -50 "$OUT/serial.log" >&2 || true
+	grep -aiE "pam|login|live-config|user-setup|oros|cage|chromium|error|fail" "$OUT/serial.log" | tail -120 >&2 || true
 	exit 1
 fi
