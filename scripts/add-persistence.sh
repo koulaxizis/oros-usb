@@ -20,15 +20,17 @@ fi
 echo ',,L' | sfdisk --force --append --no-reread "$TARGET"
 
 LOOP=""
-DEV="$TARGET"
 if [ -f "$TARGET" ]; then
-	LOOP="$(losetup -fP --show "$TARGET")"
-	DEV="$LOOP"
+	# Image file: map just the new partition with a loop device. Partition
+	# nodes (loopNpM) need udev, which containers often lack.
+	read -r START SECTORS < <(partx -g -o START,SECTORS -n -1 "$TARGET")
+	LOOP="$(losetup -f --show -o $((START * 512)) --sizelimit $((SECTORS * 512)) "$TARGET")"
+	PART="$LOOP"
 else
 	partprobe "$TARGET" || true
 	udevadm settle || true
+	PART="$(lsblk -lnpo NAME,TYPE "$TARGET" | awk '$2 == "part" { p = $1 } END { print p }')"
 fi
-PART="$(lsblk -lnpo NAME,TYPE "$DEV" | awk '$2 == "part" { p = $1 } END { print p }')"
 [ -n "$PART" ] || { echo "no new partition found" >&2; exit 1; }
 
 mkfs.ext4 -q -F -L persistence "$PART"

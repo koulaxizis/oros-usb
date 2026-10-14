@@ -41,10 +41,10 @@ kill "$QEMU" 2>/dev/null || true
 wait "$QEMU" 2>/dev/null || true
 for f in "$OUT"/*.ppm; do [ -f "$f" ] && pnmtopng "$f" > "${f%.ppm}.png" && rm "$f"; done
 
-LOOP="$(losetup -fP --show "$IMG")"
-PART="$(lsblk -lnpo NAME,TYPE "$LOOP" | awk '$2 == "part" { p = $1 } END { print p }')"
+read -r START SECTORS < <(partx -g -o START,SECTORS -n -1 "$IMG")
+LOOP="$(losetup -f --show -o $((START * 512)) --sizelimit $((SECTORS * 512)) "$IMG")"
 MNT="$(mktemp -d)"
-mount -o ro "$PART" "$MNT"
+mount -o ro "$LOOP" "$MNT"
 PROFILE="$(find "$MNT" -type d -path '*oros/data/profile/Default' | head -1)"
 ls -la "$MNT" "$PROFILE" 2>&1 | tee "$OUT/persistence.txt" || true
 OK=0
