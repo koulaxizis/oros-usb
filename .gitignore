@@ -12,3 +12,4 @@ config/chroot
 config/common
 config/source
 *.iso
+config/bootloaders/

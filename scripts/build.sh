@@ -22,6 +22,15 @@ git clone -q --depth 1 https://github.com/koulaxizis/oros-portable "$WORK/portab
 (cd "$WORK/portable/launcher" && CGO_ENABLED=0 go build -trimpath \
 	-ldflags "-s -w -X main.version=usb-$VERSION" -o "$OPT/oros-portable" .)
 
+echo "== boot menus: start orOS by itself after 3 seconds"
+# live-build's menus wait for a key forever; take its own templates and set
+# a timeout (GRUB for UEFI, isolinux for BIOS).
+rm -rf config/bootloaders && mkdir -p config/bootloaders
+cp -a /usr/share/live/build/bootloaders/grub-pc /usr/share/live/build/bootloaders/isolinux config/bootloaders/
+printf '\nset default=0\nset timeout=3\n' >> config/bootloaders/grub-pc/config.cfg
+sed -i 's/^timeout .*/timeout 30/' config/bootloaders/isolinux/isolinux.cfg
+grep -q '^timeout 30' config/bootloaders/isolinux/isolinux.cfg
+
 echo "== live-build"
 lb clean --purge
 lb config
