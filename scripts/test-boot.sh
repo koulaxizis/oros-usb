@@ -30,10 +30,31 @@ qemu-system-x86_64 \
 QEMU=$!
 
 mon() { echo "$1" | socat - UNIX-CONNECT:"$MON" >/dev/null 2>&1 || true; }
+# The first seconds: firmware and boot menu.
+for t in 4 8 12; do
+	sleep 4
+	mon "screendump $OUT/boot-$t.ppm"
+done
+sleep 18
 for t in $(seq 30 30 "$WAIT"); do
 	sleep 30
 	mon "screendump $OUT/screen-$t.ppm"
 	kill -0 "$QEMU" 2>/dev/null || { echo "QEMU stopped early" >&2; exit 1; }
+done
+# Close the welcome tour, then look at the network screen (Ctrl+Alt+F2).
+mon "sendkey esc"
+sleep 5
+mon "screendump $OUT/desktop.ppm"
+mon "sendkey ctrl-alt-f2"
+sleep 5
+mon "screendump $OUT/network.ppm"
+mon "sendkey ctrl-alt-f1"
+sleep 3
+# Small JPEG copies in the log ("SHOT name base64"), readable where the
+# artifact is not.
+for f in "$OUT"/boot-*.ppm "$OUT/screen-$WAIT.ppm" "$OUT/desktop.ppm" "$OUT/network.ppm"; do
+	[ -f "$f" ] || continue
+	echo "SHOT $(basename "${f%.ppm}") $(pnmscale -xsize 800 "$f" 2>/dev/null | pnmtojpeg -quality 70 2>/dev/null | base64 -w0)"
 done
 mon "system_powerdown"
 for _ in $(seq 1 60); do kill -0 "$QEMU" 2>/dev/null || break; sleep 2; done
