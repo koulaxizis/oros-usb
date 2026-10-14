@@ -1,0 +1,11 @@
+#!/bin/sh
+# Power button shuts down cleanly; lid close suspends.
+set -e
+mkdir -p /etc/systemd/logind.conf.d
+cat > /etc/systemd/logind.conf.d/oros.conf <<'EOF'
+[Login]
+HandlePowerKey=poweroff
+HandleLidSwitch=suspend
+EOF
+# The launcher must be executable even if it was copied without the bit.
+chmod 0755 /opt/oros/oros-portable

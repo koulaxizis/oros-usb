@@ -1,0 +1,64 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:trixie
+      options: --privileged
+    steps:
+      - name: Tools
+        run: |
+          apt-get update -q
+          apt-get install -y -q --no-install-recommends live-build golang-go git ca-certificates \
+            debootstrap xorriso squashfs-tools dosfstools mtools grub-efi-amd64-bin grub-pc-bin \
+            syslinux syslinux-common isolinux qemu-system-x86 qemu-utils ovmf socat netpbm \
+            fdisk parted e2fsprogs util-linux udev
+      - uses: actions/checkout@v4
+      - name: Version
+        id: v
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/v*) echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT" ;;
+            *) echo "version=0.0.0-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: Build image
+        run: scripts/build.sh "${{ steps.v.outputs.version }}"
+      - name: Boot test (QEMU, UEFI Secure Boot, persistence)
+        run: scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
+      - name: Screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boot-test
+          path: |
+            test-out/*.png
+            test-out/*.log
+            test-out/*.txt
+            build.log
+          retention-days: 14
+      - name: Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: orOS-USB
+          path: out/*.iso
+          retention-days: 14
+          compression-level: 0
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apt-get install -y -q gh
+          gh release create "$GITHUB_REF_NAME" out/*.iso --repo "$GITHUB_REPOSITORY" \
+            --title "orOS USB $GITHUB_REF_NAME" --notes "Write the ISO to a USB stick (Rufus, balenaEtcher or dd). See README."
