@@ -1,0 +1,32 @@
+#!/bin/sh
+# Runs orOS full screen on tty1: cage (a kiosk Wayland compositor) shows only
+# the browser that the orOS Portable launcher opens. If the window is
+# closed, orOS starts again; the power button shuts the machine down.
+set -u
+
+ROOT="$HOME/oros"
+mkdir -p "$ROOT/data"
+
+# The image carries orOS in /opt/oros/app (read-only). A copy in the home
+# folder lives on the persistence partition, so "oros-portable update"
+# works and survives reboots. A newer image refreshes the copy.
+if [ ! -f "$ROOT/app/index.html" ] || [ "$(cat /opt/oros/app/.oros-build 2>/dev/null)" != "$(cat "$ROOT/app/.oros-build" 2>/dev/null)" ]; then
+	rm -rf "$ROOT/app.new"
+	cp -a /opt/oros/app "$ROOT/app.new" && rm -rf "$ROOT/app" && mv "$ROOT/app.new" "$ROOT/app"
+fi
+
+export LANG=C.UTF-8
+export OROS_PORTABLE_ROOT="$ROOT"
+export OROS_PORTABLE_BROWSER=/usr/bin/chromium
+export OROS_PORTABLE_BROWSER_ARGS="--ozone-platform=wayland --start-fullscreen --disable-features=Translate"
+export XKB_DEFAULT_LAYOUT="us,gr"
+export XKB_DEFAULT_OPTIONS="grp:alt_shift_toggle"
+# Virtual machines and some old GPUs have no hardware GL.
+export WLR_RENDERER_ALLOW_SOFTWARE=1
+export WLR_NO_HARDWARE_CURSORS=1
+
+while true; do
+	# -s lets Ctrl+Alt+F2 switch to the network screen.
+	cage -s -- /opt/oros/oros-portable
+	sleep 1
+done

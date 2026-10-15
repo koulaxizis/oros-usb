@@ -1,0 +1,42 @@
+# Kernel and live system
+linux-image-amd64
+live-boot
+live-config
+live-config-systemd
+systemd-sysv
+dbus-user-session
+sudo
+ca-certificates
+
+# Kiosk session: cage (Wayland) + Chromium in app mode
+cage
+chromium
+chromium-sandbox
+libgl1-mesa-dri
+libegl1
+mesa-vulkan-drivers
+fonts-noto-core
+fonts-noto-color-emoji
+
+# Network (Wi-Fi set up on tty2 with nmtui for now)
+network-manager
+wpasupplicant
+iw
+
+# Sound
+pipewire
+pipewire-pulse
+wireplumber
+
+# Firmware for common Wi-Fi, graphics and sound hardware
+firmware-linux-free
+firmware-linux-nonfree
+firmware-misc-nonfree
+firmware-iwlwifi
+firmware-realtek
+firmware-atheros
+firmware-brcm80211
+firmware-intel-sound
+firmware-sof-signed
+amd64-microcode
+intel-microcode

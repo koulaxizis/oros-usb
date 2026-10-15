@@ -1,0 +1,20 @@
+#!/bin/sh
+# live-build configuration for the orOS USB image (Debian 13 "trixie").
+set -e
+
+lb config noauto \
+	--distribution trixie \
+	--archive-areas "main contrib non-free non-free-firmware" \
+	--debian-installer none \
+	--bootloaders "grub-efi syslinux" \
+	--uefi-secure-boot enable \
+	--binary-images iso-hybrid \
+	--iso-application "orOS" \
+	--iso-publisher "orOS; https://useoros.online" \
+	--iso-volume "OROS" \
+	--memtest none \
+	--apt-recommends false \
+	--security true \
+	--updates true \
+	--bootappend-live "boot=live components quiet persistence console=ttyS0,115200 console=tty0 username=oros hostname=oros" \
+	"${@}"

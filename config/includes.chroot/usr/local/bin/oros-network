@@ -1,0 +1,10 @@
+#!/bin/sh
+# tty2 (Ctrl+Alt+F2): Wi-Fi and network setup until orOS has its own panel.
+# Ctrl+Alt+F1 returns to orOS.
+while true; do
+	clear
+	echo "orOS network setup. Ctrl+Alt+F1 returns to orOS."
+	echo "Ρυθμίσεις δικτύου orOS. Ctrl+Alt+F1 για επιστροφή στο orOS."
+	echo
+	nmtui || sleep 2
+done

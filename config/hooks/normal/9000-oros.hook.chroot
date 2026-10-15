@@ -1,0 +1,21 @@
+#!/bin/sh
+# The kiosk user. live-config would need the user-setup package to make
+# it at boot; creating it in the image is simpler and always there.
+if ! id oros >/dev/null 2>&1; then
+	useradd --create-home --shell /bin/bash --comment "orOS" oros
+	passwd --lock oros
+fi
+for g in audio video input render netdev plugdev; do
+	if getent group "$g" >/dev/null; then usermod -aG "$g" oros; fi
+done
+
+# Power button shuts down cleanly; lid close suspends.
+set -e
+mkdir -p /etc/systemd/logind.conf.d
+cat > /etc/systemd/logind.conf.d/oros.conf <<'EOF'
+[Login]
+HandlePowerKey=poweroff
+HandleLidSwitch=suspend
+EOF
+# The launcher must be executable even if it was copied without the bit.
+chmod 0755 /opt/oros/oros-portable
