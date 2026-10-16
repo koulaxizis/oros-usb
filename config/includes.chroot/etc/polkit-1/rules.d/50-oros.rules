@@ -1,0 +1,10 @@
+// The orOS user may manage networks and shut down or restart the computer
+// from the System button without a password prompt (there is no password).
+polkit.addRule(function (action, subject) {
+  if (subject.user === "oros" &&
+      (action.id.indexOf("org.freedesktop.NetworkManager.") === 0 ||
+       action.id.indexOf("org.freedesktop.login1.power-off") === 0 ||
+       action.id.indexOf("org.freedesktop.login1.reboot") === 0)) {
+    return polkit.Result.YES;
+  }
+});

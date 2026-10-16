@@ -1,0 +1,7 @@
+{
+  "name": "online.useoros.system",
+  "description": "orOS system settings (Wi-Fi, sound, power, install)",
+  "path": "/opt/oros/oros-system",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://hibkbfiidcfohidigfegiadgedhmdecc/"]
+}

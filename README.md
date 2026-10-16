@@ -7,7 +7,8 @@ A bootable USB image that starts straight into [orOS](https://useoros.online). M
 - Debian 13 (trixie) live system, built with live-build, with the usual non-free firmware for Wi-Fi, graphics and sound.
 - [cage](https://github.com/cage-kiosk/cage), a kiosk Wayland compositor, showing only Debian's Chromium (no Google sign-in, sync, Safe Browsing or metrics; see `config/includes.chroot/etc/chromium/policies/managed/oros.json`).
 - The [orOS Portable](https://github.com/koulaxizis/oros-portable) launcher serving orOS from `http://localhost:47800/`, the same address as orOS Portable, so its Dropbox sign-in works here too.
-- UEFI with Secure Boot (Debian's signed shim and GRUB) and legacy BIOS boot.
+- UEFI with Secure Boot (Debian's signed shim and GRUB) and legacy BIOS boot, with an orOS boot screen.
+- A **System** button in orOS's top bar (the `system/extension` Chromium extension) for Wi-Fi, sound, battery, restart, shut down and installing orOS on the computer's disk. It talks to `oros-system` (`system/`), a small native messaging host that uses NetworkManager, PipeWire and systemd.
 
 ## Using it
 
@@ -15,21 +16,26 @@ A bootable USB image that starts straight into [orOS](https://useoros.online). M
 2. Without Rufus persistence, run `sudo scripts/add-persistence.sh /dev/sdX` to add a `persistence` partition in the rest of the stick. Without one, orOS still runs, but forgets everything on shutdown.
 3. Boot from the stick. orOS opens full screen.
 
+The System button (Wi-Fi icon, top right) has Wi-Fi, sound, battery, Restart and Shut down.
+
 | Keys | |
 |---|---|
-| Ctrl+Alt+F2 | network setup (Wi-Fi) |
+| Ctrl+Alt+F2 | network setup in text mode (nmtui) |
 | Ctrl+Alt+F1 | back to orOS |
 | Alt+Shift | switch keyboard English / Greek |
 | Power button | shut down |
 
-orOS lives in the home folder on the persistence partition (`~/oros/app`), so `/opt/oros/oros-portable update` (or a newer image) refreshes it.
+`~/oros/app` links to the orOS in the image; `/opt/oros/oros-portable update` replaces it with a newer copy on the persistence partition, and a newer image resets it.
+
+### Installing on the computer
+
+System button → **Install orOS on this computer** erases the chosen internal disk and puts orOS on it: a FAT partition with the boot files and the system image (UEFI with Secure Boot), and an ext4 partition labelled `orosdisk` that keeps the home folder, optionally copied from the stick. The installed system starts like the stick, without it. From a terminal: `sudo /opt/oros/oros-system install --disk /dev/sdX --yes`. UEFI only; old BIOS-only computers keep using the stick.
 
 ## Building
 
-`sudo scripts/build.sh <version>` on Debian 13, or let CI do it: `.github/workflows/build.yml` builds the ISO in a privileged `debian:trixie` container, writes it to a disk image with a persistence partition, boots it in QEMU with UEFI Secure Boot (Microsoft keys), and checks that orOS started and saved its profile to the persistence partition. Screenshots of the boot are kept as the `boot-test` artifact. `v*` tags publish a release.
+`sudo scripts/build.sh <version>` on Debian 13, or let CI do it: `.github/workflows/build.yml` builds the ISO in a privileged `debian:trixie` container, writes it to a disk image with a persistence partition, boots it in QEMU with UEFI Secure Boot (Microsoft keys), and checks that orOS started, the System button reached `oros-system`, and orOS saved its profile to the persistence partition. It then installs orOS from the ISO onto an empty disk image with `oros-system install` and boots that disk alone the same way (`scripts/test-install.sh`). Screenshots of the boot are kept as the `boot-test` artifact. `v*` tags publish a release.
 
 ## Not done yet
 
-- A settings panel inside orOS for Wi-Fi, volume, brightness, time zone and power (a small local helper the launcher can talk to). For now Wi-Fi is on Ctrl+Alt+F2 and the time zone is UTC.
+- Brightness and time zone in the System button (the time zone is UTC).
 - Printing (CUPS) and Bluetooth.
-- An installer to a hard disk.

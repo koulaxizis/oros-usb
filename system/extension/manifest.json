@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "orOS system",
+  "version": "0.1.0",
+  "description": "Wi-Fi, sound, battery, power and install for orOS USB.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvm/8qvQlIFbsbsvYRaN3cbu7ekkckD8PxwTWQlJNsVIlyWgxTOHtcmQiGA8PuAMr+tg5q3fpqVOFpjS/iVs9phkgtFaFMciVThx2cwxf7qPA5wfTYQbjMSYK5r3UzYorjBu+yoR+yI1S1Ld00AUaWyPRMXoUTHB44SWe2HExiKJXRHI1AYNZOeJAJZ4/r+nAwjXn1Yehy3b1QouB6/Q+o1ByJkcmtU6JkEeW2ghW159pPjyV0b7m9wnnrA4h9eyLIVnKdCSc2oaxzNtv3hyx2zlUMCM3VXvqYIivfeA5zmK+NR1aT5se/s4mLjQpJ218AgbJOpXO/0EYY8/GPjNOAQIDAQAB",
+  "permissions": ["nativeMessaging"],
+  "background": { "service_worker": "bg.js" },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:47800/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

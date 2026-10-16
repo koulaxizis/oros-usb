@@ -1,0 +1,2 @@
+# The System button may run the orOS installer (it asks before erasing).
+oros ALL=(root) NOPASSWD: /opt/oros/oros-system install *

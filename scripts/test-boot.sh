@@ -2,7 +2,10 @@
 # Boots the image the way a real stick would be used: written to a disk with
 # a persistence partition, UEFI with Secure Boot on (Microsoft keys), in QEMU.
 # Passes when orOS's browser profile with a service worker appears on the
-# persistence partition. Screenshots go to the output folder.
+# persistence partition and the System button reached oros-system.
+# Screenshots go to the output folder. With DISK=disk.img it boots that
+# disk instead (an install made by oros-system), and MARKER names a file
+# the install copied, which must still be there.
 #   sudo scripts/test-boot.sh out/orOS-USB-x.iso test-out
 set -euo pipefail
 
@@ -10,11 +13,15 @@ ISO="$1"
 OUT="${2:-test-out}"
 WAIT="${BOOT_WAIT:-300}"
 mkdir -p "$OUT"
-IMG="$OUT/usb.img"
-rm -f "$IMG"
-truncate -s 4G "$IMG"
-dd if="$ISO" of="$IMG" conv=notrunc bs=4M status=none
-OROS_YES=1 "$(dirname "$0")/add-persistence.sh" "$IMG"
+if [ -n "${DISK:-}" ]; then
+	IMG="$DISK"
+else
+	IMG="$OUT/usb.img"
+	rm -f "$IMG"
+	truncate -s 4G "$IMG"
+	dd if="$ISO" of="$IMG" conv=notrunc bs=4M status=none
+	OROS_YES=1 "$(dirname "$0")/add-persistence.sh" "$IMG"
+fi
 
 cp /usr/share/OVMF/OVMF_VARS_4M.ms.fd "$OUT/vars.fd"
 MON="$OUT/monitor.sock"
@@ -77,10 +84,23 @@ PROFILE="$(find "$MNT" -type d -path '*oros/data/profile/Default' | head -1)"
 ls -la "$MNT" "$PROFILE" 2>&1 | tee "$OUT/persistence.txt" || true
 OK=0
 [ -n "$PROFILE" ] && [ -d "$PROFILE/Service Worker" ] && OK=1
+SYSLOG="$(find "$MNT" -name oros-system.log | head -1)"
+if [ -n "$SYSLOG" ]; then
+	echo "== oros-system.log"
+	tail -5 "$SYSLOG"
+	grep -q "cmd status" "$SYSLOG" || OK=0
+else
+	echo "FAIL: the System button never reached oros-system" >&2
+	OK=0
+fi
+if [ -n "${MARKER:-}" ] && [ -z "$(find "$MNT" -name "$MARKER" | head -1)" ]; then
+	echo "FAIL: $MARKER from the install is missing" >&2
+	OK=0
+fi
 umount "$MNT"
 losetup -d "$LOOP"
 if [ "$OK" = 1 ]; then
-	echo "PASS: orOS started and its data is on the persistence partition"
+	echo "PASS: orOS started, the System button works and its data is on the persistence partition"
 else
 	echo "FAIL: no orOS profile with a service worker on the persistence partition" >&2
 	grep -aiE "pam|login|live-config|user-setup|oros|cage|chromium|error|fail" "$OUT/serial.log" | tail -120 >&2 || true

@@ -13,8 +13,9 @@ lb config noauto \
 	--iso-publisher "orOS; https://useoros.online" \
 	--iso-volume "OROS" \
 	--memtest none \
+	--chroot-squashfs-compression-type zstd \
 	--apt-recommends false \
 	--security true \
 	--updates true \
-	--bootappend-live "boot=live components quiet persistence console=ttyS0,115200 console=tty0 username=oros hostname=oros" \
+	--bootappend-live "boot=live components quiet splash persistence console=ttyS0,115200 console=tty0 username=oros hostname=oros" \
 	"${@}"

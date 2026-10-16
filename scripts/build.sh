@@ -22,6 +22,10 @@ git clone -q --depth 1 https://github.com/koulaxizis/oros-portable "$WORK/portab
 (cd "$WORK/portable/launcher" && CGO_ENABLED=0 go build -trimpath \
 	-ldflags "-s -w -X main.version=usb-$VERSION" -o "$OPT/oros-portable" .)
 
+echo "== system bridge and extension"
+(cd system && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o "$OPT/oros-system" .)
+rm -rf "$OPT/system-ext" && cp -a system/extension "$OPT/system-ext"
+
 echo "== boot menus: start orOS by itself after 3 seconds"
 # live-build's menus wait for a key forever; take its own templates and set
 # a timeout (GRUB for UEFI, isolinux for BIOS).
@@ -30,6 +34,10 @@ cp -a /usr/share/live/build/bootloaders/grub-pc /usr/share/live/build/bootloader
 printf '\nset default=0\nset timeout=3\n' >> config/bootloaders/grub-pc/config.cfg
 sed -i 's/^timeout .*/timeout 30/' config/bootloaders/isolinux/isolinux.cfg
 grep -q '^timeout 30' config/bootloaders/isolinux/isolinux.cfg
+# orOS splash instead of Debian's (640x480 for both menus).
+find config/bootloaders -name 'splash.svg' -delete
+cp assets/splash.png config/bootloaders/grub-pc/splash.png
+cp assets/splash.png config/bootloaders/isolinux/splash.png
 
 echo "== live-build"
 lb clean --purge

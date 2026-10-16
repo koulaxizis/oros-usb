@@ -35,6 +35,8 @@ jobs:
             refs/tags/v*) echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT" ;;
             *) echo "version=0.0.0-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT" ;;
           esac
+      - name: Unit tests (oros-system)
+        run: cd system && go test ./...
       - name: Build image
         run: scripts/build.sh "${{ steps.v.outputs.version }}"
       - name: Boot menus in the image
@@ -46,6 +48,8 @@ jobs:
           done
       - name: Boot test (QEMU, UEFI Secure Boot, persistence)
         run: scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
+      - name: Install test (install to a disk, boot it without the stick)
+        run: scripts/test-install.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/install
       - name: Screenshots and logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,6 +58,9 @@ jobs:
           path: |
             test-out/*.png
             test-out/*.log
+            test-out/install/*.png
+            test-out/install/*.log
+            test-out/install/*.json
             test-out/*.txt
             build.log
           retention-days: 14
