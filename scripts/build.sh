@@ -23,7 +23,7 @@ git clone -q --depth 1 https://github.com/koulaxizis/oros-portable "$WORK/portab
 	-ldflags "-s -w -X main.version=usb-$VERSION" -o "$OPT/oros-portable" .)
 
 echo "== system bridge and extension"
-(cd system && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o "$OPT/oros-system" .)
+(cd system && CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags "-s -w" -o "$OPT/oros-system" .)
 rm -rf "$OPT/system-ext" && cp -a system/extension "$OPT/system-ext"
 
 echo "== boot menus: start orOS by itself after 3 seconds"
