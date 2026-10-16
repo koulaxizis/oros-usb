@@ -127,7 +127,9 @@ write_one() { # device
 	# Re-read from the stick itself, not the page cache.
 	blockdev --flushbufs "$dev" "$ntfs" "$pers" 2>/dev/null || true
 	echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
-	cmp -n "$ISO_BYTES" "$ISO" "$dev"
+	# The image, byte for byte, except the MBR partition table we added to.
+	cmp -n 446 "$ISO" "$dev"
+	cmp -i 512 -n $((ISO_BYTES - 512)) "$ISO" "$dev"
 	mount -o ro "$ntfs" "$mnt"
 	(cd "$mnt" && sha256sum --quiet -c SHA256SUMS.txt)
 	umount "$mnt"
