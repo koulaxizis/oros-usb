@@ -26,7 +26,7 @@ jobs:
           apt-get install -y -q --no-install-recommends live-build golang-go git ca-certificates \
             debootstrap xorriso squashfs-tools dosfstools mtools grub-efi-amd64-bin grub-pc-bin \
             syslinux syslinux-common isolinux qemu-system-x86 qemu-utils ovmf socat netpbm \
-            fdisk parted e2fsprogs util-linux udev tesseract-ocr
+            fdisk parted e2fsprogs util-linux udev tesseract-ocr ntfs-3g unzip curl
       - uses: actions/checkout@v4
       - name: Version
         id: v
@@ -50,6 +50,10 @@ jobs:
         run: scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
       - name: Install test (install to a disk, boot it without the stick)
         run: scripts/test-install.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/install
+      - name: Combo stick test (image + orOS Portable on NTFS, then boot it)
+        run: |
+          curl -fsSL -o /tmp/portable.zip https://github.com/koulaxizis/oros-portable/releases/download/v0.1.0/orOS-Portable-lite-0.1.0.zip
+          scripts/test-combo-sticks.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" /tmp/portable.zip test-out/combo
       - name: Screenshots and logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -61,6 +65,8 @@ jobs:
             test-out/install/*.png
             test-out/install/*.log
             test-out/install/*.json
+            test-out/combo/*.png
+            test-out/combo/*.log
             test-out/*.txt
             build.log
           retention-days: 14
