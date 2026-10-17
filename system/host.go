@@ -144,7 +144,13 @@ func handle(req request) reply {
 	case "update.status":
 		return readProgress(updateProgressFile)
 	case "web.open":
-		return openWeb()
+		return openWeb(webHome)
+	case "disks.list":
+		return disksList()
+	case "disks.open":
+		return diskOpen(req.Disk)
+	case "disks.close":
+		return diskClose(req.Disk)
 	case "install.disks":
 		disks, err := installTargets()
 		if err != nil {
@@ -349,12 +355,15 @@ func startRoot(args ...string) reply {
 	return reply{"ok": true}
 }
 
+// webHome is the Internet button's first page.
+const webHome = "https://duckduckgo.com/"
+
 // webBrowser and webArgs open a normal Chromium window for the web, with
 // tabs and an address bar, in its own profile next to orOS's. cage shows
 // it over orOS; closing it brings orOS back.
 var webBrowser = "/usr/bin/chromium"
 
-func webArgs(home string) []string {
+func webArgs(home, url string) []string {
 	return []string{
 		"--ozone-platform=wayland",
 		"--user-data-dir=" + filepath.Join(home, "oros", "data", "web"),
@@ -362,11 +371,11 @@ func webArgs(home string) []string {
 		"--disable-features=Translate",
 		"--enable-logging=stderr",
 		"--new-window",
-		"https://duckduckgo.com/",
+		url,
 	}
 }
 
-func openWeb() reply {
+func openWeb(url string) reply {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return fail(err, "")
@@ -375,7 +384,7 @@ func openWeb() reply {
 	if err := os.MkdirAll(filepath.Join(data, "web"), 0o700); err != nil {
 		return fail(err, "")
 	}
-	cmd := exec.Command(webBrowser, webArgs(home)...)
+	cmd := exec.Command(webBrowser, webArgs(home, url)...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	// The browser's own messages, to find out why a window did not open.
 	if f, err := os.Create(filepath.Join(data, "web.log")); err == nil {

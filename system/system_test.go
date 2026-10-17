@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -274,5 +275,135 @@ func TestFetchManifestNoRelease(t *testing.T) {
 	defer func() { http.DefaultTransport = old }()
 	if _, err := fetchManifest(srv.URL + "/update.json"); !errors.Is(err, errNoRelease) {
 		t.Fatalf("err %v", err)
+	}
+}
+
+func TestPickVolumes(t *testing.T) {
+	j := `{"blockdevices":[
+	{"name":"nvme0n1","path":"/dev/nvme0n1","pkname":null,"type":"disk","size":512110190592,"fstype":null,"label":null,"mountpoint":null,"rm":false,"hotplug":false,"tran":"nvme","model":"Samsung SSD 980"},
+	{"name":"nvme0n1p1","path":"/dev/nvme0n1p1","pkname":"nvme0n1","type":"part","size":272629760,"fstype":"vfat","label":"SYSTEM","mountpoint":null,"rm":false,"hotplug":false,"tran":null,"model":null},
+	{"name":"nvme0n1p3","path":"/dev/nvme0n1p3","pkname":"nvme0n1","type":"part","size":510000000000,"fstype":"ntfs","label":"Windows","mountpoint":null,"rm":false,"hotplug":false,"tran":null,"model":null},
+	{"name":"nvme0n1p4","path":"/dev/nvme0n1p4","pkname":"nvme0n1","type":"part","size":700000000,"fstype":"ntfs","label":"Recovery","mountpoint":null,"rm":false,"hotplug":false,"tran":null,"model":null},
+	{"name":"sda","path":"/dev/sda","pkname":null,"type":"disk","size":32010928128,"fstype":null,"label":null,"mountpoint":null,"rm":true,"hotplug":true,"tran":"usb","model":"Flash Drive"},
+	{"name":"sda1","path":"/dev/sda1","pkname":"sda","type":"part","size":1500000000,"fstype":"iso9660","label":"orOS","mountpoint":"/run/live/medium","rm":true,"hotplug":true,"tran":null,"model":null},
+	{"name":"sda3","path":"/dev/sda3","pkname":"sda","type":"part","size":15000000000,"fstype":"ext4","label":"persistence","mountpoint":null,"rm":true,"hotplug":true,"tran":null,"model":null},
+	{"name":"sdb","path":"/dev/sdb","pkname":null,"type":"disk","size":64000000000,"fstype":"exfat","label":"PHOTOS","mountpoint":"/media/oros/PHOTOS","rm":true,"hotplug":true,"tran":"usb","model":"Ultra"},
+	{"name":"sr0","path":"/dev/sr0","pkname":null,"type":"rom","size":1073741312,"fstype":"iso9660","label":"CD","mountpoint":null,"rm":true,"hotplug":true,"tran":"sata","model":"DVD"},
+	{"name":"loop0","path":"/dev/loop0","pkname":null,"type":"loop","size":1300000000,"fstype":"squashfs","label":null,"mountpoint":"/run/live/rootfs","rm":false,"hotplug":false,"tran":null,"model":null}
+	]}`
+	vs, err := pickVolumes(j, map[string]bool{"sda": true, "sda1": true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vs) != 2 {
+		t.Fatalf("got %+v", vs)
+	}
+	w, p := vs[0], vs[1]
+	if w.Path != "/dev/nvme0n1p3" || w.Label != "Windows" || !w.Internal || w.USB || w.Model != "Samsung SSD 980" || w.Mount != "" {
+		t.Fatalf("windows %+v", w)
+	}
+	if p.Path != "/dev/sdb" || !p.USB || p.Internal || p.Mount != "/media/oros/PHOTOS" {
+		t.Fatalf("stick %+v", p)
+	}
+	if d := mountDir(volume{Path: "/dev/sdc1", Label: "My Disk/../x"}); d != filepath.Join(mediaRoot, "My_Disk_.._x") {
+		t.Fatalf("dir %q", d)
+	}
+	if d := mountDir(volume{Path: "/dev/sdc1", Label: ".."}); d != filepath.Join(mediaRoot, "sdc1") {
+		t.Fatalf("dir %q", d)
+	}
+}
+
+// TestMountVolume mounts real filesystems read-only (root and loop devices
+// only, as in CI).
+func TestMountVolume(t *testing.T) {
+	if os.Getuid() != 0 {
+		t.Skip("needs root")
+	}
+	if _, err := exec.LookPath("losetup"); err != nil {
+		t.Skip("no losetup")
+	}
+	old := mediaRoot
+	mediaRoot = t.TempDir()
+	defer func() { mediaRoot = old }()
+	for fs, mkfs := range map[string][]string{
+		"vfat": {"mkfs.vfat", "-n", "STICK"},
+		"ext4": {"mkfs.ext4", "-q", "-L", "LINUX"},
+		"ntfs": {"mkntfs", "-Q", "-q", "-F", "-L", "Windows"},
+	} {
+		if _, err := exec.LookPath(mkfs[0]); err != nil {
+			t.Logf("%s: no %s", fs, mkfs[0])
+			continue
+		}
+		img := filepath.Join(t.TempDir(), fs+".img")
+		if err := os.WriteFile(img, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Truncate(img, 64<<20); err != nil {
+			t.Fatal(err)
+		}
+		if out, err := exec.Command(mkfs[0], append(mkfs[1:], img)...).CombinedOutput(); err != nil {
+			t.Fatalf("%s: %v %s", fs, err, out)
+		}
+		out, err := exec.Command("losetup", "-f", "--show", img).Output()
+		if err != nil {
+			t.Skipf("losetup: %v", err)
+		}
+		dev := strings.TrimSpace(string(out))
+		v := volume{Path: dev, Label: "Disk-" + fs, FSType: fs}
+		dir, err := mountVolume(v, "1000", "1000")
+		if err != nil {
+			_ = exec.Command("losetup", "-d", dev).Run()
+			t.Fatalf("%s: %v", fs, err)
+		}
+		if dir != filepath.Join(mediaRoot, "Disk-"+fs) {
+			t.Errorf("%s: dir %s", fs, dir)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "x"), []byte("x"), 0o644); err == nil {
+			t.Errorf("%s: mounted writable", fs)
+		}
+		v.Mount = dir
+		if err := unmountVolume(v); err != nil {
+			t.Errorf("%s: %v", fs, err)
+		}
+		if _, err := os.Stat(dir); err == nil {
+			t.Errorf("%s: mount folder left", fs)
+		}
+		_ = exec.Command("losetup", "-d", dev).Run()
+	}
+}
+
+func TestDiskOpen(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	out := filepath.Join(dir, "args")
+	stub := filepath.Join(dir, "chromium")
+	if err := os.WriteFile(stub, []byte("#!/bin/sh\necho \"$@\" > "+out+"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	oldB, oldR := webBrowser, rootRun
+	webBrowser = stub
+	var got []string
+	rootRun = func(args ...string) (string, error) { got = args; return "/media/oros/Windows\n", nil }
+	defer func() { webBrowser, rootRun = oldB, oldR }()
+	r := handle(request{Cmd: "disks.open", Disk: "/dev/nvme0n1p3"})
+	if r["ok"] != true || r["mount"] != "/media/oros/Windows" {
+		t.Fatalf("open: %v", r)
+	}
+	if strings.Join(got, " ") != "mount --dev /dev/nvme0n1p3" {
+		t.Fatalf("root args %q", got)
+	}
+	var b []byte
+	for i := 0; i < 50 && len(b) == 0; i++ {
+		time.Sleep(20 * time.Millisecond)
+		b, _ = os.ReadFile(out)
+	}
+	if !strings.Contains(string(b), "file:///media/oros/Windows/") {
+		t.Fatalf("args %q", b)
+	}
+	if r := handle(request{Cmd: "disks.open", Disk: "downloads"}); r["ok"] != true || r["mount"] != filepath.Join(dir, "Downloads") {
+		t.Fatalf("downloads: %v", r)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "Downloads")); err != nil {
+		t.Fatal(err)
 	}
 }

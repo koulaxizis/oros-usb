@@ -25,6 +25,8 @@ The System button (Wi-Fi icon, top right) has Wi-Fi, sound, battery, Restart and
 | Alt+Shift | switch keyboard English / Greek |
 | Power button | shut down |
 
+System › **Disks** lists Downloads, the computer's own disks (Windows, another Linux) and USB sticks (FAT, exFAT, NTFS, ext4, Btrfs, XFS; partitions of 1 GiB or more, never the disk orOS runs from). **Open** mounts one read-only under `/media/oros/<label>` and shows it in the Internet window; **Close** unmounts it. orOS's own files are in its Files app. From a terminal: `sudo /opt/oros/oros-system mount --dev /dev/sdX1 [--unmount]`.
+
 Saved Wi-Fi networks and their passwords are kept in `/home/.oros-network` (NetworkManager's keyfile folder, set in `/etc/NetworkManager/conf.d/oros.conf`), so they survive a restart; the installer copies them to the computer. Logs for when something goes wrong: `~/oros/data/session.log` (the kiosk), `~/oros/data/profile/chrome_debug.log` (the orOS window), `~/oros/data/web.log` (the Internet window) and `~/oros/data/oros-system.log` (the System button).
 
 `~/oros/app` links to the orOS in the image; `/opt/oros/oros-portable update` replaces it with a newer copy on the persistence partition, and a newer image resets it.

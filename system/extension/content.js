@@ -25,6 +25,9 @@
       installNow: "Erase and install", back: "Back", installing: "Installing… do not turn off the computer.",
       installed: "orOS is installed. Shut down, remove the USB stick, then turn the computer on.",
       failed: "Install failed: {e}", restart: "Restart", shutdown: "Shut down", close: "Close",
+      disks: "Disks", downloads: "Downloads", diskInternal: "This computer", diskUsb: "USB",
+      diskOpen: "Open", diskClose: "Close", diskNone: "No other disks. A USB stick appears here when you plug it in.",
+      disksHint: "Disks open read-only in the Internet window. orOS's own files are in the Files app.",
       update: "System update", updateCheck: "Check for updates", updateNone: "This is the newest system ({v}).",
       updateAvail: "New system {v} ({mb} MB). Your files and settings stay.", updateNow: "Download and install",
       updating: "Downloading the new system… {p}%", updated: "Done. Restart to start the new system.",
@@ -44,6 +47,9 @@
       installNow: "Διαγραφή και εγκατάσταση", back: "Πίσω", installing: "Εγκατάσταση… μην κλείσεις τον υπολογιστή.",
       installed: "Το orOS εγκαταστάθηκε. Κλείσε τον υπολογιστή, βγάλε το USB stick και άνοιξέ τον ξανά.",
       failed: "Η εγκατάσταση απέτυχε: {e}", restart: "Επανεκκίνηση", shutdown: "Τερματισμός", close: "Κλείσιμο",
+      disks: "Δίσκοι", downloads: "Λήψεις", diskInternal: "Αυτός ο υπολογιστής", diskUsb: "USB",
+      diskOpen: "Άνοιγμα", diskClose: "Κλείσιμο", diskNone: "Δεν υπάρχουν άλλοι δίσκοι. Ένα USB stick εμφανίζεται εδώ μόλις το συνδέσεις.",
+      disksHint: "Οι δίσκοι ανοίγουν μόνο για ανάγνωση στο παράθυρο Internet. Τα αρχεία του ίδιου του orOS είναι στην εφαρμογή Αρχεία.",
       update: "Ενημέρωση συστήματος", updateCheck: "Έλεγχος για ενημερώσεις", updateNone: "Έχεις το νεότερο σύστημα ({v}).",
       updateAvail: "Νέο σύστημα {v} ({mb} MB). Τα αρχεία και οι ρυθμίσεις σου μένουν.", updateNow: "Λήψη και εγκατάσταση",
       updating: "Λήψη του νέου συστήματος… {p}%", updated: "Έτοιμο. Κάνε επανεκκίνηση για να ξεκινήσει το νέο σύστημα.",
@@ -77,6 +83,9 @@
     globe: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
     eye: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
     eyeOff: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg>',
+    drive: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M5 13l2.5-8h9L19 13"/><circle cx="17" cy="16.5" r=".8" fill="currentColor"/></svg>',
+    usb: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="9" width="10" height="13" rx="2"/><path d="M9 9V3h6v6M11 5.5h0M13 5.5h0"/></svg>',
+    folder: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>',
     lock: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   };
 
@@ -99,6 +108,10 @@
     .net.on { border-color: #c8a96e; }
     input[type=password], input[type=text] { font: inherit; width: 100%; box-sizing: border-box; background: #14120f; color: #e8e4dc;
       border: 1px solid #3f3a32; border-radius: 8px; padding: 7px 9px; margin: 6px 0; }
+    .disk { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+    .disk .name { flex: 1; min-width: 0; }
+    .disk .name div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .disk button { padding: 5px 10px; }
     .pw { display: flex; align-items: center; gap: 6px; }
     .pw button { padding: 6px 8px; line-height: 0; }
     input[type=range] { width: 100%; accent-color: #c8a96e; }
@@ -198,10 +211,12 @@
     const noSound = el("div", { class: "muted" }, t("noSound"));
     const battery = el("div", { class: "muted", style: "margin-top:12px" });
     const install = el("div", { style: "margin-top:14px" }, el("button", { style: "width:100%", onclick: renderInstall }, t("install")));
+    const disksBox = el("div", {});
     const updateBox = el("div", {});
     panel.append(el("h2", {}, t("system")),
       el("h3", {}, t("wifi")), el("div", { class: "row" }, wifiText, sw), nets,
       el("h3", {}, t("sound")), soundRow, noSound, battery,
+      el("h3", {}, t("disks")), disksBox,
       el("h3", {}, t("update")), updateBox, install,
       el("div", { class: "power" },
         el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
@@ -209,6 +224,48 @@
     main = { wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, install };
     paintMain();
     showUpdate(updateBox);
+    showDisks(disksBox);
+  }
+
+  // Disks: Downloads, the computer's own disks and USB sticks. Opening one
+  // mounts it read-only and shows it in the Internet window. The list
+  // follows sticks being plugged in while the panel is open.
+  function showDisks(box) {
+    const list = el("div", {});
+    const msg = el("div", {});
+    box.replaceChildren(list, msg, el("div", { class: "muted", style: "font-size:12px;margin-top:4px" }, t("disksHint")));
+    const gb = (n) => { const g = n / 1e9; return (g < 10 ? g.toFixed(1) : Math.round(g)) + " GB"; };
+    const row = (icon, title, sub, ...buttons) => el("div", { class: "disk" }, el("span", { html: icon }),
+      el("div", { class: "name" }, el("div", {}, title), sub ? el("div", { class: "muted", style: "font-size:12px" }, sub) : null), ...buttons);
+    const act = async (cmd, path) => {
+      msg.replaceChildren();
+      const r = await call({ cmd, disk: path });
+      if (!r.ok) msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error })));
+      last = "";
+      load();
+    };
+    let last = "";
+    async function load() {
+      if (!box.isConnected) { clearInterval(timer); return; }
+      const r = await call({ cmd: "disks.list" });
+      const key = JSON.stringify(r);
+      if (key === last) return;
+      last = key;
+      const rows = [row(ICON.folder, t("downloads"), "", el("button", { onclick: () => act("disks.open", "downloads") }, t("diskOpen")))];
+      if (!r.ok) rows.push(el("div", { class: "msg err" }, t("error", { e: r.error })));
+      for (const v of (r.volumes || [])) {
+        const where = v.usb ? t("diskUsb") : t("diskInternal");
+        const title = v.label || v.model || v.path.replace("/dev/", "");
+        const sub = [where, title === v.model ? "" : v.model, gb(v.size), v.fstype.toUpperCase()].filter(Boolean).join(" · ");
+        const buttons = [el("button", { onclick: () => act("disks.open", v.path) }, t("diskOpen"))];
+        if (v.mount) buttons.push(el("button", { onclick: () => act("disks.close", v.path) }, t("diskClose")));
+        rows.push(row(v.usb ? ICON.usb : ICON.drive, title, sub, ...buttons));
+      }
+      if (r.ok && !(r.volumes || []).length) rows.push(el("div", { class: "muted" }, t("diskNone")));
+      list.replaceChildren(...rows);
+    }
+    const timer = setInterval(load, 4000);
+    load();
   }
 
   function paintMain() {

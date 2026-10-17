@@ -27,6 +27,9 @@ polkitd
 # System button and installer (oros-system)
 efibootmgr
 dosfstools
+# Disks section: NTFS (Windows) when the kernel driver refuses, exFAT tools
+ntfs-3g
+exfatprogs
 e2fsprogs
 fdisk
 
