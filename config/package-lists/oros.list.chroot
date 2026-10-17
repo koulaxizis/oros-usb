@@ -18,15 +18,30 @@ mesa-vulkan-drivers
 fonts-noto-core
 fonts-noto-color-emoji
 
-# Network (Wi-Fi set up on tty2 with nmtui for now)
+# Network (Wi-Fi from orOS's System button, or nmtui on tty2)
 network-manager
 wpasupplicant
 iw
+polkitd
+
+# System button and installer (oros-system)
+efibootmgr
+dosfstools
+e2fsprogs
+fdisk
+
+# Boot splash
+plymouth
+plymouth-themes
 
 # Sound
 pipewire
 pipewire-pulse
+pipewire-alsa
 wireplumber
+# Sound card profiles; without them most laptops show no output at all.
+alsa-ucm-conf
+alsa-topology-conf
 
 # Firmware for common Wi-Fi, graphics and sound hardware
 firmware-linux-free

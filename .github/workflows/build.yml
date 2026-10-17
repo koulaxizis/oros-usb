@@ -5,7 +5,17 @@ on:
     branches: [main]
     tags: ["v*"]
   pull_request:
+  # The monthly system: new Chromium, kernel and firmware from Debian, and
+  # the latest orOS. A tested build is released; "Update system" on the
+  # stick installs it.
+  schedule:
+    - cron: "0 4 1 * *"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create on this commit, e.g. v0.1.0 (empty: test build only)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -26,15 +36,26 @@ jobs:
           apt-get install -y -q --no-install-recommends live-build golang-go git ca-certificates \
             debootstrap xorriso squashfs-tools dosfstools mtools grub-efi-amd64-bin grub-pc-bin \
             syslinux syslinux-common isolinux qemu-system-x86 qemu-utils ovmf socat netpbm \
-            fdisk parted e2fsprogs util-linux udev tesseract-ocr
+            fdisk parted e2fsprogs util-linux udev tesseract-ocr ntfs-3g unzip curl initramfs-tools-core
       - uses: actions/checkout@v4
       - name: Version
         id: v
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           case "$GITHUB_REF" in
-            refs/tags/v*) echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT" ;;
-            *) echo "version=0.0.0-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT" ;;
+            refs/tags/v*) TAG="$GITHUB_REF_NAME" ;;
           esac
+          if [ "$GITHUB_EVENT_NAME" = schedule ]; then TAG="v$(date -u +%Y.%m.%d)"; fi
+          if [ -n "$TAG" ]; then
+            case "$TAG" in v[0-9]*) ;; *) echo "bad tag: $TAG"; exit 1;; esac
+            echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Unit tests (oros-system)
+        run: cd system && go test ./...
       - name: Build image
         run: scripts/build.sh "${{ steps.v.outputs.version }}"
       - name: Boot menus in the image
@@ -46,6 +67,14 @@ jobs:
           done
       - name: Boot test (QEMU, UEFI Secure Boot, persistence)
         run: scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
+      - name: Install test (install to a disk, boot it without the stick)
+        run: scripts/test-install.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/install
+      - name: Combo stick test (image + orOS Portable on NTFS, then boot it)
+        run: |
+          curl -fsSL -o /tmp/portable.zip https://github.com/koulaxizis/oros-portable/releases/download/v0.1.0/orOS-Portable-lite-0.1.0.zip
+          scripts/test-combo-sticks.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" /tmp/portable.zip test-out/combo
+      - name: Update test (system update onto the persistence partition, then boot it)
+        run: scripts/test-update.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/update
       - name: Screenshots and logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,6 +83,13 @@ jobs:
           path: |
             test-out/*.png
             test-out/*.log
+            test-out/install/*.png
+            test-out/install/*.log
+            test-out/install/*.json
+            test-out/combo/*.png
+            test-out/combo/*.log
+            test-out/update/*.png
+            test-out/update/*.log
             test-out/*.txt
             build.log
           retention-days: 14
@@ -64,11 +100,17 @@ jobs:
           path: out/*.iso
           retention-days: 14
           compression-level: 0
+      # A tag push, a manual run with a tag, or the monthly run. The tag is
+      # created on the commit that was built and tested.
       - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.v.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.v.outputs.tag }}
+          VERSION: ${{ steps.v.outputs.version }}
         run: |
           apt-get install -y -q gh
-          gh release create "$GITHUB_REF_NAME" out/*.iso --repo "$GITHUB_REPOSITORY" \
-            --title "orOS USB $GITHUB_REF_NAME" --notes "Write the ISO to a USB stick (Rufus, balenaEtcher or dd). See README."
+          scripts/update-assets.sh "out/orOS-USB-$VERSION.iso" out/update "$VERSION"
+          gh release create "$TAG" --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY" \
+            "out/orOS-USB-$VERSION.iso" out/update/update.json out/update/filesystem.squashfs out/update/vmlinuz out/update/initrd.img \
+            --title "orOS USB $TAG" --notes "Write the ISO to a USB stick (Rufus, balenaEtcher or dd); see README. Sticks with orOS already on them get this system with System › System update; files and settings stay."

@@ -17,5 +17,13 @@ cat > /etc/systemd/logind.conf.d/oros.conf <<'EOF'
 HandlePowerKey=poweroff
 HandleLidSwitch=suspend
 EOF
-# The launcher must be executable even if it was copied without the bit.
-chmod 0755 /opt/oros/oros-portable
+# The launcher and the system bridge must be executable even if they were
+# copied without the bit; sudo ignores rule files with loose permissions.
+chmod 0755 /opt/oros/oros-portable /opt/oros/oros-system
+chmod 0440 /etc/sudoers.d/oros-install
+
+# orOS boot splash: the spinner theme's images with the orOS logo.
+if [ -d /usr/share/plymouth/themes/spinner ]; then
+	cp -n /usr/share/plymouth/themes/spinner/*.png /usr/share/plymouth/themes/oros/
+fi
+plymouth-set-default-theme -R oros
