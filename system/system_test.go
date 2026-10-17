@@ -151,7 +151,7 @@ func TestUpdateHelpers(t *testing.T) {
 		t.Fatalf("slot %q", s)
 	}
 	got := bootArgs("BOOT_IMAGE=/live/vmlinuz boot=live components quiet splash persistence live-media-path=/oros-system/A live-media=/dev/sdb4", "abcd-1234", "B")
-	want := "boot=live components quiet splash persistence live-media=/dev/disk/by-uuid/abcd-1234 live-media-path=/oros-system/B"
+	want := "boot=live components quiet splash persistence live-media=/dev/disk/by-uuid/abcd-1234 live-media-path=/oros-system/B toram=filesystem.squashfs"
 	if got != want {
 		t.Fatalf("args:\n%s\n%s", got, want)
 	}
@@ -204,7 +204,7 @@ func TestUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg, _ := os.ReadFile(filepath.Join(target, "oros-system", "boot.cfg"))
-	if !strings.Contains(string(cfg), "/oros-system/A/vmlinuz boot=live components quiet persistence live-media=/dev/disk/by-uuid/u-1 live-media-path=/oros-system/A") {
+	if !strings.Contains(string(cfg), "/oros-system/A/vmlinuz boot=live components quiet persistence live-media=/dev/disk/by-uuid/u-1 live-media-path=/oros-system/A toram=filesystem.squashfs") {
 		t.Fatalf("first update:\n%s", cfg)
 	}
 

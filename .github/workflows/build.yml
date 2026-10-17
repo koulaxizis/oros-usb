@@ -36,7 +36,7 @@ jobs:
           apt-get install -y -q --no-install-recommends live-build golang-go git ca-certificates \
             debootstrap xorriso squashfs-tools dosfstools mtools grub-efi-amd64-bin grub-pc-bin \
             syslinux syslinux-common isolinux qemu-system-x86 qemu-utils ovmf socat netpbm \
-            fdisk parted e2fsprogs util-linux udev tesseract-ocr ntfs-3g unzip curl
+            fdisk parted e2fsprogs util-linux udev tesseract-ocr ntfs-3g unzip curl initramfs-tools-core
       - uses: actions/checkout@v4
       - name: Version
         id: v

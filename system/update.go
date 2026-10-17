@@ -161,12 +161,14 @@ func bootArgs(cmdline, uuid, slot string) string {
 	for _, a := range strings.Fields(cmdline) {
 		k := strings.SplitN(a, "=", 2)[0]
 		switch k {
-		case "BOOT_IMAGE", "initrd", "findiso", "live-media", "live-media-path", "live-media-timeout":
+		case "BOOT_IMAGE", "initrd", "findiso", "live-media", "live-media-path", "live-media-timeout", "toram":
 			continue
 		}
 		keep = append(keep, a)
 	}
-	keep = append(keep, "live-media=/dev/disk/by-uuid/"+uuid, "live-media-path=/"+updateDir+"/"+slot)
+	// toram: the system is copied into memory and the partition released,
+	// so live-boot can then mount the same partition for persistence.
+	keep = append(keep, "live-media=/dev/disk/by-uuid/"+uuid, "live-media-path=/"+updateDir+"/"+slot, "toram=filesystem.squashfs")
 	return strings.Join(keep, " ")
 }
 

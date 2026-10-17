@@ -11,6 +11,12 @@ BIN="$ROOT/config/includes.chroot/opt/oros/oros-system"
 mkdir -p "$OUT"
 
 "$ROOT/scripts/update-assets.sh" "$ISO" "$OUT/release" 9.9.9-test
+# How live-boot picks the persistence partition (printed for diagnosis).
+if command -v unmkinitramfs >/dev/null; then
+	unmkinitramfs "$OUT/release/initrd.img" "$OUT/initrd" 2>/dev/null || true
+	grep -rn -A3 -iE "skip.*(live|medium)|livefs_root|PERSISTENCE_MEDIA|toram" "$OUT/initrd" --include='*misc-helpers*' 2>/dev/null | head -80 || true
+	rm -rf "$OUT/initrd"
+fi
 
 IMG="$OUT/usb.img"
 rm -f "$IMG"
