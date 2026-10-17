@@ -33,6 +33,9 @@ type reply map[string]any
 // serveHost speaks Chromium's native messaging protocol: each message is a
 // 32-bit length in native byte order followed by that much JSON.
 func serveHost(in io.Reader, out io.Writer) error {
+	if b, err := os.ReadFile("/proc/cmdline"); err == nil {
+		logf("system %s slot=%q", currentVersion(), runningSlot(string(b)))
+	}
 	r := bufio.NewReader(in)
 	for {
 		var n uint32
@@ -134,6 +137,12 @@ func handle(req request) reply {
 			return fail(err, out)
 		}
 		return reply{"ok": true}
+	case "update.check":
+		return checkUpdate()
+	case "update.start":
+		return startRoot("update", "--yes")
+	case "update.status":
+		return readProgress(updateProgressFile)
 	case "web.open":
 		return openWeb()
 	case "install.disks":
@@ -145,13 +154,7 @@ func handle(req request) reply {
 	case "install.start":
 		return startInstall(req)
 	case "install.status":
-		b, err := os.ReadFile(progressFile)
-		if err != nil {
-			return reply{"ok": true, "running": false}
-		}
-		var p progress
-		_ = json.Unmarshal(b, &p)
-		return reply{"ok": true, "running": !p.Done, "progress": p}
+		return readProgress(progressFile)
 	}
 	return reply{"ok": false, "error": "unknown command"}
 }
@@ -300,6 +303,43 @@ func startInstall(req request) reply {
 		return fail(err, "")
 	}
 	// The installer outlives this short-lived host process.
+	go func() { _ = cmd.Wait() }()
+	time.Sleep(300 * time.Millisecond)
+	return reply{"ok": true}
+}
+
+func readProgress(file string) reply {
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return reply{"ok": true, "running": false}
+	}
+	var p progress
+	_ = json.Unmarshal(b, &p)
+	return reply{"ok": true, "running": !p.Done, "progress": p}
+}
+
+// checkUpdate compares the running system with the latest release.
+func checkUpdate() reply {
+	cur := currentVersion()
+	r := reply{"ok": true, "current": cur, "canUpdate": persistenceTarget() != ""}
+	m, err := fetchManifest(updateURL)
+	if err != nil {
+		return fail(err, "")
+	}
+	r["latest"] = m.Version
+	r["size"] = m.size()
+	r["available"] = m.Version != cur
+	return r
+}
+
+// startRoot runs oros-system as root through the narrow sudo rule, in
+// the background; it outlives this short-lived host process.
+func startRoot(args ...string) reply {
+	cmd := exec.Command("sudo", append([]string{"-n", "/opt/oros/oros-system"}, args...)...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	if err := cmd.Start(); err != nil {
+		return fail(err, "")
+	}
 	go func() { _ = cmd.Wait() }()
 	time.Sleep(300 * time.Millisecond)
 	return reply{"ok": true}

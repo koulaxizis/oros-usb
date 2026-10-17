@@ -27,6 +27,10 @@ The System button (Wi-Fi icon, top right) has Wi-Fi, sound, battery, Restart and
 
 `~/oros/app` links to the orOS in the image; `/opt/oros/oros-portable update` replaces it with a newer copy on the persistence partition, and a newer image resets it.
 
+### System updates
+
+A new orOS USB is built and released every month (newer Chromium, kernel and firmware from Debian 13, and the latest orOS), after the same tests as every build. System › **System update** downloads its system (about 1.2 GB) onto the persistence partition, into slot A or B, whichever is not running, checks it against `update.json`, and writes `/oros-system/boot.cfg`. On the next start the boot menu (UEFI) starts the new system; the previous one and the stick's own system stay in the menu as a way back. Files and settings stay, because the persistence partition only keeps the home folder. Old BIOS computers keep starting the stick's own system. From a terminal: `sudo /opt/oros/oros-system update --yes`.
+
 ### Installing on the computer
 
 System button → **Install orOS on this computer** erases the chosen internal disk and puts orOS on it: a FAT partition with the boot files and the system image (UEFI with Secure Boot), and an ext4 partition labelled `orosdisk` that keeps the home folder, optionally copied from the stick. The installed system starts like the stick, without it. From a terminal: `sudo /opt/oros/oros-system install --disk /dev/sdX --yes`. UEFI only; old BIOS-only computers keep using the stick.
@@ -37,7 +41,7 @@ System button → **Install orOS on this computer** erases the chosen internal d
 
 ## Building
 
-`sudo scripts/build.sh <version>` on Debian 13, or let CI do it: `.github/workflows/build.yml` builds the ISO in a privileged `debian:trixie` container, writes it to a disk image with a persistence partition, boots it in QEMU with UEFI Secure Boot (Microsoft keys), and checks that orOS started, the System button reached `oros-system`, and orOS saved its profile to the persistence partition. It then installs orOS from the ISO onto an empty disk image with `oros-system install` and boots that disk alone the same way (`scripts/test-install.sh`), and writes a combo stick image with the orOS Portable lite release and boots it (`scripts/test-combo-sticks.sh`). Screenshots of the boot are kept as the `boot-test` artifact. `v*` tags publish a release.
+`sudo scripts/build.sh <version>` on Debian 13, or let CI do it: `.github/workflows/build.yml` builds the ISO in a privileged `debian:trixie` container, writes it to a disk image with a persistence partition, boots it in QEMU with UEFI Secure Boot (Microsoft keys), and checks that orOS started, the System button reached `oros-system`, and orOS saved its profile to the persistence partition. It then installs orOS from the ISO onto an empty disk image with `oros-system install` and boots that disk alone the same way (`scripts/test-install.sh`), and writes a combo stick image with the orOS Portable lite release and boots it (`scripts/test-combo-sticks.sh`), and puts the image's system onto a stick's persistence partition with `oros-system update` and boots it (`scripts/test-update.sh`). Tags, manual runs with a tag, and the monthly run (1st of the month) publish a release with the ISO and the update files. Screenshots of the boot are kept as the `boot-test` artifact. `v*` tags publish a release.
 
 ## Not done yet
 

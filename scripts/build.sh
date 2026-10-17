@@ -25,6 +25,7 @@ git clone -q --depth 1 https://github.com/koulaxizis/oros-portable "$WORK/portab
 echo "== system bridge and extension"
 (cd system && CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags "-s -w" -o "$OPT/oros-system" .)
 rm -rf "$OPT/system-ext" && cp -a system/extension "$OPT/system-ext"
+echo "$VERSION" > "$OPT/version"
 
 echo "== boot menus: start orOS by itself after 3 seconds"
 # live-build's menus wait for a key forever; take its own templates and set
@@ -34,6 +35,21 @@ cp -a /usr/share/live/build/bootloaders/grub-pc /usr/share/live/build/bootloader
 printf '\nset default=0\nset timeout=3\n' >> config/bootloaders/grub-pc/config.cfg
 sed -i 's/^timeout .*/timeout 30/' config/bootloaders/isolinux/isolinux.cfg
 grep -q '^timeout 30' config/bootloaders/isolinux/isolinux.cfg
+# System updates (oros-system update) put a newer system on the persistence
+# partition with its own menu entries in /oros-system/boot.cfg; they come
+# first. UEFI only (isolinux cannot read ext4); the stick's own system
+# stays in the menu below them.
+cat >> config/bootloaders/grub-pc/config.cfg <<'GRUB'
+
+if regexp --set=1:orosdev '^\(?([^,)]+)' "$root"; then
+	search --no-floppy --file --set=orosupd --hint="${orosdev}," /oros-system/boot.cfg
+else
+	search --no-floppy --file --set=orosupd /oros-system/boot.cfg
+fi
+if [ -n "$orosupd" ]; then
+	source ($orosupd)/oros-system/boot.cfg
+fi
+GRUB
 # orOS splash instead of Debian's (640x480 for both menus).
 find config/bootloaders -name 'splash.svg' -delete
 cp assets/splash.png config/bootloaders/grub-pc/splash.png

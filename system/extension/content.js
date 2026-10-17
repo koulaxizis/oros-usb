@@ -25,6 +25,10 @@
       installNow: "Erase and install", back: "Back", installing: "Installing… do not turn off the computer.",
       installed: "orOS is installed. Shut down, remove the USB stick, then turn the computer on.",
       failed: "Install failed: {e}", restart: "Restart", shutdown: "Shut down", close: "Close",
+      update: "System update", updateCheck: "Check for updates", updateNone: "This is the newest system ({v}).",
+      updateAvail: "New system {v} ({mb} MB). Your files and settings stay.", updateNow: "Download and install",
+      updating: "Downloading the new system… {p}%", updated: "Done. Restart to start the new system.",
+      updateNoPersist: "Updates need a persistence partition on the stick.",
       error: "Error: {e}", web: "Internet", webTitle: "Open a web browser window (close it to return to orOS)",
     },
     el: {
@@ -40,6 +44,10 @@
       installNow: "Διαγραφή και εγκατάσταση", back: "Πίσω", installing: "Εγκατάσταση… μην κλείσεις τον υπολογιστή.",
       installed: "Το orOS εγκαταστάθηκε. Κλείσε τον υπολογιστή, βγάλε το USB stick και άνοιξέ τον ξανά.",
       failed: "Η εγκατάσταση απέτυχε: {e}", restart: "Επανεκκίνηση", shutdown: "Τερματισμός", close: "Κλείσιμο",
+      update: "Ενημέρωση συστήματος", updateCheck: "Έλεγχος για ενημερώσεις", updateNone: "Έχεις το νεότερο σύστημα ({v}).",
+      updateAvail: "Νέο σύστημα {v} ({mb} MB). Τα αρχεία και οι ρυθμίσεις σου μένουν.", updateNow: "Λήψη και εγκατάσταση",
+      updating: "Λήψη του νέου συστήματος… {p}%", updated: "Έτοιμο. Κάνε επανεκκίνηση για να ξεκινήσει το νέο σύστημα.",
+      updateNoPersist: "Οι ενημερώσεις χρειάζονται διαμέρισμα persistence στο stick.",
       error: "Σφάλμα: {e}", web: "Internet", webTitle: "Άνοιγμα παραθύρου για το διαδίκτυο (κλείσ' το για να γυρίσεις στο orOS)",
     },
   };
@@ -186,14 +194,17 @@
     const noSound = el("div", { class: "muted" }, t("noSound"));
     const battery = el("div", { class: "muted", style: "margin-top:12px" });
     const install = el("div", { style: "margin-top:14px" }, el("button", { style: "width:100%", onclick: renderInstall }, t("install")));
+    const updateBox = el("div", {});
     panel.append(el("h2", {}, t("system")),
       el("h3", {}, t("wifi")), el("div", { class: "row" }, wifiText, sw), nets,
-      el("h3", {}, t("sound")), soundRow, noSound, battery, install,
+      el("h3", {}, t("sound")), soundRow, noSound, battery,
+      el("h3", {}, t("update")), updateBox, install,
       el("div", { class: "power" },
         el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
         el("button", { class: "primary", html: ICON.power + " " + t("shutdown"), onclick: () => call({ cmd: "power.off" }) })));
     main = { wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, install };
     paintMain();
+    showUpdate(updateBox);
   }
 
   function paintMain() {
@@ -217,6 +228,50 @@
       m.battery.textContent = t("battery", { p: state.battery.percent }) + (state.battery.charging ? " · " + t("charging") : "");
     }
     m.install.hidden = !state.canInstall;
+  }
+
+  // System update: check the latest orOS USB release, download it onto the
+  // persistence partition, then a restart starts it.
+  async function showUpdate(box) {
+    const st = await call({ cmd: "update.status" });
+    if (st.ok && st.running) return followUpdate(box);
+    if (st.ok && st.progress && st.progress.done && !st.progress.error) {
+      box.replaceChildren(el("div", { class: "msg" }, t("updated")));
+      return;
+    }
+    box.replaceChildren(el("div", { class: "row" }, el("button", { onclick: () => checkUpdate(box) }, t("updateCheck"))));
+    if (st.ok && st.progress && st.progress.error) box.append(el("div", { class: "msg err" }, t("error", { e: st.progress.error })));
+  }
+
+  async function checkUpdate(box) {
+    box.replaceChildren(el("div", { class: "muted" }, t("searching")));
+    const r = await call({ cmd: "update.check" });
+    if (!r.ok) { box.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error }))); return; }
+    if (!r.available) { box.replaceChildren(el("div", { class: "muted" }, t("updateNone", { v: r.current || "?" }))); return; }
+    box.replaceChildren(el("div", {}, t("updateAvail", { v: r.latest, mb: Math.round(r.size / 1048576) })));
+    if (!r.canUpdate) { box.append(el("div", { class: "msg err" }, t("updateNoPersist"))); return; }
+    box.append(el("div", { class: "row", style: "margin-top:6px" }, el("button", { class: "primary", onclick: async () => {
+      const s = await call({ cmd: "update.start" });
+      if (!s.ok) { box.append(el("div", { class: "msg err" }, t("error", { e: s.error }))); return; }
+      followUpdate(box);
+    } }, t("updateNow"))));
+  }
+
+  function followUpdate(box) {
+    const msg = el("div", { class: "muted" }, t("updating", { p: 0 }));
+    const bar = el("progress", { max: "100", value: "0", style: "width:100%" });
+    box.replaceChildren(msg, bar);
+    const timer = setInterval(async () => {
+      if (!box.isConnected) { clearInterval(timer); return; }
+      const st = await call({ cmd: "update.status" });
+      const p = (st.progress) || {};
+      bar.value = p.percent || 0;
+      msg.textContent = t("updating", { p: p.percent || 0 });
+      if (!st.running && p.done) {
+        clearInterval(timer);
+        box.replaceChildren(el("div", { class: p.error ? "msg err" : "msg" }, p.error ? t("error", { e: p.error }) : t("updated")));
+      }
+    }, 1500);
   }
 
   async function scan(list) {
