@@ -16,7 +16,7 @@ A bootable USB image that starts straight into [orOS](https://useoros.online). M
 2. Without Rufus persistence, run `sudo scripts/add-persistence.sh /dev/sdX` to add a `persistence` partition in the rest of the stick. Without one, orOS still runs, but forgets everything on shutdown.
 3. Boot from the stick. orOS opens full screen. In the computer's boot menu the stick may appear under another name: Acer computers, for example, call every non-Windows USB stick "Linpus lite". That is the computer's label, not a different system; after installing, the entry reads "orOS".
 
-The System button (Wi-Fi icon, top right) has Wi-Fi, sound, battery, Restart and Shut down.
+The System button (Wi-Fi icon, top right) has Wi-Fi, sound, battery, Restart and Shut down. The **Internet** button next to it opens a normal browser window (tabs, address bar, DuckDuckGo search, the same no-Google settings, its own profile in `~/oros/data/web`) over orOS; closing it brings orOS back.
 
 | Keys | |
 |---|---|

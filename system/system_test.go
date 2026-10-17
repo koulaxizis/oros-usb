@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSplitTerse(t *testing.T) {
@@ -113,5 +114,29 @@ func must(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestOpenWeb(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	out := filepath.Join(dir, "args")
+	stub := filepath.Join(dir, "chromium")
+	if err := os.WriteFile(stub, []byte("#!/bin/sh\necho \"$@\" > "+out+"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := webBrowser
+	webBrowser = stub
+	defer func() { webBrowser = old }()
+	if r := handle(request{Cmd: "web.open"}); r["ok"] != true {
+		t.Fatalf("web.open: %v", r)
+	}
+	var b []byte
+	for i := 0; i < 50 && len(b) == 0; i++ {
+		time.Sleep(20 * time.Millisecond)
+		b, _ = os.ReadFile(out)
+	}
+	if !strings.Contains(string(b), "--user-data-dir="+filepath.Join(dir, "oros", "data", "web")) {
+		t.Fatalf("args: %q", b)
 	}
 }

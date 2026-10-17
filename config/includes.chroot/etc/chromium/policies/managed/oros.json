@@ -11,5 +11,13 @@
   "BackgroundModeEnabled": false,
   "PromotionalTabsEnabled": false,
   "AutofillAddressEnabled": false,
-  "AutofillCreditCardEnabled": false
+  "AutofillCreditCardEnabled": false,
+  "DefaultSearchProviderEnabled": true,
+  "DefaultSearchProviderName": "DuckDuckGo",
+  "DefaultSearchProviderKeyword": "duckduckgo.com",
+  "DefaultSearchProviderSearchURL": "https://duckduckgo.com/?q={searchTerms}",
+  "DefaultSearchProviderIconURL": "https://duckduckgo.com/favicon.ico",
+  "NewTabPageLocation": "https://duckduckgo.com/",
+  "HomepageLocation": "https://duckduckgo.com/",
+  "ShowHomeButton": true
 }

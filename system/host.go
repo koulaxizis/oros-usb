@@ -134,6 +134,8 @@ func handle(req request) reply {
 			return fail(err, out)
 		}
 		return reply{"ok": true}
+	case "web.open":
+		return openWeb()
 	case "install.disks":
 		disks, err := installTargets()
 		if err != nil {
@@ -300,6 +302,37 @@ func startInstall(req request) reply {
 	// The installer outlives this short-lived host process.
 	go func() { _ = cmd.Wait() }()
 	time.Sleep(300 * time.Millisecond)
+	return reply{"ok": true}
+}
+
+// webBrowser and webArgs open a normal Chromium window for the web, with
+// tabs and an address bar, in its own profile next to orOS's. cage shows
+// it over orOS; closing it brings orOS back.
+var webBrowser = "/usr/bin/chromium"
+
+func webArgs(home string) []string {
+	return []string{
+		"--ozone-platform=wayland",
+		"--user-data-dir=" + filepath.Join(home, "oros", "data", "web"),
+		"--no-first-run",
+		"--disable-features=Translate",
+		"--new-window",
+		"https://duckduckgo.com/",
+	}
+}
+
+func openWeb() reply {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fail(err, "")
+	}
+	cmd := exec.Command(webBrowser, webArgs(home)...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	if err := cmd.Start(); err != nil {
+		return fail(err, "")
+	}
+	// The browser outlives this short-lived host process.
+	go func() { _ = cmd.Wait() }()
 	return reply{"ok": true}
 }
 

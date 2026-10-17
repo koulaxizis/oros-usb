@@ -25,7 +25,7 @@
       installNow: "Erase and install", back: "Back", installing: "Installing… do not turn off the computer.",
       installed: "orOS is installed. Shut down, remove the USB stick, then turn the computer on.",
       failed: "Install failed: {e}", restart: "Restart", shutdown: "Shut down", close: "Close",
-      error: "Error: {e}",
+      error: "Error: {e}", web: "Internet", webTitle: "Open a web browser window (close it to return to orOS)",
     },
     el: {
       system: "Σύστημα", wifi: "Wi-Fi", wired: "Ενσύρματο δίκτυο", connectedTo: "Συνδεδεμένο στο {n}",
@@ -40,7 +40,7 @@
       installNow: "Διαγραφή και εγκατάσταση", back: "Πίσω", installing: "Εγκατάσταση… μην κλείσεις τον υπολογιστή.",
       installed: "Το orOS εγκαταστάθηκε. Κλείσε τον υπολογιστή, βγάλε το USB stick και άνοιξέ τον ξανά.",
       failed: "Η εγκατάσταση απέτυχε: {e}", restart: "Επανεκκίνηση", shutdown: "Τερματισμός", close: "Κλείσιμο",
-      error: "Σφάλμα: {e}",
+      error: "Σφάλμα: {e}", web: "Internet", webTitle: "Άνοιγμα παραθύρου για το διαδίκτυο (κλείσ' το για να γυρίσεις στο orOS)",
     },
   };
   const lang = () => ((localStorage.getItem("oros-lang") || navigator.language || "en").slice(0, 2) === "el" ? "el" : "en");
@@ -66,6 +66,7 @@
     wifiOff: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.5a15 15 0 0 1 20 0" opacity=".35"/><path d="M5 12a10.5 10.5 0 0 1 14 0" opacity=".35"/><path d="M8.5 15.5a5.5 5.5 0 0 1 7 0" opacity=".35"/><path d="M3 3l18 18"/></svg>',
     wired: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 14v-4h10v4M12 10V4"/></svg>',
     power: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/></svg>',
+    globe: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
     lock: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   };
 
@@ -104,6 +105,7 @@
   `;
 
   let state = {};
+  let webBtn = null;
   let btn = null, host = null, root = null, panel = null, view = "main", pollTimer = null;
 
   const el = (tag, attrs, ...kids) => {
@@ -310,7 +312,12 @@
     if (!bar || btn) return !!btn;
     btn = el("button", { type: "button", id: "oros-system-btn", "aria-haspopup": "dialog",
       style: "display:inline-flex;align-items:center;gap:2px;background:none;border:0;color:inherit;font:inherit;padding:4px 6px;cursor:pointer", onclick: (e) => { e.stopPropagation(); open(); } });
-    bar.append(btn);
+    // Internet: a normal browser window over orOS, for the web outside orOS.
+    webBtn = el("button", { type: "button", id: "oros-web-btn",
+      style: "display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:inherit;font:inherit;padding:4px 6px;cursor:pointer",
+      html: ICON.globe + "<span>" + t("web") + "</span>", title: t("webTitle"),
+      onclick: (e) => { e.stopPropagation(); call({ cmd: "web.open" }); } });
+    bar.append(webBtn, btn);
     paintButton();
     refresh();
     setInterval(refresh, 30000);
