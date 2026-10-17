@@ -23,15 +23,23 @@ export OROS_PORTABLE_ROOT="$ROOT"
 export OROS_PORTABLE_BROWSER=/usr/bin/chromium
 # The orOS system extension adds the System button (Wi-Fi, sound, power,
 # install); Chromium keeps a dark window until orOS paints.
-export OROS_PORTABLE_BROWSER_ARGS="--ozone-platform=wayland --start-fullscreen --disable-features=Translate --load-extension=/opt/oros/system-ext --default-background-color=ff1b1a18"
+export OROS_PORTABLE_BROWSER_ARGS="--ozone-platform=wayland --start-fullscreen --disable-features=Translate --load-extension=/opt/oros/system-ext --default-background-color=ff1b1a18 --enable-logging --v=0"
 export XKB_DEFAULT_LAYOUT="us,gr"
 export XKB_DEFAULT_OPTIONS="grp:alt_shift_toggle"
 # Virtual machines and some old GPUs have no hardware GL.
 export WLR_RENDERER_ALLOW_SOFTWARE=1
 export WLR_NO_HARDWARE_CURSORS=1
 
+LOG="$ROOT/data/session.log"
+[ "$(stat -c %s "$LOG" 2>/dev/null || echo 0)" -lt 262144 ] || rm -f "$LOG"
 while true; do
+	# Only one session runs, so browser lock files left by a crash, a power
+	# cut or the installer's copy are stale; Chromium would otherwise think
+	# the profile is open elsewhere and show a blank window.
+	rm -f "$ROOT"/data/*/Singleton*
+	echo "== $(date -Is) start" >> "$LOG"
 	# -s lets Ctrl+Alt+F2 switch to the network screen.
-	cage -s -- /opt/oros/oros-portable
+	cage -s -- /opt/oros/oros-portable >> "$LOG" 2>&1
+	echo "== $(date -Is) exit $?" >> "$LOG"
 	sleep 1
 done

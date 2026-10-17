@@ -6,6 +6,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -220,5 +223,56 @@ func TestUpdate(t *testing.T) {
 	}
 	if v, _ := os.ReadFile(filepath.Join(target, "oros-system", "B", "version")); strings.TrimSpace(string(v)) != "2026.12.01" {
 		t.Fatalf("B version %q", v)
+	}
+}
+
+func TestInstalledSystem(t *testing.T) {
+	dir := t.TempDir()
+	old := cmdlineFile
+	defer func() { cmdlineFile = old }()
+	cmdlineFile = filepath.Join(dir, "cmdline")
+	for cl, want := range map[string]bool{
+		"boot=live components persistence persistence-label=orosdisk quiet": true,
+		"boot=live components persistence quiet":                            false,
+		"boot=live persistence-label=orosdisk2":                             false,
+	} {
+		if err := os.WriteFile(cmdlineFile, []byte(cl+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got := installedSystem(); got != want {
+			t.Fatalf("%q: %v", cl, got)
+		}
+	}
+}
+
+func TestRemoveBrowserLocks(t *testing.T) {
+	root := t.TempDir()
+	prof := filepath.Join(root, "oros", "data", "profile")
+	if err := os.MkdirAll(prof, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.Symlink("debian-1234", filepath.Join(prof, "SingletonLock"))
+	_ = os.WriteFile(filepath.Join(prof, "SingletonCookie"), nil, 0o644)
+	_ = os.WriteFile(filepath.Join(prof, "Preferences"), []byte("{}"), 0o644)
+	removeBrowserLocks(root)
+	if _, err := os.Lstat(filepath.Join(prof, "SingletonLock")); err == nil {
+		t.Fatal("lock kept")
+	}
+	if _, err := os.Lstat(filepath.Join(prof, "SingletonCookie")); err == nil {
+		t.Fatal("cookie kept")
+	}
+	if _, err := os.Stat(filepath.Join(prof, "Preferences")); err != nil {
+		t.Fatal("preferences removed")
+	}
+}
+
+func TestFetchManifestNoRelease(t *testing.T) {
+	srv := httptest.NewTLSServer(http.NotFoundHandler())
+	defer srv.Close()
+	old := http.DefaultTransport
+	http.DefaultTransport = srv.Client().Transport
+	defer func() { http.DefaultTransport = old }()
+	if _, err := fetchManifest(srv.URL + "/update.json"); !errors.Is(err, errNoRelease) {
+		t.Fatalf("err %v", err)
 	}
 }

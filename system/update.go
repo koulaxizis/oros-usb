@@ -81,6 +81,9 @@ func currentVersion() string {
 	return strings.TrimSpace(string(b))
 }
 
+// errNoRelease means no system update has been published yet.
+var errNoRelease = errors.New("no update published yet")
+
 // fetchManifest reads update.json from a URL or a folder.
 func fetchManifest(src string) (updateManifest, error) {
 	var m updateManifest
@@ -90,6 +93,10 @@ func fetchManifest(src string) (updateManifest, error) {
 		res, err := c.Get(src)
 		if err != nil {
 			return m, err
+		}
+		if res.StatusCode == 404 {
+			res.Body.Close()
+			return m, errNoRelease
 		}
 		if res.StatusCode != 200 {
 			res.Body.Close()

@@ -93,6 +93,13 @@ else
 	echo "FAIL: the System button never reached oros-system" >&2
 	OK=0
 fi
+# Saved Wi-Fi networks are kept next to the home folder.
+if [ -z "$(find "$MNT" -maxdepth 4 -type d -name .oros-network | head -1)" ]; then
+	echo "FAIL: no .oros-network folder for saved networks on the persistence partition" >&2
+	OK=0
+fi
+SESSLOG="$(find "$MNT" -name session.log | head -1)"
+[ -z "$SESSLOG" ] || { echo "== session.log"; tail -20 "$SESSLOG"; }
 if [ -n "${MARKER:-}" ] && [ -z "$(find "$MNT" -name "$MARKER" | head -1)" ]; then
 	echo "FAIL: $MARKER from the install is missing" >&2
 	OK=0

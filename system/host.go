@@ -201,7 +201,7 @@ func status() reply {
 	if b := battery(); b != nil {
 		res["battery"] = b
 	}
-	res["canInstall"] = liveMedium() != ""
+	res["canInstall"] = liveMedium() != "" && !installedSystem()
 	return res
 }
 
@@ -323,6 +323,10 @@ func checkUpdate() reply {
 	cur := currentVersion()
 	r := reply{"ok": true, "current": cur, "canUpdate": persistenceTarget() != ""}
 	m, err := fetchManifest(updateURL)
+	if errors.Is(err, errNoRelease) {
+		r["available"] = false
+		return r
+	}
 	if err != nil {
 		return fail(err, "")
 	}
@@ -356,6 +360,7 @@ func webArgs(home string) []string {
 		"--user-data-dir=" + filepath.Join(home, "oros", "data", "web"),
 		"--no-first-run",
 		"--disable-features=Translate",
+		"--enable-logging=stderr",
 		"--new-window",
 		"https://duckduckgo.com/",
 	}
@@ -366,8 +371,17 @@ func openWeb() reply {
 	if err != nil {
 		return fail(err, "")
 	}
+	data := filepath.Join(home, "oros", "data")
+	if err := os.MkdirAll(filepath.Join(data, "web"), 0o700); err != nil {
+		return fail(err, "")
+	}
 	cmd := exec.Command(webBrowser, webArgs(home)...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	// The browser's own messages, to find out why a window did not open.
+	if f, err := os.Create(filepath.Join(data, "web.log")); err == nil {
+		cmd.Stdout, cmd.Stderr = f, f
+		defer f.Close()
+	}
 	if err := cmd.Start(); err != nil {
 		return fail(err, "")
 	}

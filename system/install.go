@@ -95,6 +95,24 @@ func liveMedium() string {
 	return ""
 }
 
+// cmdlineFile is read to tell a stick from an installed disk.
+var cmdlineFile = "/proc/cmdline"
+
+// installedSystem reports whether orOS runs from a disk it was installed
+// on: the installer sets that disk's own persistence label.
+func installedSystem() bool {
+	b, err := os.ReadFile(cmdlineFile)
+	if err != nil {
+		return false
+	}
+	for _, f := range strings.Fields(string(b)) {
+		if f == "persistence-label="+diskLabel {
+			return true
+		}
+	}
+	return false
+}
+
 // bootDisk is the disk that holds the running orOS ("sdb"), never offered
 // as a target.
 func bootDisk() string {
@@ -265,13 +283,20 @@ func install(o installOpts, step func(string, int)) error {
 	if err := os.MkdirAll(rw, 0o755); err != nil {
 		return err
 	}
-	if o.home != "" {
-		if _, err := os.Stat(o.home); err == nil {
-			if out, err := run("cp", "-a", o.home, rw+"/"); err != nil {
+	// The home folder, and the saved Wi-Fi networks that live next to it.
+	for _, src := range []string{o.home, networkDir} {
+		if src == "" {
+			continue
+		}
+		if _, err := os.Stat(src); err == nil {
+			if out, err := run("cp", "-a", src, rw+"/"); err != nil {
 				return cmdErr("cp", out, err)
 			}
 		}
 	}
+	// The browser is running while we copy: its lock files would make the
+	// installed system think the profile is open on another computer.
+	removeBrowserLocks(rw)
 
 	step("finish", 95)
 	_, _ = run("sync")
@@ -354,6 +379,20 @@ func treeSize(root string) (int64, error) {
 		return nil
 	})
 	return n, err
+}
+
+// networkDir holds NetworkManager's saved networks (see
+// /etc/NetworkManager/conf.d/oros.conf), under /home so they are kept.
+var networkDir = "/home/.oros-network"
+
+// removeBrowserLocks deletes Chromium's Singleton* files below root.
+func removeBrowserLocks(root string) {
+	_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() && strings.HasPrefix(d.Name(), "Singleton") {
+			_ = os.Remove(p)
+		}
+		return nil
+	})
 }
 
 // copyTree copies folders and regular files; links are skipped (the ISO

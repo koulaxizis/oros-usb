@@ -25,6 +25,8 @@ The System button (Wi-Fi icon, top right) has Wi-Fi, sound, battery, Restart and
 | Alt+Shift | switch keyboard English / Greek |
 | Power button | shut down |
 
+Saved Wi-Fi networks and their passwords are kept in `/home/.oros-network` (NetworkManager's keyfile folder, set in `/etc/NetworkManager/conf.d/oros.conf`), so they survive a restart; the installer copies them to the computer. Logs for when something goes wrong: `~/oros/data/session.log` (the kiosk), `~/oros/data/profile/chrome_debug.log` (the orOS window), `~/oros/data/web.log` (the Internet window) and `~/oros/data/oros-system.log` (the System button).
+
 `~/oros/app` links to the orOS in the image; `/opt/oros/oros-portable update` replaces it with a newer copy on the persistence partition, and a newer image resets it.
 
 ### System updates
@@ -33,7 +35,7 @@ A new orOS USB is built and released every month (newer Chromium, kernel and fir
 
 ### Installing on the computer
 
-System button → **Install orOS on this computer** erases the chosen internal disk and puts orOS on it: a FAT partition with the boot files and the system image (UEFI with Secure Boot), and an ext4 partition labelled `orosdisk` that keeps the home folder, optionally copied from the stick. The installed system starts like the stick, without it. From a terminal: `sudo /opt/oros/oros-system install --disk /dev/sdX --yes`. UEFI only; old BIOS-only computers keep using the stick.
+System button → **Install orOS on this computer** erases the chosen internal disk and puts orOS on it: a FAT partition with the boot files and the system image (UEFI with Secure Boot), and an ext4 partition labelled `orosdisk` that keeps the home folder, optionally copied from the stick. The installed system starts like the stick, without it, and no longer offers to install. From a terminal: `sudo /opt/oros/oros-system install --disk /dev/sdX --yes`. UEFI only; old BIOS-only computers keep using the stick.
 
 ### Combo sticks (orOS USB + orOS Portable)
 

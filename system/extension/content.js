@@ -15,7 +15,7 @@
     en: {
       system: "System", wifi: "Wi-Fi", wired: "Wired network", connectedTo: "Connected to {n}",
       notConnected: "Not connected", wifiOff: "Wi-Fi is off", networks: "Show networks",
-      searching: "Searching…", none: "No networks found", password: "Password", connect: "Connect",
+      searching: "Searching…", none: "No networks found", password: "Password", showPw: "Show password", hidePw: "Hide password", connect: "Connect",
       connecting: "Connecting…", connected: "Connected", sound: "Sound", mute: "Mute", unmute: "Unmute",
       noSound: "No sound device found", battery: "Battery {p}%", charging: "charging",
       install: "Install orOS on this computer", installTitle: "Install orOS on this computer",
@@ -34,7 +34,7 @@
     el: {
       system: "Σύστημα", wifi: "Wi-Fi", wired: "Ενσύρματο δίκτυο", connectedTo: "Συνδεδεμένο στο {n}",
       notConnected: "Χωρίς σύνδεση", wifiOff: "Το Wi-Fi είναι κλειστό", networks: "Εμφάνιση δικτύων",
-      searching: "Αναζήτηση…", none: "Δεν βρέθηκαν δίκτυα", password: "Κωδικός", connect: "Σύνδεση",
+      searching: "Αναζήτηση…", none: "Δεν βρέθηκαν δίκτυα", password: "Κωδικός", showPw: "Εμφάνιση κωδικού", hidePw: "Απόκρυψη κωδικού", connect: "Σύνδεση",
       connecting: "Σύνδεση…", connected: "Συνδέθηκε", sound: "Ήχος", mute: "Σίγαση", unmute: "Ήχος ανοιχτός",
       noSound: "Δεν βρέθηκε συσκευή ήχου", battery: "Μπαταρία {p}%", charging: "φορτίζει",
       install: "Εγκατάσταση του orOS σε αυτόν τον υπολογιστή", installTitle: "Εγκατάσταση του orOS σε αυτόν τον υπολογιστή",
@@ -75,6 +75,8 @@
     wired: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 14v-4h10v4M12 10V4"/></svg>',
     power: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/></svg>',
     globe: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
+    eye: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    eyeOff: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg>',
     lock: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   };
 
@@ -97,6 +99,8 @@
     .net.on { border-color: #c8a96e; }
     input[type=password], input[type=text] { font: inherit; width: 100%; box-sizing: border-box; background: #14120f; color: #e8e4dc;
       border: 1px solid #3f3a32; border-radius: 8px; padding: 7px 9px; margin: 6px 0; }
+    .pw { display: flex; align-items: center; gap: 6px; }
+    .pw button { padding: 6px 8px; line-height: 0; }
     input[type=range] { width: 100%; accent-color: #c8a96e; }
     .switch { position: relative; width: 40px; height: 22px; border-radius: 11px; background: #3f3a32; border: none; padding: 0; }
     .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #e8e4dc; transition: left .15s; }
@@ -292,7 +296,17 @@
         const pw = el("input", { type: "password", placeholder: t("password"), autocomplete: "off" });
         const go = el("button", { class: "primary", onclick: () => connect(n.ssid, pw.value, box) }, t("connect"));
         pw.addEventListener("keydown", (e) => { if (e.key === "Enter") go.click(); });
-        box.replaceChildren(pw, go);
+        const eye = el("button", { type: "button", class: "eye", title: t("showPw"), "aria-label": t("showPw"), "aria-pressed": "false", html: ICON.eye });
+        eye.addEventListener("click", () => {
+          const show = pw.type === "password";
+          pw.type = show ? "text" : "password";
+          eye.innerHTML = show ? ICON.eyeOff : ICON.eye;
+          eye.title = t(show ? "hidePw" : "showPw");
+          eye.setAttribute("aria-label", eye.title);
+          eye.setAttribute("aria-pressed", String(show));
+          pw.focus();
+        });
+        box.replaceChildren(el("div", { class: "pw" }, pw, eye), go);
         pw.focus();
       });
       list.append(item, box);
