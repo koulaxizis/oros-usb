@@ -99,6 +99,7 @@
     .msg { margin: 6px 0; font-size: 13px; }
     .msg.err { color: #f0a0a0; }
     .power { display: flex; gap: 8px; margin-top: 14px; }
+    [hidden] { display: none !important; }
     .power button { flex: 1; }
   `;
 
@@ -132,12 +133,12 @@
     const r = await call({ cmd: "status" });
     if (r.ok) state = r;
     paintButton();
-    if (panel && view === "main") renderMain();
+    if (panel && view === "main" && main) paintMain();
   }
 
   function close() {
     if (host) host.remove();
-    host = root = panel = null;
+    host = root = panel = main = null;
     view = "main";
     clearInterval(pollTimer);
     document.removeEventListener("keydown", onKey, true);
@@ -163,50 +164,57 @@
     refresh();
   }
 
+  // The main view is built once per opening; refresh() only repaints its
+  // status parts, so a scanned network list or a password being typed stays.
+  let main = null;
+
   function renderMain() {
     view = "main";
     panel.replaceChildren();
-    panel.append(el("h2", {}, t("system")));
+    const wifiText = el("span", { class: "grow" });
+    const sw = el("button", { class: "switch", "aria-label": t("wifi"),
+      onclick: async () => { await call({ cmd: "wifi.radio", on: !state.wifiOn }); await refresh(); } });
+    const list = el("div", {});
+    const nets = el("div", {}, el("div", { class: "row", style: "margin-top:6px" },
+      el("button", { onclick: () => scan(list) }, t("networks"))), list);
+    const range = el("input", { type: "range", min: "0", max: "100", "aria-label": t("sound") });
+    range.addEventListener("change", () => call({ cmd: "volume.set", value: Number(range.value) }).then(refresh));
+    const mute = el("button", { onclick: () => call({ cmd: "volume.mute", on: !state.muted }).then(refresh) });
+    const soundRow = el("div", { class: "row" }, el("div", { class: "grow" }, range), mute);
+    const noSound = el("div", { class: "muted" }, t("noSound"));
+    const battery = el("div", { class: "muted", style: "margin-top:12px" });
+    const install = el("div", { style: "margin-top:14px" }, el("button", { style: "width:100%", onclick: renderInstall }, t("install")));
+    panel.append(el("h2", {}, t("system")),
+      el("h3", {}, t("wifi")), el("div", { class: "row" }, wifiText, sw), nets,
+      el("h3", {}, t("sound")), soundRow, noSound, battery, install,
+      el("div", { class: "power" },
+        el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
+        el("button", { class: "primary", html: ICON.power + " " + t("shutdown"), onclick: () => call({ cmd: "power.off" }) })));
+    main = { wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, install };
+    paintMain();
+  }
 
-    // Wi-Fi
+  function paintMain() {
+    const m = main;
     let wifiText = t("notConnected");
     if (state.wired) wifiText = t("wired");
     if (state.wifi) wifiText = t("connectedTo", { n: state.wifi.ssid });
     if (state.wifiOn === false) wifiText = t("wifiOff");
-    const sw = el("button", { class: "switch" + (state.wifiOn ? " on" : ""), "aria-label": t("wifi"), "aria-pressed": state.wifiOn ? "true" : "false",
-      onclick: async () => { await call({ cmd: "wifi.radio", on: !state.wifiOn }); await refresh(); } });
-    panel.append(el("h3", {}, t("wifi")),
-      el("div", { class: "row" }, el("span", { class: "grow" }, wifiText), sw));
-    const list = el("div", {});
-    if (state.wifiOn !== false) {
-      panel.append(el("div", { class: "row", style: "margin-top:6px" },
-        el("button", { onclick: () => scan(list) }, t("networks"))), list);
-    }
-
-    // Sound
-    panel.append(el("h3", {}, t("sound")));
-    if (typeof state.volume === "number") {
-      const range = el("input", { type: "range", min: "0", max: "100", value: String(state.volume), "aria-label": t("sound") });
-      range.addEventListener("change", () => call({ cmd: "volume.set", value: Number(range.value) }).then(refresh));
-      const mute = el("button", { onclick: () => call({ cmd: "volume.mute", on: !state.muted }).then(refresh) },
-        state.muted ? t("unmute") : t("mute"));
-      panel.append(el("div", { class: "row" }, el("div", { class: "grow" }, range), mute));
-    } else {
-      panel.append(el("div", { class: "muted" }, t("noSound")));
-    }
-
+    m.wifiText.textContent = wifiText;
+    m.sw.className = "switch" + (state.wifiOn ? " on" : "");
+    m.sw.setAttribute("aria-pressed", state.wifiOn ? "true" : "false");
+    m.nets.hidden = state.wifiOn === false;
+    if (state.wifiOn === false) m.list.replaceChildren();
+    const hasVolume = typeof state.volume === "number";
+    m.soundRow.hidden = !hasVolume;
+    m.noSound.hidden = hasVolume;
+    if (hasVolume && root.activeElement !== m.range) m.range.value = String(state.volume);
+    m.mute.textContent = state.muted ? t("unmute") : t("mute");
+    m.battery.hidden = !state.battery;
     if (state.battery) {
-      panel.append(el("div", { class: "muted", style: "margin-top:12px" },
-        t("battery", { p: state.battery.percent }) + (state.battery.charging ? " · " + t("charging") : "")));
+      m.battery.textContent = t("battery", { p: state.battery.percent }) + (state.battery.charging ? " · " + t("charging") : "");
     }
-
-    if (state.canInstall) {
-      panel.append(el("div", { style: "margin-top:14px" }, el("button", { style: "width:100%", onclick: renderInstall }, t("install"))));
-    }
-
-    panel.append(el("div", { class: "power" },
-      el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
-      el("button", { class: "primary", html: ICON.power + " " + t("shutdown"), onclick: () => call({ cmd: "power.off" }) })));
+    m.install.hidden = !state.canInstall;
   }
 
   async function scan(list) {

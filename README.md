@@ -14,7 +14,7 @@ A bootable USB image that starts straight into [orOS](https://useoros.online). M
 
 1. Write the ISO to a stick: on Windows with [Rufus](https://rufus.ie) (set "Persistent partition size" to keep your data), elsewhere with balenaEtcher or `dd`.
 2. Without Rufus persistence, run `sudo scripts/add-persistence.sh /dev/sdX` to add a `persistence` partition in the rest of the stick. Without one, orOS still runs, but forgets everything on shutdown.
-3. Boot from the stick. orOS opens full screen.
+3. Boot from the stick. orOS opens full screen. In the computer's boot menu the stick may appear under another name: Acer computers, for example, call every non-Windows USB stick "Linpus lite". That is the computer's label, not a different system; after installing, the entry reads "orOS".
 
 The System button (Wi-Fi icon, top right) has Wi-Fi, sound, battery, Restart and Shut down.
 
