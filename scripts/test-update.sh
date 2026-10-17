@@ -19,8 +19,9 @@ dd if="$ISO" of="$IMG" conv=notrunc bs=4M status=none
 OROS_YES=1 "$ROOT/scripts/add-persistence.sh" "$IMG"
 
 # The options the stick's menu starts the live system with.
-ARGS="$(xorriso -osirrox on -indev "$ISO" -extract /boot/grub/grub.cfg /dev/stdout 2>/dev/null |
-	awk '$1 == "linux" { $1 = ""; $2 = ""; print; exit }')"
+xorriso -osirrox on -indev "$ISO" -extract /boot/grub/grub.cfg "$OUT/grub.cfg" >/dev/null 2>&1
+ARGS="$(awk '$1 == "linux" { $1 = ""; $2 = ""; print; exit }' "$OUT/grub.cfg")"
+[ -n "$ARGS" ] || { echo "no kernel options in the image's grub.cfg" >&2; exit 1; }
 echo "kernel options: $ARGS"
 
 read -r START SECTORS < <(partx -g -o START,SECTORS -n -1 "$IMG")
