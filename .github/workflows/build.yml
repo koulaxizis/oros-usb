@@ -67,6 +67,10 @@ jobs:
           done
       - name: Boot test (QEMU, UEFI Secure Boot, persistence)
         run: scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
+      - name: Rufus stick test (files on FAT32, ext3 persistence keeping the whole system)
+        # Reproduces Chris's real-PC first start; reported, not yet blocking.
+        continue-on-error: true
+        run: scripts/test-rufus.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/rufus
       - name: Install test (install to a disk, boot it without the stick)
         run: scripts/test-install.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/install
       - name: Combo stick test (image + orOS Portable on NTFS, then boot it)
@@ -90,6 +94,8 @@ jobs:
             test-out/combo/*.log
             test-out/update/*.png
             test-out/update/*.log
+            test-out/rufus/*.png
+            test-out/rufus/*.log
             test-out/*.txt
             build.log
           retention-days: 14

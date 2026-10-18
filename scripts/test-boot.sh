@@ -28,8 +28,14 @@ read -r PSTART PSECTORS < <(partx -g -o START,SECTORS -n -1 "$IMG")
 PLOOP="$(losetup -f --show -o $((PSTART * 512)) --sizelimit $((PSECTORS * 512)) "$IMG")"
 PMNT="$(mktemp -d)"
 mount "$PLOOP" "$PMNT"
-mkdir -p "$PMNT/home/rw"
-touch "$PMNT/home/rw/.oros-selftest"
+if grep -qx "/ union" "$PMNT/persistence.conf" 2>/dev/null; then
+	# The whole system is kept (Rufus): changes live in rw/.
+	mkdir -p "$PMNT/rw/home"
+	touch "$PMNT/rw/home/.oros-selftest"
+else
+	mkdir -p "$PMNT/home/rw"
+	touch "$PMNT/home/rw/.oros-selftest"
+fi
 umount "$PMNT"
 losetup -d "$PLOOP"
 
