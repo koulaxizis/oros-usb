@@ -254,7 +254,7 @@ func progressWriter(file string) func(progress) {
 		if os.WriteFile(tmp, b, 0o644) == nil {
 			_ = os.Rename(tmp, file)
 		}
-		fmt.Printf("%3d%% %s %s\n", p.Percent, p.Step, p.Error)
+		fmt.Printf("%s %3d%% %s %s\n", time.Now().Format("15:04:05"), p.Percent, p.Step, p.Error)
 	}
 }
 

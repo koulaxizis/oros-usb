@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -77,7 +78,7 @@ func installMain(args []string) int {
 		if os.WriteFile(tmp, b, 0o644) == nil {
 			_ = os.Rename(tmp, o.progress)
 		}
-		fmt.Printf("%3d%% %s %s\n", p.Percent, p.Step, p.Error)
+		fmt.Printf("%s %3d%% %s %s\n", time.Now().Format("15:04:05"), p.Percent, p.Step, p.Error)
 	}
 	if err := install(o, func(step string, pct int) { report(progress{Step: step, Percent: pct}) }); err != nil {
 		report(progress{Step: "error", Done: true, Error: err.Error()})
@@ -408,15 +409,32 @@ func copyTree(src, dst string, progress func(int64)) error {
 		case d.IsDir():
 			return os.MkdirAll(target, 0o755)
 		case d.Type().IsRegular():
-			n, err := copyFile(p, target)
-			progress(n)
+			_, err := copyFile(p, target, progress)
 			return err
 		}
 		return nil
 	})
 }
 
-func copyFile(src, dst string) (int64, error) {
+// countingWriter reports every few MiB, so copying the 1.3 GB system image
+// from a slow stick moves the bar instead of looking stuck.
+type countingWriter struct {
+	w       io.Writer
+	pending int64
+	report  func(int64)
+}
+
+func (p *countingWriter) Write(b []byte) (int, error) {
+	n, err := p.w.Write(b)
+	p.pending += int64(n)
+	if p.pending >= 8<<20 {
+		p.report(p.pending)
+		p.pending = 0
+	}
+	return n, err
+}
+
+func copyFile(src, dst string, progress func(int64)) (int64, error) {
 	in, err := os.Open(src)
 	if err != nil {
 		return 0, err
@@ -426,7 +444,9 @@ func copyFile(src, dst string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	n, err := io.Copy(out, in)
+	pw := &countingWriter{w: out, report: progress}
+	n, err := io.CopyBuffer(pw, in, make([]byte, 1<<20))
+	progress(pw.pending)
 	if err != nil {
 		out.Close()
 		return n, err

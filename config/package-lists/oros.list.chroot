@@ -30,6 +30,8 @@ dosfstools
 # Disks section: NTFS (Windows) when the kernel driver refuses, exFAT tools
 ntfs-3g
 exfatprogs
+# Problem report: which hardware the computer has
+pciutils
 e2fsprogs
 fdisk
 

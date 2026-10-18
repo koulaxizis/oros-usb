@@ -23,6 +23,16 @@ else
 	OROS_YES=1 "$(dirname "$0")/add-persistence.sh" "$IMG"
 fi
 
+# Ask the image's self-test to save a network (oros-selftest.service).
+read -r PSTART PSECTORS < <(partx -g -o START,SECTORS -n -1 "$IMG")
+PLOOP="$(losetup -f --show -o $((PSTART * 512)) --sizelimit $((PSECTORS * 512)) "$IMG")"
+PMNT="$(mktemp -d)"
+mount "$PLOOP" "$PMNT"
+mkdir -p "$PMNT/home/rw"
+touch "$PMNT/home/rw/.oros-selftest"
+umount "$PMNT"
+losetup -d "$PLOOP"
+
 cp /usr/share/OVMF/OVMF_VARS_4M.ms.fd "$OUT/vars.fd"
 MON="$OUT/monitor.sock"
 qemu-system-x86_64 \
@@ -93,9 +103,17 @@ else
 	echo "FAIL: the System button never reached oros-system" >&2
 	OK=0
 fi
-# Saved Wi-Fi networks are kept next to the home folder.
-if [ -z "$(find "$MNT" -maxdepth 4 -type d -name .oros-network | head -1)" ]; then
-	echo "FAIL: no .oros-network folder for saved networks on the persistence partition" >&2
+# Saved networks are kept next to the home folder: the self-test's network
+# must be there.
+if [ -z "$(find "$MNT" -maxdepth 5 -path '*/.oros-network/oros-selftest.nmconnection' | head -1)" ]; then
+	echo "FAIL: NetworkManager could not save a network in /home/.oros-network" >&2
+	ls -la "$(find "$MNT" -maxdepth 4 -type d -name .oros-network | head -1)" 2>&1 || true
+	grep -a "oros-selftest\|NetworkManager" "$OUT/serial.log" | tail -20 >&2 || true
+	OK=0
+fi
+# The system log is kept for the problem report.
+if [ -z "$(find "$MNT" -path '*/.oros-journal/*' -name '*.journal' | head -1)" ]; then
+	echo "FAIL: no system log in /home/.oros-journal on the persistence partition" >&2
 	OK=0
 fi
 SESSLOG="$(find "$MNT" -name session.log | head -1)"

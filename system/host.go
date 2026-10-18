@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -145,6 +144,8 @@ func handle(req request) reply {
 		return readProgress(updateProgressFile)
 	case "web.open":
 		return openWeb(webHome)
+	case "report":
+		return report()
 	case "disks.list":
 		return disksList()
 	case "disks.open":
@@ -303,12 +304,15 @@ func startInstall(req request) reply {
 	}
 	cmd := exec.Command("sudo", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-	var errb bytes.Buffer
-	cmd.Stderr = &errb
+	// Its steps go to a log file, not a pipe: the installer outlives this
+	// short-lived host process, and writing to a closed pipe would stop it.
+	if f := logFile("install.log"); f != nil {
+		cmd.Stdout, cmd.Stderr = f, f
+		defer f.Close()
+	}
 	if err := cmd.Start(); err != nil {
 		return fail(err, "")
 	}
-	// The installer outlives this short-lived host process.
 	go func() { _ = cmd.Wait() }()
 	time.Sleep(300 * time.Millisecond)
 	return reply{"ok": true}
@@ -347,6 +351,10 @@ func checkUpdate() reply {
 func startRoot(args ...string) reply {
 	cmd := exec.Command("sudo", append([]string{"-n", "/opt/oros/oros-system"}, args...)...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	if f := logFile(args[0] + ".log"); f != nil {
+		cmd.Stdout, cmd.Stderr = f, f
+		defer f.Close()
+	}
 	if err := cmd.Start(); err != nil {
 		return fail(err, "")
 	}
@@ -397,6 +405,20 @@ func openWeb(url string) reply {
 	// The browser outlives this short-lived host process.
 	go func() { _ = cmd.Wait() }()
 	return reply{"ok": true}
+}
+
+// logFile opens a fresh log in ~/oros/data for a background job.
+func logFile(name string) *os.File {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil
+	}
+	f, err := os.Create(filepath.Join(home, "oros", "data", name))
+	if err != nil {
+		return nil
+	}
+	fmt.Fprintf(f, "== %s\n", time.Now().Format(time.RFC3339))
+	return f
 }
 
 // logf keeps a short log next to orOS's data; the boot test reads it to

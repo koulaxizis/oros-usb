@@ -1,0 +1,16 @@
+# Boot tests only: when the test put /home/.oros-selftest on the persistence
+# partition, save a network the way the System button does (as the orOS
+# user), so the test can check that it lands in /home/.oros-network.
+[Unit]
+Description=orOS boot self-test
+ConditionPathExists=/home/.oros-selftest
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+User=oros
+ExecStart=/usr/bin/nmcli connection add type ethernet ifname "*" con-name oros-selftest autoconnect no
+
+[Install]
+WantedBy=multi-user.target

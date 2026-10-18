@@ -28,6 +28,7 @@
       disks: "Disks", downloads: "Downloads", diskInternal: "This computer", diskUsb: "USB",
       diskOpen: "Open", diskClose: "Close", diskNone: "No other disks. A USB stick appears here when you plug it in.",
       disksHint: "Disks open read-only in the Internet window. orOS's own files are in the Files app.",
+      report: "Problem report", reportMaking: "Preparing the report…", reportSaved: "Saved in Downloads: {f}. You can attach it to a message from the Internet window.",
       update: "System update", updateCheck: "Check for updates", updateNone: "This is the newest system ({v}).",
       updateAvail: "New system {v} ({mb} MB). Your files and settings stay.", updateNow: "Download and install",
       updating: "Downloading the new system… {p}%", updated: "Done. Restart to start the new system.",
@@ -50,6 +51,7 @@
       disks: "Δίσκοι", downloads: "Λήψεις", diskInternal: "Αυτός ο υπολογιστής", diskUsb: "USB",
       diskOpen: "Άνοιγμα", diskClose: "Κλείσιμο", diskNone: "Δεν υπάρχουν άλλοι δίσκοι. Ένα USB stick εμφανίζεται εδώ μόλις το συνδέσεις.",
       disksHint: "Οι δίσκοι ανοίγουν μόνο για ανάγνωση στο παράθυρο Internet. Τα αρχεία του ίδιου του orOS είναι στην εφαρμογή Αρχεία.",
+      report: "Αναφορά προβλήματος", reportMaking: "Ετοιμάζεται η αναφορά…", reportSaved: "Αποθηκεύτηκε στις Λήψεις: {f}. Μπορείς να το επισυνάψεις σε μήνυμα από το παράθυρο Internet.",
       update: "Ενημέρωση συστήματος", updateCheck: "Έλεγχος για ενημερώσεις", updateNone: "Έχεις το νεότερο σύστημα ({v}).",
       updateAvail: "Νέο σύστημα {v} ({mb} MB). Τα αρχεία και οι ρυθμίσεις σου μένουν.", updateNow: "Λήψη και εγκατάσταση",
       updating: "Λήψη του νέου συστήματος… {p}%", updated: "Έτοιμο. Κάνε επανεκκίνηση για να ξεκινήσει το νέο σύστημα.",
@@ -213,11 +215,20 @@
     const install = el("div", { style: "margin-top:14px" }, el("button", { style: "width:100%", onclick: renderInstall }, t("install")));
     const disksBox = el("div", {});
     const updateBox = el("div", {});
+    const reportMsg = el("div", {});
+    const reportBtn = el("button", { style: "width:100%", onclick: async () => {
+      reportBtn.disabled = true;
+      reportMsg.replaceChildren(el("div", { class: "muted" }, t("reportMaking")));
+      const r = await call({ cmd: "report" });
+      reportBtn.disabled = false;
+      reportMsg.replaceChildren(el("div", { class: r.ok ? "msg" : "msg err" }, r.ok ? t("reportSaved", { f: r.file }) : t("error", { e: r.error })));
+    } }, t("report"));
     panel.append(el("h2", {}, t("system")),
       el("h3", {}, t("wifi")), el("div", { class: "row" }, wifiText, sw), nets,
       el("h3", {}, t("sound")), soundRow, noSound, battery,
       el("h3", {}, t("disks")), disksBox,
       el("h3", {}, t("update")), updateBox, install,
+      el("div", { style: "margin-top:10px" }, reportBtn, reportMsg),
       el("div", { class: "power" },
         el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
         el("button", { class: "primary", html: ICON.power + " " + t("shutdown"), onclick: () => call({ cmd: "power.off" }) })));

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -334,6 +335,12 @@ func TestMountVolume(t *testing.T) {
 			t.Logf("%s: no %s", fs, mkfs[0])
 			continue
 		}
+		if b, _ := os.ReadFile("/proc/filesystems"); fs != "ntfs" && !strings.Contains(string(b), "\t"+fs+"\n") {
+			if exec.Command("modprobe", fs).Run() != nil {
+				t.Logf("%s: not in this kernel", fs)
+				continue
+			}
+		}
 		img := filepath.Join(t.TempDir(), fs+".img")
 		if err := os.WriteFile(img, nil, 0o644); err != nil {
 			t.Fatal(err)
@@ -405,5 +412,36 @@ func TestDiskOpen(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "Downloads")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestReport(t *testing.T) {
+	home := t.TempDir()
+	data := filepath.Join(home, "oros", "data", "profile")
+	if err := os.MkdirAll(data, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var log strings.Builder
+	for i := 0; i < 1000; i++ {
+		fmt.Fprintf(&log, "line %d\n", i)
+	}
+	_ = os.WriteFile(filepath.Join(data, "chrome_debug.log"), []byte(log.String()), 0o644)
+	_ = os.WriteFile(filepath.Join(home, "oros", "data", "session.log"), []byte("== start\n"), 0o644)
+	p, err := writeReport(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(p)
+	s := string(b)
+	for _, want := range []string{"===== uname -a", "===== session.log\n== start\n", "line 999\n", "===== install.log\n(none)"} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("missing %q", want)
+		}
+	}
+	if strings.Contains(s, "line 599\n") {
+		t.Fatal("chrome_debug.log not cut to its last lines")
+	}
+	if filepath.Dir(p) != filepath.Join(home, "Downloads") {
+		t.Fatalf("path %s", p)
 	}
 }
