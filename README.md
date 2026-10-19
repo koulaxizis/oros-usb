@@ -2,6 +2,8 @@
 
 A bootable USB image that starts straight into [orOS](https://useoros.online). MIT, free forever.
 
+**Beta.** Releases are for testing. Known: on some PCs the very first start shows a white screen with a cursor, and a restart fixes it. System › Problem report collects what is needed to find out why.
+
 ## What is inside
 
 - Debian 13 (trixie) live system, built with live-build, with the usual non-free firmware for Wi-Fi, graphics and sound.

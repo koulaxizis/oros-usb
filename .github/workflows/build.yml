@@ -46,7 +46,8 @@ jobs:
           case "$GITHUB_REF" in
             refs/tags/v*) TAG="$GITHUB_REF_NAME" ;;
           esac
-          if [ "$GITHUB_EVENT_NAME" = schedule ]; then TAG="v$(date -u +%Y.%m.%d)"; fi
+          # Monthly builds are betas until orOS USB leaves beta.
+          if [ "$GITHUB_EVENT_NAME" = schedule ]; then TAG="v$(date -u +%Y.%m.%d)-beta"; fi
           if [ -n "$TAG" ]; then
             case "$TAG" in v[0-9]*) ;; *) echo "bad tag: $TAG"; exit 1;; esac
             echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
@@ -116,7 +117,17 @@ jobs:
           VERSION: ${{ steps.v.outputs.version }}
         run: |
           apt-get install -y -q gh
+          TITLE="orOS USB $VERSION"
+          NOTES="Write the ISO to a USB stick (Rufus, balenaEtcher or dd); see README. Sticks with orOS already on them get this system with System › System update; files and settings stay."
+          # A beta is a normal release (System update finds it through
+          # releases/latest), named and described as a beta.
+          case "$TAG" in *beta*)
+            TITLE="$TITLE (Beta)"
+            BETA_EN="Beta: for testing. Some PCs show a white screen on the very first start (restarting fixes it). Please send System › Problem report when something goes wrong."
+            BETA_EL="Beta: για δοκιμές. Σε μερικά PC η πρώτη εκκίνηση δείχνει λευκή οθόνη (η επανεκκίνηση το διορθώνει). Στείλε Σύστημα › Αναφορά προβλήματος όταν κάτι δεν πάει καλά."
+            NOTES="$(printf '%s\n\n%s\n\n%s' "$BETA_EN" "$BETA_EL" "$NOTES")" ;;
+          esac
           scripts/update-assets.sh "out/orOS-USB-$VERSION.iso" out/update "$VERSION"
           gh release create "$TAG" --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY" \
             "out/orOS-USB-$VERSION.iso" out/update/update.json out/update/filesystem.squashfs out/update/vmlinuz out/update/initrd.img \
-            --title "orOS USB $TAG" --notes "Write the ISO to a USB stick (Rufus, balenaEtcher or dd); see README. Sticks with orOS already on them get this system with System › System update; files and settings stay."
+            --title "$TITLE" --notes "$NOTES"
