@@ -7,26 +7,39 @@ set -u
 ROOT="$HOME/oros"
 mkdir -p "$ROOT/data"
 
-# The image carries orOS in /opt/oros/app (read-only). A copy in the home
-# folder lives on the persistence partition, so "oros-portable update"
-# works and survives reboots. A newer image refreshes the copy.
-if [ ! -f "$ROOT/app/index.html" ] || [ "$(cat /opt/oros/app/.oros-build 2>/dev/null)" != "$(cat "$ROOT/app/.oros-build" 2>/dev/null)" ]; then
-	rm -rf "$ROOT/app.new"
-	cp -a /opt/oros/app "$ROOT/app.new" && rm -rf "$ROOT/app" && mv "$ROOT/app.new" "$ROOT/app"
+# The image carries orOS in /opt/oros/app (read-only). ~/oros/app links
+# to it; "oros-portable update" replaces the link with a newer copy on the
+# persistence partition. A new image resets the link (copying thousands of
+# files to the stick made the first start very slow).
+IMAGE_BUILD="$(cat /opt/oros/app/.oros-build 2>/dev/null)"
+if [ ! -f "$ROOT/app/index.html" ] || [ "$IMAGE_BUILD" != "$(cat "$ROOT/.image-build" 2>/dev/null)" ]; then
+	rm -rf "$ROOT/app" "$ROOT/app.old" "$ROOT/app.new"
+	ln -s /opt/oros/app "$ROOT/app"
+	echo "$IMAGE_BUILD" > "$ROOT/.image-build"
 fi
 
 export LANG=C.UTF-8
 export OROS_PORTABLE_ROOT="$ROOT"
 export OROS_PORTABLE_BROWSER=/usr/bin/chromium
-export OROS_PORTABLE_BROWSER_ARGS="--ozone-platform=wayland --start-fullscreen --disable-features=Translate"
+# The orOS system extension adds the System button (Wi-Fi, sound, power,
+# install); Chromium keeps a dark window until orOS paints.
+export OROS_PORTABLE_BROWSER_ARGS="--ozone-platform=wayland --start-fullscreen --disable-features=Translate --load-extension=/opt/oros/system-ext --default-background-color=ff1b1a18 --enable-logging --v=0"
 export XKB_DEFAULT_LAYOUT="us,gr"
 export XKB_DEFAULT_OPTIONS="grp:alt_shift_toggle"
 # Virtual machines and some old GPUs have no hardware GL.
 export WLR_RENDERER_ALLOW_SOFTWARE=1
 export WLR_NO_HARDWARE_CURSORS=1
 
+LOG="$ROOT/data/session.log"
+[ "$(stat -c %s "$LOG" 2>/dev/null || echo 0)" -lt 262144 ] || rm -f "$LOG"
 while true; do
+	# Only one session runs, so browser lock files left by a crash, a power
+	# cut or the installer's copy are stale; Chromium would otherwise think
+	# the profile is open elsewhere and show a blank window.
+	rm -f "$ROOT"/data/*/Singleton*
+	echo "== $(date -Is) start" >> "$LOG"
 	# -s lets Ctrl+Alt+F2 switch to the network screen.
-	cage -s -- /opt/oros/oros-portable
+	cage -s -- /opt/oros/oros-portable >> "$LOG" 2>&1
+	echo "== $(date -Is) exit $?" >> "$LOG"
 	sleep 1
 done

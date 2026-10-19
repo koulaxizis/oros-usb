@@ -1,0 +1,12 @@
+# /home/.oros-journal exists only once tmpfiles has run, after journald's
+# own flush; move this start's log there now.
+[Unit]
+Description=Keep the orOS system log
+After=systemd-tmpfiles-setup.service systemd-journal-flush.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/journalctl --flush
+
+[Install]
+WantedBy=multi-user.target
