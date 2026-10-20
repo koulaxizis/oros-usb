@@ -66,6 +66,20 @@ jobs:
             echo "== $f"; rm -f /tmp/menu
             xorriso -osirrox on -indev "$ISO" -extract "/$f" /tmp/menu >/dev/null 2>&1 && head -60 /tmp/menu || echo "(none)"
           done
+      - name: Licences and sources on the stick
+        run: |
+          V="${{ steps.v.outputs.version }}"
+          rm -rf /tmp/notices && mkdir /tmp/notices
+          for f in CREDITS.txt WRITTEN-OFFER.txt SOURCES.txt; do
+            xorriso -osirrox on -indev "out/orOS-USB-$V.iso" -extract "/$f" "/tmp/notices/$f" >/dev/null 2>&1
+            test -s "/tmp/notices/$f" || { echo "::error::$f missing on the ISO"; exit 1; }
+          done
+          grep -Eq '^linux(-signed-amd64)? ' /tmp/notices/SOURCES.txt
+          grep -q '^chromium ' /tmp/notices/SOURCES.txt
+          grep -q '^cage ' /tmp/notices/SOURCES.txt
+          cmp /tmp/notices/SOURCES.txt "out/orOS-USB-$V-sources.txt"
+          test -s "out/orOS-USB-$V-packages.txt"
+          echo "$(grep -c snapshot.debian.org/package /tmp/notices/SOURCES.txt) source packages listed"
       - name: Boot test (QEMU, UEFI Secure Boot, persistence)
         run: scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
       - name: Rufus stick test (files on FAT32, ext3 persistence keeping the whole system)
@@ -104,7 +118,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: orOS-USB
-          path: out/*.iso
+          path: |
+            out/*.iso
+            out/*.txt
           retention-days: 14
           compression-level: 0
       # A tag push, a manual run with a tag, or the monthly run. The tag is
@@ -118,7 +134,7 @@ jobs:
         run: |
           apt-get install -y -q gh
           TITLE="orOS USB $VERSION"
-          NOTES="Write the ISO to a USB stick (Rufus, balenaEtcher or dd); see README. Sticks with orOS already on them get this system with System › System update; files and settings stay."
+          NOTES="Write the ISO to a USB stick (Rufus, balenaEtcher or dd); see README. Sticks with orOS already on them get this system with System › System update; files and settings stay. Source code: the -sources.txt file names the exact Debian source package of every program (also SOURCES.txt on the stick, with CREDITS.txt and WRITTEN-OFFER.txt)."
           # A beta is a normal release (System update finds it through
           # releases/latest), named and described as a beta.
           case "$TAG" in *beta*)
@@ -130,4 +146,5 @@ jobs:
           scripts/update-assets.sh "out/orOS-USB-$VERSION.iso" out/update "$VERSION"
           gh release create "$TAG" --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY" \
             "out/orOS-USB-$VERSION.iso" out/update/update.json out/update/filesystem.squashfs out/update/vmlinuz out/update/initrd.img \
+            "out/orOS-USB-$VERSION-sources.txt" "out/orOS-USB-$VERSION-packages.txt" \
             --title "$TITLE" --notes "$NOTES"

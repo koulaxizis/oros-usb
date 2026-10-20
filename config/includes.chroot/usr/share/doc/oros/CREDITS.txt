@@ -1,0 +1,52 @@
+orOS USB: credits and licences
+==============================
+
+orOS USB is free software (MIT). It is built from the work of thousands of
+people who share what they make. Thank you.
+
+orOS itself
+  orOS web app        MIT, Christos Koulaxizis      https://github.com/koulaxizis/oros
+                      (its own third-party credits: CREDITS.md in the app,
+                      and Info > Credits & licences inside orOS)
+  orOS Portable       MIT (the launcher that serves orOS on localhost)
+                      https://github.com/koulaxizis/oros-portable
+  orOS USB            MIT (oros-system, the System button, this image)
+                      https://github.com/koulaxizis/oros-usb
+  Go                  BSD-3-Clause, The Go Authors (compiles the launcher
+                      and oros-system)  https://go.dev/
+
+The system underneath: Debian 13 "trixie"  https://www.debian.org/
+  Linux kernel        GPL-2.0, Linus Torvalds and the kernel developers
+  GRUB, shim          GPL-3.0+ (GRUB), BSD-2-Clause (shim); Debian's signed
+                      builds for UEFI Secure Boot
+  SYSLINUX            GPL-2.0+ (legacy BIOS boot)
+  live-boot,          GPL-3.0+, the Debian Live project (live-build made
+  live-config         this image)
+  cage                MIT, Jente Hidskes Ankarberg and contributors
+                      https://github.com/cage-kiosk/cage
+  Chromium            BSD-3-Clause and many component licences, The Chromium
+                      Authors; Debian's package (open chrome://credits)
+  systemd             LGPL-2.1+ and GPL-2.0+, systemd contributors
+  NetworkManager      GPL-2.0+ and LGPL-2.1+, NetworkManager contributors
+  wpa_supplicant      BSD-3-Clause, Jouni Malinen and contributors
+  PipeWire,           MIT, PipeWire and WirePlumber contributors
+  WirePlumber
+  ALSA                LGPL-2.1+ and BSD-3-Clause (UCM profiles), ALSA project
+  Mesa                MIT, Mesa contributors (graphics drivers)
+  Plymouth            GPL-2.0+, Plymouth contributors (boot screen)
+  ntfs-3g             GPL-2.0+, Tuxera and the NTFS-3G contributors
+  exfatprogs          GPL-2.0+, exfatprogs contributors
+  Noto fonts          SIL Open Font License 1.1, Google and the Noto project
+  Firmware            linux-firmware and Debian's firmware-* packages: each
+                      file keeps its vendor's licence (redistribution allowed;
+                      some are not free software)
+  Microcode           amd64-microcode, intel-microcode: vendors' licences
+
+Every Debian package keeps its own licence. The full copyright notice and
+licence text of each package is in /usr/share/doc/<package>/copyright on
+this system.
+
+Source code: SOURCES.txt (on the stick, and /usr/share/doc/oros/SOURCES.txt
+on the running system) names the exact source of every program in this
+build. Written offer for the source code: WRITTEN-OFFER.txt.
+Licence texts of the orOS parts and Go: /usr/share/doc/oros/.
