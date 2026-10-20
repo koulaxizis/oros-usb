@@ -74,7 +74,9 @@ DOC=chroot/usr/share/doc/oros
 cp LICENSE "$DOC/orOS-USB-MIT.txt"
 cp "$OPT/app/LICENSE" "$DOC/orOS-MIT.txt"
 cp "$WORK/portable/LICENSE" "$DOC/orOS-Portable-MIT.txt"
-cp "$(go env GOROOT)/LICENSE" "$DOC/Go-BSD.txt"
+# Go's licence for the Go-built oros-system and launcher; Debian's golang-go
+# has no GOROOT/LICENSE, so the text is kept in the repository.
+cp licenses/Go-BSD.txt "$DOC/Go-BSD.txt"
 USB_COMMIT="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo "${GITHUB_SHA:-unknown}")"
 scripts/sources-manifest.sh chroot "$DOC" "$VERSION" "$USB_COMMIT" "$OROS_COMMIT" "$PORTABLE_COMMIT"
 grep -Eq '^linux(-signed-amd64)? ' "$DOC/SOURCES.txt"
