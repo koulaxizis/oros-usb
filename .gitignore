@@ -13,3 +13,4 @@ config/common
 config/source
 *.iso
 config/bootloaders/
+config/includes.binary/

@@ -1,0 +1,33 @@
+Written offer for source code
+=============================
+
+EN
+This orOS USB system contains programs under the GNU GPL and LGPL (the Linux
+kernel, GRUB, systemd, NetworkManager and most of Debian) and other free and
+non-free licences. SOURCES.txt lists the exact source package and version of
+every program in this build. Each one can be downloaded from Debian's archive
+(https://snapshot.debian.org keeps every version ever published).
+
+For at least three years after the last sale or distribution of this version,
+Christos Koulaxizis offers any third party a complete machine-readable copy of
+the corresponding source code, on a medium customarily used for software
+interchange, for a charge no more than the cost of physically performing the
+distribution. Ask by opening an issue at
+  https://github.com/koulaxizis/oros-usb/issues
+or by e-mail to koulaxizis@glarolykoi.net, and name the version written in
+SOURCES.txt.
+
+EL
+Αυτό το σύστημα orOS USB περιέχει προγράμματα με άδειες GNU GPL και LGPL (ο
+πυρήνας Linux, το GRUB, το systemd, το NetworkManager και το μεγαλύτερο μέρος
+του Debian) και άλλες άδειες, ελεύθερες και μη. Το SOURCES.txt δείχνει το
+ακριβές πακέτο πηγαίου κώδικα και την έκδοση κάθε προγράμματος αυτής της
+έκδοσης. Το καθένα κατεβαίνει από το αρχείο του Debian
+(το https://snapshot.debian.org κρατά κάθε έκδοση που δημοσιεύτηκε ποτέ).
+
+Για τουλάχιστον τρία χρόνια μετά την τελευταία πώληση ή διανομή αυτής της
+έκδοσης, ο Christos Koulaxizis δίνει σε οποιονδήποτε πλήρες αντίγραφο του
+αντίστοιχου πηγαίου κώδικα, σε συνηθισμένο μέσο ανταλλαγής λογισμικού, με
+χρέωση όχι μεγαλύτερη από το κόστος της αποστολής. Το ζητάς ανοίγοντας ένα
+issue στον παραπάνω σύνδεσμο ή με e-mail στο koulaxizis@glarolykoi.net, με
+την έκδοση που γράφει το SOURCES.txt.

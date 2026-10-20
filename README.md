@@ -45,6 +45,26 @@ System button → **Install orOS on this computer** erases the chosen internal d
 
 `sudo scripts/make-combo-sticks.sh ISO orOS-Portable-<version>.zip /dev/sdX [/dev/sdY ...]` writes sticks that do both: they boot orOS on any PC, and in Windows or Linux they show an NTFS drive `OROS` with [orOS Portable](https://github.com/koulaxizis/oros-portable), which runs without a restart. Layout: the image, then the NTFS partition, then the `persistence` partition (half of the free space by default, or `--persistence-gib N`). Each stick is read back and checked: the image byte for byte, the Portable files against `SHA256SUMS.txt`. 32 GB sticks or larger. The two modes keep separate data.
 
+## Credits and licences
+
+orOS USB (this repository: `oros-system`, the System button, the build scripts) is MIT, like [orOS](https://github.com/koulaxizis/oros) and the [orOS Portable](https://github.com/koulaxizis/oros-portable) launcher it runs. Everything else in the image is unmodified free software from [Debian](https://www.debian.org/), with thanks to everyone who makes it:
+
+- [Debian 13](https://www.debian.org/) and the [Linux](https://kernel.org/) kernel (GPL-2.0), built into a live system with [live-build](https://salsa.debian.org/live-team/live-build), live-boot and live-config (GPL-3.0+, Debian Live project)
+- [GRUB](https://www.gnu.org/software/grub/) (GPL-3.0+) and [shim](https://github.com/rhboot/shim) (BSD-2-Clause) in Debian's signed builds for Secure Boot, SYSLINUX (GPL-2.0+) for BIOS
+- [cage](https://github.com/cage-kiosk/cage) (MIT) and [Chromium](https://www.chromium.org/) (BSD-3-Clause plus its components' licences, listed at `chrome://credits`), Debian's packages
+- [systemd](https://systemd.io/) (LGPL-2.1+), [NetworkManager](https://networkmanager.dev/) (GPL-2.0+), wpa_supplicant (BSD-3-Clause), [PipeWire](https://pipewire.org/) and WirePlumber (MIT), ALSA (LGPL-2.1+), [Mesa](https://mesa3d.org/) (MIT), [Plymouth](https://gitlab.freedesktop.org/plymouth/plymouth) (GPL-2.0+), [ntfs-3g](https://github.com/tuxera/ntfs-3g) and exfatprogs (GPL-2.0+)
+- [Noto](https://fonts.google.com/noto) fonts (SIL OFL 1.1)
+- firmware and microcode from Debian's `firmware-*`, `amd64-microcode` and `intel-microcode` packages, under their vendors' licences (redistribution allowed; some are not free software)
+- [Go](https://go.dev/) (BSD-3-Clause) compiles `oros-system` and the launcher
+
+Every Debian package's licence is in `/usr/share/doc/<package>/copyright` on the system. Each build also carries, at the top of the stick and in `/usr/share/doc/oros/`:
+
+- `CREDITS.txt`: the list above;
+- `SOURCES.txt`: the commits of orOS, orOS Portable and orOS USB, and every Debian source package with its exact version and its [snapshot.debian.org](https://snapshot.debian.org/) address (`apt-get source <package>=<version>` fetches the same);
+- `WRITTEN-OFFER.txt`: a three-year written offer of the complete source on a disc or stick at cost, for copies sold on sticks.
+
+Releases attach the same `-sources.txt` and `-packages.txt` (every binary package and version). `scripts/sources-manifest.sh` writes them from the built system; CI checks they are on the ISO.
+
 ## Building
 
 `sudo scripts/build.sh <version>` on Debian 13, or let CI do it: `.github/workflows/build.yml` builds the ISO in a privileged `debian:trixie` container, writes it to a disk image with a persistence partition, boots it in QEMU with UEFI Secure Boot (Microsoft keys), and checks that orOS started, the System button reached `oros-system`, and orOS saved its profile to the persistence partition. It then installs orOS from the ISO onto an empty disk image with `oros-system install` and boots that disk alone the same way (`scripts/test-install.sh`), and writes a combo stick image with the orOS Portable lite release and boots it (`scripts/test-combo-sticks.sh`), and puts the image's system onto a stick's persistence partition with `oros-system update` and boots it (`scripts/test-update.sh`). Tags, manual runs with a tag, and the monthly run (1st of the month) publish a release with the ISO and the update files. Screenshots of the boot are kept as the `boot-test` artifact. `v*` tags publish a release.
