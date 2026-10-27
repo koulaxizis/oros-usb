@@ -37,6 +37,13 @@
       screen: "Screen", brightness: "Brightness", time: "Time", timeZone: "Time zone",
       timeSynced: "The clock is set from the internet.", timeNotSynced: "The clock is set from the internet once you are online.",
       timeZoneInstall: "Time zone of this computer",
+      bt: "Bluetooth", btFind: "Find devices", btSearching: "Searching for 10 seconds… put the device in pairing mode.",
+      btNone: "No new devices found. Is the device in pairing mode?", btPair: "Pair", btPairing: "Pairing…",
+      btPasskey: "Type {k} on the keyboard, then press Enter.", btConnect: "Connect", btDisconnect: "Disconnect",
+      btForget: "Forget", btConnected: "connected", btNoPaired: "No paired devices.", btOff: "Bluetooth is off",
+      printers: "Printers", printTest: "Test page", printSent: "Test page sent to {p}.",
+      printNone: "No printers yet. Printers that support AirPrint or IPP Everywhere appear by themselves when they are on the same network or plugged in by USB.",
+      printHint: "Print from any app with Ctrl+P.",
     },
     el: {
       system: "Σύστημα", wifi: "Wi-Fi", wired: "Ενσύρματο δίκτυο", connectedTo: "Συνδεδεμένο στο {n}",
@@ -63,6 +70,13 @@
       screen: "Οθόνη", brightness: "Φωτεινότητα", time: "Ώρα", timeZone: "Ζώνη ώρας",
       timeSynced: "Η ώρα ρυθμίζεται από το διαδίκτυο.", timeNotSynced: "Η ώρα θα ρυθμιστεί από το διαδίκτυο μόλις συνδεθείς.",
       timeZoneInstall: "Ζώνη ώρας αυτού του υπολογιστή",
+      bt: "Bluetooth", btFind: "Εύρεση συσκευών", btSearching: "Αναζήτηση για 10 δευτερόλεπτα… βάλε τη συσκευή σε λειτουργία σύζευξης.",
+      btNone: "Δεν βρέθηκαν νέες συσκευές. Είναι η συσκευή σε λειτουργία σύζευξης;", btPair: "Σύζευξη", btPairing: "Σύζευξη…",
+      btPasskey: "Πληκτρολόγησε {k} στο πληκτρολόγιο και πάτα Enter.", btConnect: "Σύνδεση", btDisconnect: "Αποσύνδεση",
+      btForget: "Διαγραφή", btConnected: "συνδεδεμένο", btNoPaired: "Δεν υπάρχουν συζευγμένες συσκευές.", btOff: "Το Bluetooth είναι κλειστό",
+      printers: "Εκτυπωτές", printTest: "Δοκιμαστική σελίδα", printSent: "Η δοκιμαστική σελίδα στάλθηκε στον {p}.",
+      printNone: "Δεν υπάρχουν ακόμη εκτυπωτές. Όσοι υποστηρίζουν AirPrint ή IPP Everywhere εμφανίζονται μόνοι τους όταν είναι στο ίδιο δίκτυο ή συνδεθούν με USB.",
+      printHint: "Εκτύπωση από κάθε εφαρμογή με Ctrl+P.",
     },
   };
   const lang = () => ((localStorage.getItem("oros-lang") || navigator.language || "en").slice(0, 2) === "el" ? "el" : "en");
@@ -234,6 +248,8 @@
     light.addEventListener("input", sendLight);
     const screenBox = el("div", {}, el("h3", {}, t("screen")), el("div", { class: "row" }, el("span", {}, t("brightness")), el("div", { class: "grow" }, light)));
     const timeBox = el("div", {});
+    const btBox = el("div", {});
+    const printBox = el("div", {});
     const install = el("div", { style: "margin-top:14px" }, el("button", { style: "width:100%", onclick: renderInstall }, t("install")));
     const disksBox = el("div", {});
     const updateBox = el("div", {});
@@ -248,6 +264,8 @@
     panel.append(el("h2", {}, t("system")),
       el("h3", {}, t("wifi")), el("div", { class: "row" }, wifiText, sw), nets,
       el("h3", {}, t("sound")), soundRow, noSound, battery, screenBox,
+      btBox,
+      el("h3", {}, t("printers")), printBox,
       el("h3", {}, t("time")), timeBox,
       el("h3", {}, t("disks")), disksBox,
       el("h3", {}, t("update")), updateBox, install,
@@ -258,6 +276,8 @@
     main = { wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, install, light, screenBox };
     paintMain();
     showTime(timeBox, false);
+    showBluetooth(btBox);
+    showPrinters(printBox);
     showUpdate(updateBox);
     showDisks(disksBox);
   }
@@ -318,6 +338,79 @@
     });
     box.replaceChildren(el("div", { class: forInstall ? "" : "muted", style: "margin-bottom:4px" }, forInstall ? t("timeZoneInstall") : t("timeZone")), sel, msg);
     if (!forInstall) box.append(el("div", { class: "muted", style: "font-size:12px;margin-top:4px" }, r.synced ? t("timeSynced") : t("timeNotSynced")));
+  }
+
+  // Bluetooth: paired devices with connect / disconnect / forget, and a
+  // search that pairs new ones (showing the code a keyboard asks for).
+  // Hidden on computers without Bluetooth.
+  async function showBluetooth(box) {
+    const r = await call({ cmd: "bt.list" });
+    if (!box.isConnected) return;
+    if (!r.ok || !r.present) { box.replaceChildren(); return; }
+    const msg = el("div", {});
+    const err = (e) => msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e })));
+    const sw = el("button", { class: "switch" + (r.powered ? " on" : ""), "aria-label": t("bt"), "aria-pressed": r.powered ? "true" : "false",
+      onclick: async () => { const s = await call({ cmd: "bt.power", on: !r.powered }); if (!s.ok) err(s.error); showBluetooth(box); } });
+    const head = el("div", { class: "row" }, el("h3", { class: "grow" }, t("bt")), sw);
+    if (!r.powered) { box.replaceChildren(head, el("div", { class: "muted" }, t("btOff")), msg); return; }
+    const act = async (cmd, mac) => {
+      msg.replaceChildren(el("div", { class: "muted" }, "…"));
+      const s = await call({ cmd, mac });
+      if (!s.ok) { err(s.error); return; }
+      msg.replaceChildren();
+      showBluetooth(box);
+    };
+    const rows = (r.devices || []).map((d) => el("div", { class: "disk" },
+      el("div", { class: "name" }, el("div", {}, d.name), d.connected ? el("div", { class: "muted", style: "font-size:12px" }, t("btConnected")) : null),
+      el("button", { onclick: () => act(d.connected ? "bt.disconnect" : "bt.connect", d.mac) }, d.connected ? t("btDisconnect") : t("btConnect")),
+      el("button", { onclick: () => act("bt.forget", d.mac) }, t("btForget"))));
+    if (!rows.length) rows.push(el("div", { class: "muted" }, t("btNoPaired")));
+    const found = el("div", {});
+    const find = el("button", { onclick: async () => {
+      find.disabled = true;
+      found.replaceChildren(el("div", { class: "muted" }, t("btSearching")));
+      const s = await call({ cmd: "bt.scan" });
+      find.disabled = false;
+      if (!s.ok) { found.replaceChildren(); err(s.error); return; }
+      const list = (s.devices || []).map((d) => el("div", { class: "disk" }, el("div", { class: "name" }, el("div", {}, d.name)),
+        el("button", { class: "primary", onclick: () => pair(d) }, t("btPair"))));
+      found.replaceChildren(...(list.length ? list : [el("div", { class: "muted" }, t("btNone"))]));
+    } }, t("btFind"));
+    const pair = async (d) => {
+      const status = el("div", { class: "msg" }, t("btPairing") + " " + d.name);
+      found.replaceChildren(status);
+      const s = await call({ cmd: "bt.pair", mac: d.mac });
+      if (!s.ok) { found.replaceChildren(); err(s.error); return; }
+      const started = Date.now();
+      const timer = setInterval(async () => {
+        if (!box.isConnected || Date.now() - started > 90000) { clearInterval(timer); return; }
+        const p = await call({ cmd: "bt.pairStatus" });
+        if (p.passkey && !p.done) status.textContent = t("btPasskey", { k: p.passkey });
+        if (!p.done) return;
+        clearInterval(timer);
+        found.replaceChildren();
+        if (p.error) { err(p.error); return; }
+        act("bt.connect", d.mac);
+      }, 1000);
+    };
+    box.replaceChildren(head, ...rows, el("div", { class: "row", style: "margin-top:6px" }, find), found, msg);
+  }
+
+  // Printers: driverless only (AirPrint / IPP Everywhere), found by
+  // themselves; a test page checks one works.
+  async function showPrinters(box) {
+    const r = await call({ cmd: "printers.list" });
+    if (!box.isConnected) return;
+    const msg = el("div", {});
+    if (!r.ok) { box.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error }))); return; }
+    const list = r.printers || [];
+    if (!list.length) { box.replaceChildren(el("div", { class: "muted" }, t("printNone"))); return; }
+    const rows = list.map((p) => el("div", { class: "disk" }, el("div", { class: "name" }, el("div", { title: p.name.replace(/_/g, " ") }, p.name.replace(/_/g, " "))),
+      el("button", { onclick: async () => {
+        const s = await call({ cmd: "printers.test", printer: p.name });
+        msg.replaceChildren(el("div", { class: s.ok ? "msg" : "msg err" }, s.ok ? t("printSent", { p: p.name.replace(/_/g, " ") }) : t("error", { e: s.error })));
+      } }, t("printTest"))));
+    box.replaceChildren(...rows, msg, el("div", { class: "muted", style: "font-size:12px;margin-top:4px" }, t("printHint")));
   }
 
   function paintMain() {

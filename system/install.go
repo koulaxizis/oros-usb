@@ -284,9 +284,9 @@ func install(o installOpts, step func(string, int)) error {
 	if err := os.MkdirAll(rw, 0o755); err != nil {
 		return err
 	}
-	// The home folder, and the saved Wi-Fi networks and time zone that live
-	// next to it.
-	for _, src := range []string{o.home, networkDir, zoneFile} {
+	// The home folder, and the saved Wi-Fi networks, time zone and
+	// Bluetooth pairings that live next to it.
+	for _, src := range []string{o.home, networkDir, zoneFile, btDir} {
 		if src == "" {
 			continue
 		}

@@ -582,3 +582,67 @@ func TestParseBrightness(t *testing.T) {
 		t.Fatal("empty")
 	}
 }
+
+func TestParseBTDevices(t *testing.T) {
+	out := "\x1b[0;94m[bluetooth]\x1b[0m# Device AA:BB:CC:DD:EE:01 MX Master 3\r\nDevice AA:BB:CC:DD:EE:02 AA-BB-CC-DD-EE-02\nDevice AA:BB:CC:DD:EE:01 MX Master 3\nDevice nonsense here\n[NEW] Device AA:BB:CC:DD:EE:03 JBL Go 3\n"
+	got := parseBTDevices(out, false)
+	if len(got) != 2 || got[0].Name != "MX Master 3" || got[1].Mac != "AA:BB:CC:DD:EE:03" {
+		t.Fatalf("named: %+v", got)
+	}
+	if got := parseBTDevices(out, true); len(got) != 3 || got[1].Name != "AA:BB:CC:DD:EE:02" {
+		t.Fatalf("all: %+v", got)
+	}
+}
+
+func TestParsePair(t *testing.T) {
+	r := parsePair("Attempting to pair with AA:BB:CC:DD:EE:01\n\x1b[0;93m[CHG]\x1b[0m Device AA:BB:CC:DD:EE:01 Connected: yes\n[agent] Passkey: 042317\n")
+	if r["passkey"] != "042317" || r["done"] != nil {
+		t.Fatalf("waiting: %v", r)
+	}
+	r = parsePair("[agent] Passkey: 042317\n[CHG] Device AA:BB:CC:DD:EE:01 Paired: yes\nPairing successful\n")
+	if r["done"] != true || r["error"] != nil {
+		t.Fatalf("done: %v", r)
+	}
+	r = parsePair("Attempting to pair with AA:BB:CC:DD:EE:01\nFailed to pair: org.bluez.Error.AuthenticationFailed\n")
+	if r["done"] != true || r["error"] != "Failed to pair: org.bluez.Error.AuthenticationFailed" {
+		t.Fatalf("failed: %v", r)
+	}
+	if r := parsePair("Device AA:BB:CC:DD:EE:01 not available\n"); r["error"] == nil {
+		t.Fatal("unknown device must fail")
+	}
+	if r := parsePair("[agent] PIN code: 0000\n"); r["passkey"] != "0000" {
+		t.Fatalf("pin: %v", r)
+	}
+}
+
+func TestBTCommandsCheckAddresses(t *testing.T) {
+	for _, mac := range []string{"", "aa:bb:cc:dd:ee:ff", "AA:BB:CC:DD:EE:FF; reboot", "AA:BB:CC:DD:EE"} {
+		if r := btPair(mac); r["ok"] != false {
+			t.Fatalf("pair %q accepted", mac)
+		}
+		if r := btDo("forget", mac); r["ok"] != false {
+			t.Fatalf("forget %q accepted", mac)
+		}
+	}
+	if r := btDo("reboot", "AA:BB:CC:DD:EE:FF"); r["ok"] != false {
+		t.Fatal("unknown action accepted")
+	}
+}
+
+func TestParsePrinters(t *testing.T) {
+	got := parsePrinters("HP_LaserJet_M15w\nBrother_HL_L2350DW_series\n\n", "system default destination: Brother_HL_L2350DW_series\n")
+	if len(got) != 2 || got[0].Name != "Brother_HL_L2350DW_series" || !got[0].Default || got[1].Default {
+		t.Fatalf("got %+v", got)
+	}
+	if got := parsePrinters("lpstat: No destinations added.\n", "no system default destination\n"); len(got) != 0 {
+		t.Fatalf("none: %+v", got)
+	}
+	for _, n := range []string{"", "a b", "../x", "x;y"} {
+		if printerName.MatchString(n) {
+			t.Fatalf("%q accepted", n)
+		}
+	}
+	if r := printTest("x;reboot"); r["ok"] != false {
+		t.Fatal("bad printer name accepted")
+	}
+}

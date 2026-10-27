@@ -79,6 +79,8 @@ jobs:
           grep -Eq '^linux(-signed-amd64)? ' /tmp/notices/SOURCES.txt
           grep -q '^chromium ' /tmp/notices/SOURCES.txt
           grep -q '^cage ' /tmp/notices/SOURCES.txt
+          grep -q '^cups ' /tmp/notices/SOURCES.txt
+          grep -q '^bluez ' /tmp/notices/SOURCES.txt
           cmp /tmp/notices/SOURCES.txt "out/orOS-USB-$V-sources.txt"
           test -s "out/orOS-USB-$V-packages.txt"
           echo "$(grep -c snapshot.debian.org/package /tmp/notices/SOURCES.txt) source packages listed"

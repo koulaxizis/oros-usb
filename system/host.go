@@ -26,6 +26,8 @@ type request struct {
 	Disk     string `json:"disk,omitempty"`
 	KeepData bool   `json:"keepData,omitempty"`
 	Zone     string `json:"zone,omitempty"`
+	Mac      string `json:"mac,omitempty"`
+	Printer  string `json:"printer,omitempty"`
 }
 
 type reply map[string]any
@@ -154,6 +156,22 @@ func handle(req request) reply {
 		return timeZone(req.Zone)
 	case "brightness.set":
 		return setBrightness(req.Value)
+	case "bt.list":
+		return btList()
+	case "bt.scan":
+		return btScan()
+	case "bt.power":
+		return btPower(req.On)
+	case "bt.pair":
+		return btPair(req.Mac)
+	case "bt.pairStatus":
+		return btPairStatus()
+	case "bt.connect", "bt.disconnect", "bt.forget":
+		return btDo(strings.TrimPrefix(req.Cmd, "bt."), req.Mac)
+	case "printers.list":
+		return printersList()
+	case "printers.test":
+		return printTest(req.Printer)
 	case "web.open":
 		return openWeb(webHome)
 	case "report":
