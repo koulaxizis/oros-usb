@@ -133,6 +133,17 @@ if [ -z "$TZF" ] || [ "$(cat "$TZF")" != "Europe/Athens" ]; then
 	grep -a "oros-selftest\|sudo" "$OUT/serial.log" | tail -20 >&2 || true
 	OK=0
 fi
+# The print server runs and Bluetooth pairings are kept on the stick.
+DEVF="$(find "$MNT" -maxdepth 5 -name .oros-selftest-devices | head -1)"
+[ -z "$DEVF" ] || { echo "== devices self-test"; cat "$DEVF"; }
+if [ -z "$DEVF" ] || ! grep -q "scheduler is running" "$DEVF"; then
+	echo "FAIL: the print server (CUPS) is not running" >&2
+	OK=0
+fi
+if [ -z "$DEVF" ] || ! grep -qx "/var/lib/bluetooth" "$DEVF"; then
+	echo "FAIL: Bluetooth pairings are not kept in /home/.oros-bluetooth" >&2
+	OK=0
+fi
 # The system log is kept for the problem report.
 if [ -z "$(find "$MNT" -path '*/.oros-journal/*' -name '*.journal' | head -1)" ]; then
 	echo "FAIL: no system log in /home/.oros-journal on the persistence partition" >&2

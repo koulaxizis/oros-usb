@@ -27,6 +27,9 @@ var reportCommands = [][]string{
 	{"df", "-h"},
 	{"nmcli", "general"},
 	{"nmcli", "device"},
+	{"lpstat", "-t"},
+	{"rfkill"},
+	{"bluetoothctl", "show"},
 	{"journalctl", "--list-boots", "--no-pager"},
 	{"journalctl", "-b", "-1", "--no-pager", "-o", "short-monotonic", "-n", "1500"},
 	{"journalctl", "-b", "0", "--no-pager", "-o", "short-monotonic", "-n", "1500"},
@@ -60,7 +63,7 @@ func writeReport(home string) (string, error) {
 	b.WriteString(watchdogLines(filepath.Join(data, "session.log")))
 	for _, c := range reportCommands {
 		fmt.Fprintf(&b, "\n===== %s\n", strings.Join(c, " "))
-		out, err := run(c[0], c[1:]...)
+		out, err := runFor(20*time.Second, c[0], c[1:]...)
 		b.WriteString(out)
 		if err != nil {
 			fmt.Fprintf(&b, "(%v)\n", err)

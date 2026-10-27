@@ -18,7 +18,7 @@ A bootable USB image that starts straight into [orOS](https://useoros.online). M
 2. Without Rufus persistence, run `sudo scripts/add-persistence.sh /dev/sdX` to add a `persistence` partition in the rest of the stick. Without one, orOS still runs, but forgets everything on shutdown.
 3. Boot from the stick. orOS opens full screen. In the computer's boot menu the stick may appear under another name: Acer computers, for example, call every non-Windows USB stick "Linpus lite". That is the computer's label, not a different system; after installing, the entry reads "orOS".
 
-The System button (Wi-Fi icon, top right) has Wi-Fi, sound, battery, screen brightness (laptops), time zone, Restart and Shut down. The **Internet** button next to it opens a normal browser window (tabs, address bar, DuckDuckGo search, the same no-Google settings, its own profile in `~/oros/data/web`) over orOS; closing it brings orOS back.
+The System button (Wi-Fi icon, top right) has Wi-Fi, sound, Bluetooth, printers, battery, screen brightness (laptops), time zone, Restart and Shut down. The **Internet** button next to it opens a normal browser window (tabs, address bar, DuckDuckGo search, the same no-Google settings, its own profile in `~/oros/data/web`) over orOS; closing it brings orOS back.
 
 | Keys | |
 |---|---|
@@ -32,6 +32,10 @@ System › **Disks** lists Downloads, the computer's own disks (Windows, another
 Saved Wi-Fi networks and their passwords are kept in `/home/.oros-network` (NetworkManager's keyfile folder, set in `/etc/NetworkManager/conf.d/oros.conf`), so they survive a restart; the installer copies them to the computer. System › **Problem report** writes `~/Downloads/orOS-report-<date>.txt` (hardware, disks, network state, this and the previous start's system log, and the logs below) and shows it in the Internet window, from where it can be attached to a message. The system log is kept across restarts in `/home/.oros-journal` (100 MB at most). Logs for when something goes wrong: `~/oros/data/session.log` (the kiosk), `~/oros/data/profile/chrome_debug.log` (the orOS window), `~/oros/data/web.log` (the Internet window) and `~/oros/data/oros-system.log` (the System button), `~/oros/data/install.log` and `update.log`.
 
 **Session watchdog.** `oros-session` restarts orOS when its window shows no sign of life: the System extension pings `oros-system` every 10 s once the window has painted a frame, and the time lands in a file in RAM (`$XDG_RUNTIME_DIR/oros-alive-<uid>`). No ping within 60 s of a start, or none for 40 s later, stops the session and starts it again: the first time as it was, from the second time with the GPU off (`--disable-gpu`, also for the Internet window) for the rest of that boot. At most 3 restarts per boot. Each one is a `watchdog:` line in `session.log` and in the Problem report's first section. CI tests it with a fake compositor (`scripts/test-session-watchdog.sh`) and in QEMU with two starts that never ping (`WATCHDOG_TEST=2 scripts/test-boot.sh`); a normal boot test fails if the watchdog had to restart.
+
+**Printing.** Driverless only, no vendor drivers: CUPS with cups-browsed and Avahi finds printers that support IPP Everywhere or AirPrint on the same network, and ipp-usb does the same for such printers on USB (almost every printer sold since about 2015). They show up by themselves in every print dialog (Ctrl+P in any app, or Print in orOS's apps) and in System › **Printers**, which also prints CUPS's test page. Queues are found again at every start, so nothing is stored.
+
+**Bluetooth.** System › **Bluetooth** (shown when the computer has it) turns it on and off, finds devices for 10 seconds, pairs them (a keyboard shows the code to type on it), and connects, disconnects or forgets paired ones. Headphones and speakers play through PipeWire. Pairings are kept in `/home/.oros-bluetooth`, bound onto `/var/lib/bluetooth` by `oros-bluetooth.service`, and the installer copies them.
 
 **Time.** The clock is set from the internet (systemd-timesyncd with Debian's `debian.pool.ntp.org` servers). System › **Time** picks the time zone (UTC until then); it is kept in `/home/.oros-timezone`, set again at every start by `oros-time.service`, and copied by the installer, whose screen offers the same choice. From a terminal: `sudo /opt/oros/oros-system time --zone Europe/Athens`. Computers that also run Windows keep local time in their hardware clock, so offline the clock can be off by the time zone's hours until the stick goes online. Brightness uses `brightnessctl`; each start begins at the computer's own level.
 
@@ -56,9 +60,10 @@ orOS USB (this repository: `oros-system`, the System button, the build scripts) 
 - [Debian 13](https://www.debian.org/) and the [Linux](https://kernel.org/) kernel (GPL-2.0), built into a live system with [live-build](https://salsa.debian.org/live-team/live-build), live-boot and live-config (GPL-3.0+, Debian Live project)
 - [GRUB](https://www.gnu.org/software/grub/) (GPL-3.0+) and [shim](https://github.com/rhboot/shim) (BSD-2-Clause) in Debian's signed builds for Secure Boot, SYSLINUX (GPL-2.0+) for BIOS
 - [cage](https://github.com/cage-kiosk/cage) (MIT) and [Chromium](https://www.chromium.org/) (BSD-3-Clause plus its components' licences, listed at `chrome://credits`), Debian's packages
+- [CUPS](https://openprinting.github.io/cups/) and cups-browsed (Apache-2.0), [cups-filters](https://github.com/OpenPrinting/cups-filters) (GPL-2.0+, LGPL-2.1+ and MIT parts), [ipp-usb](https://github.com/OpenPrinting/ipp-usb) (BSD-2-Clause), [Ghostscript](https://www.ghostscript.com/) (AGPL-3.0+), [Avahi](https://avahi.org/) and nss-mdns (LGPL-2.1+), [BlueZ](https://www.bluez.org/) (GPL-2.0+ and LGPL-2.1+)
 - [systemd](https://systemd.io/) (LGPL-2.1+, with systemd-timesyncd for the clock), the [IANA time zone database](https://www.iana.org/time-zones) (public domain), [brightnessctl](https://github.com/Hummer12007/brightnessctl) (MIT), [NetworkManager](https://networkmanager.dev/) (GPL-2.0+), wpa_supplicant (BSD-3-Clause), [PipeWire](https://pipewire.org/) and WirePlumber (MIT), ALSA (LGPL-2.1+), [Mesa](https://mesa3d.org/) (MIT), [Plymouth](https://gitlab.freedesktop.org/plymouth/plymouth) (GPL-2.0+), [ntfs-3g](https://github.com/tuxera/ntfs-3g) and exfatprogs (GPL-2.0+)
 - [Noto](https://fonts.google.com/noto) fonts (SIL OFL 1.1)
-- firmware and microcode from Debian's `firmware-*`, `amd64-microcode` and `intel-microcode` packages, under their vendors' licences (redistribution allowed; some are not free software)
+- firmware and microcode from Debian's `firmware-*`, `bluez-firmware`, `amd64-microcode` and `intel-microcode` packages, under their vendors' licences (redistribution allowed; some are not free software)
 - [Go](https://go.dev/) (BSD-3-Clause) compiles `oros-system` and the launcher
 
 Every Debian package's licence is in `/usr/share/doc/<package>/copyright` on the system. Each build also carries, at the top of the stick and in `/usr/share/doc/oros/`:
@@ -75,4 +80,4 @@ Releases attach the same `-sources.txt` and `-packages.txt` (every binary packag
 
 ## Not done yet
 
-- Printing (CUPS) and Bluetooth.
+- Printers that need a vendor driver, and adding a printer by its address.

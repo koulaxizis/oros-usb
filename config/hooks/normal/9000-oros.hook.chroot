@@ -5,7 +5,7 @@ if ! id oros >/dev/null 2>&1; then
 	useradd --create-home --shell /bin/bash --comment "orOS" oros
 	passwd --lock oros
 fi
-for g in audio video input render netdev plugdev systemd-journal; do
+for g in audio video input render netdev plugdev systemd-journal bluetooth; do
 	if getent group "$g" >/dev/null; then usermod -aG "$g" oros; fi
 done
 
@@ -21,7 +21,7 @@ EOF
 # copied without the bit; sudo ignores rule files with loose permissions.
 chmod 0755 /opt/oros/oros-portable /opt/oros/oros-system
 chmod 0440 /etc/sudoers.d/oros-install
-systemctl enable oros-selftest.service oros-journal.service oros-time.service
+systemctl enable oros-selftest.service oros-journal.service oros-time.service oros-bluetooth.service
 # The system log lives in /home, which orOS keeps (oros-journal.service).
 rm -rf /var/log/journal
 ln -s /home/.oros-journal /var/log/journal

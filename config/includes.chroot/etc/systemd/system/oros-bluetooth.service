@@ -1,0 +1,19 @@
+# BlueZ keeps its pairings in /var/lib/bluetooth, which the live system
+# forgets; bind /home/.oros-bluetooth there before bluetoothd starts.
+# A bind mount rather than a symlink: bluetooth.service hides /home
+# (ProtectHome) and sets up /var/lib/bluetooth itself (StateDirectory).
+[Unit]
+Description=Keep orOS's Bluetooth pairings
+After=systemd-tmpfiles-setup.service
+Before=bluetooth.service
+ConditionPathIsDirectory=/home/.oros-bluetooth
+ConditionPathIsMountPoint=!/var/lib/bluetooth
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/mkdir -p /var/lib/bluetooth
+ExecStart=/bin/mount --bind /home/.oros-bluetooth /var/lib/bluetooth
+
+[Install]
+WantedBy=bluetooth.service multi-user.target

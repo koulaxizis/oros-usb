@@ -42,6 +42,22 @@ systemd-timesyncd
 tzdata
 brightnessctl
 
+# Printing without vendor drivers: CUPS finds IPP Everywhere and AirPrint
+# printers on the network (cups-browsed, Avahi) and on USB (ipp-usb).
+cups
+cups-client
+cups-browsed
+cups-filters
+ipp-usb
+ghostscript
+avahi-daemon
+libnss-mdns
+
+# Bluetooth: headphones and speakers (PipeWire), mice and keyboards
+bluez
+libspa-0.2-bluetooth
+bluez-firmware
+
 # Boot splash
 plymouth
 plymouth-themes
