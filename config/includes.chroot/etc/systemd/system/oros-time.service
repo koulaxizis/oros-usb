@@ -1,0 +1,14 @@
+# The time zone chosen in the System button is kept in /home/.oros-timezone
+# (the live system forgets /etc); set it before orOS starts.
+[Unit]
+Description=orOS time zone
+ConditionPathExists=/home/.oros-timezone
+After=local-fs.target
+Before=getty@tty1.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/oros/oros-system time --apply
+
+[Install]
+WantedBy=multi-user.target

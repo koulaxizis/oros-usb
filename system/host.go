@@ -25,6 +25,7 @@ type request struct {
 	Value    int    `json:"value,omitempty"`
 	Disk     string `json:"disk,omitempty"`
 	KeepData bool   `json:"keepData,omitempty"`
+	Zone     string `json:"zone,omitempty"`
 }
 
 type reply map[string]any
@@ -147,6 +148,12 @@ func handle(req request) reply {
 		return startRoot("update", "--yes")
 	case "update.status":
 		return readProgress(updateProgressFile)
+	case "time.get":
+		return timeGet()
+	case "time.zone":
+		return timeZone(req.Zone)
+	case "brightness.set":
+		return setBrightness(req.Value)
 	case "web.open":
 		return openWeb(webHome)
 	case "report":
@@ -228,6 +235,10 @@ func status() reply {
 	if b := battery(); b != nil {
 		res["battery"] = b
 	}
+	if v, ok := brightness(); ok {
+		res["brightness"] = v
+	}
+	res["zone"] = currentZone()
 	res["canInstall"] = liveMedium() != "" && !installedSystem()
 	return res
 }

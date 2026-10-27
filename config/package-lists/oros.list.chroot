@@ -37,6 +37,11 @@ pciutils
 e2fsprogs
 fdisk
 
+# Clock: NTP from Debian's pool servers, time zones, screen brightness
+systemd-timesyncd
+tzdata
+brightnessctl
+
 # Boot splash
 plymouth
 plymouth-themes

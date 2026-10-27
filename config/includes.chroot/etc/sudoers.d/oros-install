@@ -4,3 +4,5 @@ oros ALL=(root) NOPASSWD: /opt/oros/oros-system install *
 oros ALL=(root) NOPASSWD: /opt/oros/oros-system update *
 # ...and open other disks read-only from the Disks section (only those it lists).
 oros ALL=(root) NOPASSWD: /opt/oros/oros-system mount *
+# ...and set the time zone (only a zone from /usr/share/zoneinfo).
+oros ALL=(root) NOPASSWD: /opt/oros/oros-system time --zone *

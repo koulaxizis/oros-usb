@@ -19,6 +19,7 @@ var reportCommands = [][]string{
 	{"uname", "-a"},
 	{"cat", "/proc/cmdline"},
 	{"uptime"},
+	{"timedatectl"},
 	{"free", "-m"},
 	{"lspci", "-nnk"},
 	{"lsusb"},

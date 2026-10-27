@@ -27,6 +27,9 @@ The system underneath: Debian 13 "trixie"  https://www.debian.org/
   Chromium            BSD-3-Clause and many component licences, The Chromium
                       Authors; Debian's package (open chrome://credits)
   systemd             LGPL-2.1+ and GPL-2.0+, systemd contributors
+                      (with systemd-timesyncd for the clock)
+  tzdata              public domain, the IANA time zone database
+  brightnessctl       MIT, Mykyta Holubakha and contributors
   NetworkManager      GPL-2.0+ and LGPL-2.1+, NetworkManager contributors
   wpa_supplicant      BSD-3-Clause, Jouni Malinen and contributors
   PipeWire,           MIT, PipeWire and WirePlumber contributors

@@ -126,6 +126,13 @@ if [ -z "$(find "$MNT" -maxdepth 5 -path '*/.oros-network/oros-selftest.nmconnec
 	grep -a "oros-selftest\|NetworkManager" "$OUT/serial.log" | tail -20 >&2 || true
 	OK=0
 fi
+# The time zone set through the System button's sudo rule is kept too.
+TZF="$(find "$MNT" -maxdepth 4 -name .oros-timezone | head -1)"
+if [ -z "$TZF" ] || [ "$(cat "$TZF")" != "Europe/Athens" ]; then
+	echo "FAIL: the time zone was not saved in /home/.oros-timezone" >&2
+	grep -a "oros-selftest\|sudo" "$OUT/serial.log" | tail -20 >&2 || true
+	OK=0
+fi
 # The system log is kept for the problem report.
 if [ -z "$(find "$MNT" -path '*/.oros-journal/*' -name '*.journal' | head -1)" ]; then
 	echo "FAIL: no system log in /home/.oros-journal on the persistence partition" >&2
