@@ -4,6 +4,11 @@
 (() => {
   if (window.top !== window) return;
 
+  // orOS's on-screen keyboard (osk.js) reads this: the kiosk has no system
+  // keyboard, so on a touch screen it opens by itself and its top-bar
+  // button is always there.
+  document.documentElement.setAttribute("data-oros-kiosk", "usb");
+
   // orOS already is the system here: no browser "Install app" prompt (it
   // only opened an empty window in the kiosk).
   window.addEventListener("beforeinstallprompt", (e) => {
