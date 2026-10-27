@@ -461,6 +461,16 @@
     return true;
   }
 
+  // Sign of life for oros-session's watchdog: the first ping waits for a
+  // painted frame (a window that never paints sends none), then one every
+  // 10 s while the page runs. A timer, not frames, keeps it going while the
+  // Internet window covers orOS.
+  const ping = () => call({ cmd: "ping" });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    ping();
+    setInterval(ping, 10000);
+  }));
+
   const start = () => {
     if (mount()) return;
     const mo = new MutationObserver(() => { if (mount()) mo.disconnect(); });

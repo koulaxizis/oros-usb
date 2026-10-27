@@ -57,6 +57,8 @@ jobs:
           fi
       - name: Unit tests (oros-system)
         run: cd system && go test ./...
+      - name: Session watchdog test (fake cage, no VM)
+        run: scripts/test-session-watchdog.sh
       - name: Build image
         run: scripts/build.sh "${{ steps.v.outputs.version }}"
       - name: Boot menus in the image
@@ -82,6 +84,8 @@ jobs:
           echo "$(grep -c snapshot.debian.org/package /tmp/notices/SOURCES.txt) source packages listed"
       - name: Boot test (QEMU, UEFI Secure Boot, persistence)
         run: scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
+      - name: Watchdog test (two starts that never show orOS, then the GPU off)
+        run: WATCHDOG_TEST=2 BOOT_WAIT=420 scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/watchdog
       - name: Rufus stick test (files on FAT32, ext3 persistence keeping the whole system)
         # Reproduces Chris's real-PC first start; reported, not yet blocking.
         continue-on-error: true
@@ -109,6 +113,8 @@ jobs:
             test-out/combo/*.log
             test-out/update/*.png
             test-out/update/*.log
+            test-out/watchdog/*.png
+            test-out/watchdog/*.log
             test-out/rufus/*.png
             test-out/rufus/*.log
             test-out/*.txt

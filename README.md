@@ -2,7 +2,7 @@
 
 A bootable USB image that starts straight into [orOS](https://useoros.online). MIT, free forever.
 
-**Beta.** Releases are for testing. Known: on some PCs the very first start shows a white screen with a cursor, and a restart fixes it. System › Problem report collects what is needed to find out why.
+**Beta.** Releases are for testing. Known: on some PCs the very first start showed a white screen with a cursor, and a restart fixed it. The session watchdog (below) now restarts such a start by itself; System › Problem report shows each time it did.
 
 ## What is inside
 
@@ -30,6 +30,8 @@ The System button (Wi-Fi icon, top right) has Wi-Fi, sound, battery, Restart and
 System › **Disks** lists Downloads, the computer's own disks (Windows, another Linux) and USB sticks (FAT, exFAT, NTFS, ext4, Btrfs, XFS; partitions of 1 GiB or more, never the disk orOS runs from). **Open** mounts one read-only under `/media/oros/<label>` and shows it in the Internet window; **Close** unmounts it. orOS's own files are in its Files app. From a terminal: `sudo /opt/oros/oros-system mount --dev /dev/sdX1 [--unmount]`.
 
 Saved Wi-Fi networks and their passwords are kept in `/home/.oros-network` (NetworkManager's keyfile folder, set in `/etc/NetworkManager/conf.d/oros.conf`), so they survive a restart; the installer copies them to the computer. System › **Problem report** writes `~/Downloads/orOS-report-<date>.txt` (hardware, disks, network state, this and the previous start's system log, and the logs below) and shows it in the Internet window, from where it can be attached to a message. The system log is kept across restarts in `/home/.oros-journal` (100 MB at most). Logs for when something goes wrong: `~/oros/data/session.log` (the kiosk), `~/oros/data/profile/chrome_debug.log` (the orOS window), `~/oros/data/web.log` (the Internet window) and `~/oros/data/oros-system.log` (the System button), `~/oros/data/install.log` and `update.log`.
+
+**Session watchdog.** `oros-session` restarts orOS when its window shows no sign of life: the System extension pings `oros-system` every 10 s once the window has painted a frame, and the time lands in a file in RAM (`$XDG_RUNTIME_DIR/oros-alive-<uid>`). No ping within 60 s of a start, or none for 40 s later, stops the session and starts it again: the first time as it was, from the second time with the GPU off (`--disable-gpu`, also for the Internet window) for the rest of that boot. At most 3 restarts per boot. Each one is a `watchdog:` line in `session.log` and in the Problem report's first section. CI tests it with a fake compositor (`scripts/test-session-watchdog.sh`) and in QEMU with two starts that never ping (`WATCHDOG_TEST=2 scripts/test-boot.sh`); a normal boot test fails if the watchdog had to restart.
 
 `~/oros/app` links to the orOS in the image; `/opt/oros/oros-portable update` replaces it with a newer copy on the persistence partition, and a newer image resets it.
 
