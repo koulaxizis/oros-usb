@@ -1,6 +1,7 @@
 # Boot tests only: when the test put /home/.oros-selftest on the persistence
 # partition, save a network the way the System button does (as the orOS
-# user), so the test can check that it lands in /home/.oros-network.
+# user), so the test can check that it lands in /home/.oros-network, and
+# set the time zone the same way (/home/.oros-timezone).
 [Unit]
 Description=orOS boot self-test
 ConditionPathExists=/home/.oros-selftest
@@ -11,6 +12,7 @@ Wants=NetworkManager.service
 Type=oneshot
 User=oros
 ExecStart=/usr/bin/nmcli connection add type ethernet ifname "*" con-name oros-selftest autoconnect no
+ExecStart=/usr/bin/sudo -n /opt/oros/oros-system time --zone Europe/Athens
 
 [Install]
 WantedBy=multi-user.target

@@ -9,6 +9,7 @@
   "UrlKeyedAnonymizedDataCollectionEnabled": false,
   "DefaultBrowserSettingEnabled": false,
   "BackgroundModeEnabled": false,
+  "IntensiveWakeUpThrottlingEnabled": false,
   "PromotionalTabsEnabled": false,
   "AutofillAddressEnabled": false,
   "AutofillCreditCardEnabled": false,

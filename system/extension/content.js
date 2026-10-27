@@ -34,6 +34,9 @@
       updating: "Downloading the new system… {p}%", updated: "Done. Restart to start the new system.",
       updateNoPersist: "Updates need a persistence partition on the stick.",
       error: "Error: {e}", web: "Internet", webTitle: "Open a web browser window (close it to return to orOS)",
+      screen: "Screen", brightness: "Brightness", time: "Time", timeZone: "Time zone",
+      timeSynced: "The clock is set from the internet.", timeNotSynced: "The clock is set from the internet once you are online.",
+      timeZoneInstall: "Time zone of this computer",
     },
     el: {
       system: "Σύστημα", wifi: "Wi-Fi", wired: "Ενσύρματο δίκτυο", connectedTo: "Συνδεδεμένο στο {n}",
@@ -57,6 +60,9 @@
       updating: "Λήψη του νέου συστήματος… {p}%", updated: "Έτοιμο. Κάνε επανεκκίνηση για να ξεκινήσει το νέο σύστημα.",
       updateNoPersist: "Οι ενημερώσεις χρειάζονται διαμέρισμα persistence στο stick.",
       error: "Σφάλμα: {e}", web: "Internet", webTitle: "Άνοιγμα παραθύρου για το διαδίκτυο (κλείσ' το για να γυρίσεις στο orOS)",
+      screen: "Οθόνη", brightness: "Φωτεινότητα", time: "Ώρα", timeZone: "Ζώνη ώρας",
+      timeSynced: "Η ώρα ρυθμίζεται από το διαδίκτυο.", timeNotSynced: "Η ώρα θα ρυθμιστεί από το διαδίκτυο μόλις συνδεθείς.",
+      timeZoneInstall: "Ζώνη ώρας αυτού του υπολογιστή",
     },
   };
   const lang = () => ((localStorage.getItem("oros-lang") || navigator.language || "en").slice(0, 2) === "el" ? "el" : "en");
@@ -117,6 +123,7 @@
     .pw { display: flex; align-items: center; gap: 6px; }
     .pw button { padding: 6px 8px; line-height: 0; }
     input[type=range] { width: 100%; accent-color: #c8a96e; }
+    select { font: inherit; width: 100%; box-sizing: border-box; background: #14120f; color: #e8e4dc; border: 1px solid #3f3a32; border-radius: 8px; padding: 7px 8px; }
     .switch { position: relative; width: 40px; height: 22px; border-radius: 11px; background: #3f3a32; border: none; padding: 0; }
     .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #e8e4dc; transition: left .15s; }
     .switch.on { background: #c8a96e; }
@@ -212,6 +219,21 @@
     const soundRow = el("div", { class: "row" }, el("div", { class: "grow" }, range), mute);
     const noSound = el("div", { class: "muted" }, t("noSound"));
     const battery = el("div", { class: "muted", style: "margin-top:12px" });
+    // Brightness: only on screens with a backlight (laptops).
+    const light = el("input", { type: "range", min: "5", max: "100", "aria-label": t("brightness") });
+    // Follows the slider while it moves, one call at a time.
+    let lightBusy = false;
+    const sendLight = async () => {
+      if (lightBusy) return;
+      lightBusy = true;
+      const v = light.value;
+      await call({ cmd: "brightness.set", value: Number(v) });
+      lightBusy = false;
+      if (light.value !== v) sendLight();
+    };
+    light.addEventListener("input", sendLight);
+    const screenBox = el("div", {}, el("h3", {}, t("screen")), el("div", { class: "row" }, el("span", {}, t("brightness")), el("div", { class: "grow" }, light)));
+    const timeBox = el("div", {});
     const install = el("div", { style: "margin-top:14px" }, el("button", { style: "width:100%", onclick: renderInstall }, t("install")));
     const disksBox = el("div", {});
     const updateBox = el("div", {});
@@ -225,15 +247,17 @@
     } }, t("report"));
     panel.append(el("h2", {}, t("system")),
       el("h3", {}, t("wifi")), el("div", { class: "row" }, wifiText, sw), nets,
-      el("h3", {}, t("sound")), soundRow, noSound, battery,
+      el("h3", {}, t("sound")), soundRow, noSound, battery, screenBox,
+      el("h3", {}, t("time")), timeBox,
       el("h3", {}, t("disks")), disksBox,
       el("h3", {}, t("update")), updateBox, install,
       el("div", { style: "margin-top:10px" }, reportBtn, reportMsg),
       el("div", { class: "power" },
         el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
         el("button", { class: "primary", html: ICON.power + " " + t("shutdown"), onclick: () => call({ cmd: "power.off" }) })));
-    main = { wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, install };
+    main = { wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, install, light, screenBox };
     paintMain();
+    showTime(timeBox, false);
     showUpdate(updateBox);
     showDisks(disksBox);
   }
@@ -279,6 +303,23 @@
     load();
   }
 
+  // Time zone: kept on the stick, copied when orOS is installed. The clock
+  // itself comes from the internet (NTP).
+  async function showTime(box, forInstall) {
+    const r = await call({ cmd: "time.get" });
+    if (!r.ok) { box.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error }))); return; }
+    const sel = el("select", { "aria-label": t("timeZone") });
+    for (const z of r.zones || []) sel.append(el("option", { value: z, selected: z === r.zone }, z.replace(/_/g, " ")));
+    const msg = el("div", {});
+    sel.addEventListener("change", async () => {
+      msg.replaceChildren();
+      const s = await call({ cmd: "time.zone", zone: sel.value });
+      if (!s.ok) msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: s.error })));
+    });
+    box.replaceChildren(el("div", { class: forInstall ? "" : "muted", style: "margin-bottom:4px" }, forInstall ? t("timeZoneInstall") : t("timeZone")), sel, msg);
+    if (!forInstall) box.append(el("div", { class: "muted", style: "font-size:12px;margin-top:4px" }, r.synced ? t("timeSynced") : t("timeNotSynced")));
+  }
+
   function paintMain() {
     const m = main;
     let wifiText = t("notConnected");
@@ -300,6 +341,8 @@
       m.battery.textContent = t("battery", { p: state.battery.percent }) + (state.battery.charging ? " · " + t("charging") : "");
     }
     m.install.hidden = !state.canInstall;
+    m.screenBox.hidden = typeof state.brightness !== "number";
+    if (typeof state.brightness === "number" && root.activeElement !== m.light) m.light.value = String(state.brightness);
   }
 
   // System update: check the latest orOS USB release, download it onto the
@@ -414,7 +457,9 @@
       if (!s.ok) { panel.append(el("div", { class: "msg err" }, t("failed", { e: s.error }))); return; }
       renderProgress();
     });
-    panel.append(el("label", { class: "chk" }, keep, el("span", {}, t("keepData"))),
+    const zoneBox = el("div", { style: "margin:10px 0" });
+    showTime(zoneBox, true);
+    panel.append(zoneBox, el("label", { class: "chk" }, keep, el("span", {}, t("keepData"))),
       el("label", { class: "chk" }, sure, el("span", {}, t("understand"))),
       el("div", { class: "row" }, el("button", { onclick: renderMain }, t("back")), el("span", { class: "grow" }), go));
   }
@@ -460,6 +505,16 @@
     setInterval(refresh, 30000);
     return true;
   }
+
+  // Sign of life for oros-session's watchdog: the first ping waits for a
+  // painted frame (a window that never paints sends none), then one every
+  // 10 s while the page runs. A timer, not frames, keeps it going while the
+  // Internet window covers orOS.
+  const ping = () => call({ cmd: "ping" });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    ping();
+    setInterval(ping, 10000);
+  }));
 
   const start = () => {
     if (mount()) return;

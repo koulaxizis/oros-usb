@@ -445,3 +445,140 @@ func TestReport(t *testing.T) {
 		t.Fatalf("path %s", p)
 	}
 }
+
+func TestPingWritesAliveQuietly(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if err := os.MkdirAll(filepath.Join(home, "oros", "data"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	alive := filepath.Join(t.TempDir(), "oros-alive")
+	t.Setenv("OROS_ALIVE", alive)
+	if r := handle(request{Cmd: "ping"}); r["ok"] != true {
+		t.Fatalf("ping: %v", r)
+	}
+	first, err := os.ReadFile(alive)
+	if err != nil || len(first) < 10 {
+		t.Fatalf("no alive file: %q %v", first, err)
+	}
+	time.Sleep(time.Millisecond)
+	handle(request{Cmd: "ping"})
+	if second, _ := os.ReadFile(alive); bytes.Equal(first, second) {
+		t.Fatal("a new ping must change the file, the watchdog compares contents")
+	}
+	if _, err := os.Stat(filepath.Join(home, "oros", "data", "oros-system.log")); err == nil {
+		t.Fatal("pings must not fill oros-system.log")
+	}
+	t.Setenv("OROS_ALIVE", "")
+	if r := handle(request{Cmd: "ping"}); r["ok"] != true {
+		t.Fatalf("ping without a watchdog: %v", r)
+	}
+}
+
+func TestWatchdogLinesInReport(t *testing.T) {
+	log := filepath.Join(t.TempDir(), "session.log")
+	if got := watchdogLines(log); !strings.Contains(got, "no session.log") {
+		t.Fatal(got)
+	}
+	os.WriteFile(log, []byte("== 2026-10-27T10:00:00+00:00 start\n== 2026-10-27T10:01:00+00:00 watchdog: no sign of life for 60 s, restart 1 of 3\n== 2026-10-27T10:01:05+00:00 exit 143\n== 2026-10-27T10:01:06+00:00 start (GPU off)"), 0o644)
+	got := watchdogLines(log)
+	if strings.Count(got, "\n") != 1 || !strings.Contains(got, "restart 1 of 3") {
+		t.Fatalf("got %q", got)
+	}
+	os.WriteFile(log, []byte("== start\n== exit 0\n"), 0o644)
+	if got := watchdogLines(log); !strings.Contains(got, "none") {
+		t.Fatal(got)
+	}
+}
+
+func TestWebArgsFollowGPUOff(t *testing.T) {
+	t.Setenv("OROS_GPU_OFF", "")
+	a := webArgs("/home/oros", "https://duckduckgo.com/")
+	if strings.Contains(strings.Join(a, " "), "--disable-gpu") || a[len(a)-1] != "https://duckduckgo.com/" {
+		t.Fatalf("got %q", a)
+	}
+	t.Setenv("OROS_GPU_OFF", "1")
+	a = webArgs("/home/oros", "file:///home/oros/Downloads/r.txt")
+	if !strings.Contains(strings.Join(a, " "), "--disable-gpu") || a[len(a)-1] != "file:///home/oros/Downloads/r.txt" {
+		t.Fatalf("got %q", a)
+	}
+}
+
+// fakeZoneinfo points the time zone code at a temporary system.
+func fakeZoneinfo(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	zi := filepath.Join(root, "zoneinfo")
+	for _, z := range []string{"UTC", "Europe/Athens", "Europe/Berlin"} {
+		p := filepath.Join(zi, z)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte("TZif2 fake"), 0o644)
+	}
+	os.WriteFile(filepath.Join(zi, "Europe", "notes"), []byte("not a zone"), 0o644)
+	os.WriteFile(filepath.Join(zi, "zone1970.tab"), []byte("# comment\nGR\t+3758+02343\tEurope/Athens\nDE,DK\t+5230+01322\tEurope/Berlin\tmost of Germany\n"), 0o644)
+	os.MkdirAll(filepath.Join(root, "etc"), 0o755)
+	os.MkdirAll(filepath.Join(root, "home"), 0o755)
+	old := []string{zoneinfo, localtime, etcZone, zoneFile}
+	zoneinfo = zi
+	localtime = filepath.Join(root, "etc", "localtime")
+	etcZone = filepath.Join(root, "etc", "timezone")
+	zoneFile = filepath.Join(root, "home", ".oros-timezone")
+	t.Cleanup(func() { zoneinfo, localtime, etcZone, zoneFile = old[0], old[1], old[2], old[3] })
+	return root
+}
+
+func TestTimeZones(t *testing.T) {
+	fakeZoneinfo(t)
+	for _, z := range []string{"Europe/Athens", "UTC"} {
+		if !validZone(z) {
+			t.Fatalf("%s refused", z)
+		}
+	}
+	for _, z := range []string{"", "Europe/Paris", "Europe/notes", "Europe", "../etc/passwd", "Europe/../UTC", "/UTC", "Europe/Athens\n"} {
+		if validZone(z) {
+			t.Fatalf("%q accepted", z)
+		}
+	}
+	if got := strings.Join(zones(), ","); got != "UTC,Europe/Athens,Europe/Berlin" {
+		t.Fatal(got)
+	}
+	if currentZone() != "UTC" {
+		t.Fatal("no /etc/localtime must read as UTC")
+	}
+	if timeMain([]string{"--apply"}) != 0 {
+		t.Fatal("nothing saved must not fail")
+	}
+	if timeMain([]string{"--zone", "Mars/Olympus"}) == 0 {
+		t.Fatal("unknown zone saved")
+	}
+	if timeMain([]string{"--zone", "Europe/Athens"}) != 0 || currentZone() != "Europe/Athens" || savedZone() != "Europe/Athens" {
+		t.Fatalf("set: current %s saved %s", currentZone(), savedZone())
+	}
+	if b, _ := os.ReadFile(etcZone); string(b) != "Europe/Athens\n" {
+		t.Fatalf("/etc/timezone %q", b)
+	}
+	// A new start: /etc is fresh, the saved zone is applied again.
+	os.Remove(localtime)
+	if timeMain([]string{"--apply"}) != 0 || currentZone() != "Europe/Athens" {
+		t.Fatal("apply at boot")
+	}
+	os.WriteFile(zoneFile, []byte("../../etc/shadow\n"), 0o644)
+	if savedZone() != "" {
+		t.Fatal("a broken saved zone must be ignored")
+	}
+}
+
+func TestParseBrightness(t *testing.T) {
+	if v, ok := parseBrightness("intel_backlight,backlight,480,50%,960\n"); !ok || v != 50 {
+		t.Fatal(v, ok)
+	}
+	if v, ok := parseBrightness("input3::capslock,leds,0,0%,1\namdgpu_bl0,backlight,255,100%,255\n"); !ok || v != 100 {
+		t.Fatal(v, ok)
+	}
+	if _, ok := parseBrightness("input3::capslock,leds,0,0%,1\n"); ok {
+		t.Fatal("a keyboard LED is not a screen")
+	}
+	if _, ok := parseBrightness(""); ok {
+		t.Fatal("empty")
+	}
+}

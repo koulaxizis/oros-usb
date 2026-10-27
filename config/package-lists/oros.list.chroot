@@ -12,6 +12,8 @@ ca-certificates
 cage
 chromium
 chromium-sandbox
+# pkill for the session watchdog
+procps
 libgl1-mesa-dri
 libegl1
 mesa-vulkan-drivers
@@ -34,6 +36,11 @@ exfatprogs
 pciutils
 e2fsprogs
 fdisk
+
+# Clock: NTP from Debian's pool servers, time zones, screen brightness
+systemd-timesyncd
+tzdata
+brightnessctl
 
 # Boot splash
 plymouth

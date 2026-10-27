@@ -25,6 +25,7 @@ type request struct {
 	Value    int    `json:"value,omitempty"`
 	Disk     string `json:"disk,omitempty"`
 	KeepData bool   `json:"keepData,omitempty"`
+	Zone     string `json:"zone,omitempty"`
 }
 
 type reply map[string]any
@@ -69,8 +70,13 @@ func serveHost(in io.Reader, out io.Writer) error {
 }
 
 func handle(req request) reply {
-	logf("cmd %s", req.Cmd)
+	// The watchdog's ping comes every few seconds; logging it would bury the rest.
+	if req.Cmd != "ping" {
+		logf("cmd %s", req.Cmd)
+	}
 	switch req.Cmd {
+	case "ping":
+		return ping()
 	case "status":
 		return status()
 	case "wifi.scan":
@@ -142,6 +148,12 @@ func handle(req request) reply {
 		return startRoot("update", "--yes")
 	case "update.status":
 		return readProgress(updateProgressFile)
+	case "time.get":
+		return timeGet()
+	case "time.zone":
+		return timeZone(req.Zone)
+	case "brightness.set":
+		return setBrightness(req.Value)
 	case "web.open":
 		return openWeb(webHome)
 	case "report":
@@ -164,6 +176,21 @@ func handle(req request) reply {
 		return readProgress(progressFile)
 	}
 	return reply{"ok": false, "error": "unknown command"}
+}
+
+// ping tells oros-session's watchdog that the orOS window has painted and
+// its page still runs. OROS_ALIVE (set by oros-session, passed on by
+// Chromium) names a file in RAM, so the stick is not written every few
+// seconds.
+func ping() reply {
+	p := os.Getenv("OROS_ALIVE")
+	if p == "" {
+		return reply{"ok": true}
+	}
+	if err := os.WriteFile(p, []byte(strconv.FormatInt(time.Now().UnixNano(), 10)+"\n"), 0o600); err != nil {
+		return fail(err, "")
+	}
+	return reply{"ok": true}
 }
 
 func fail(err error, out string) reply {
@@ -208,6 +235,10 @@ func status() reply {
 	if b := battery(); b != nil {
 		res["battery"] = b
 	}
+	if v, ok := brightness(); ok {
+		res["brightness"] = v
+	}
+	res["zone"] = currentZone()
 	res["canInstall"] = liveMedium() != "" && !installedSystem()
 	return res
 }
@@ -372,15 +403,20 @@ const webHome = "https://duckduckgo.com/"
 var webBrowser = "/usr/bin/chromium"
 
 func webArgs(home, url string) []string {
-	return []string{
+	args := []string{
 		"--ozone-platform=wayland",
 		"--user-data-dir=" + filepath.Join(home, "oros", "data", "web"),
 		"--no-first-run",
 		"--disable-features=Translate",
 		"--enable-logging=stderr",
 		"--new-window",
-		url,
 	}
+	// oros-session's watchdog turned the GPU off for the orOS window after
+	// it stayed blank; the Internet window would stay blank the same way.
+	if os.Getenv("OROS_GPU_OFF") == "1" {
+		args = append(args, "--disable-gpu")
+	}
+	return append(args, url)
 }
 
 func openWeb(url string) reply {

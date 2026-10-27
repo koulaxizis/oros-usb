@@ -5,7 +5,10 @@
 # persistence partition and the System button reached oros-system.
 # Screenshots go to the output folder. With DISK=disk.img it boots that
 # disk instead (an install made by oros-system), and MARKER names a file
-# the install copied, which must still be there.
+# the install copied, which must still be there. With WATCHDOG_TEST=N the
+# first N starts come up without the System extension (no ping), and the
+# session watchdog must restart them, the second time with the GPU off.
+# Without it, a start the watchdog had to restart fails the test.
 #   sudo scripts/test-boot.sh out/orOS-USB-x.iso test-out
 set -euo pipefail
 
@@ -31,10 +34,16 @@ mount "$PLOOP" "$PMNT"
 if grep -qx "/ union" "$PMNT/persistence.conf" 2>/dev/null; then
 	# The whole system is kept (Rufus): changes live in rw/.
 	mkdir -p "$PMNT/rw/home"
-	touch "$PMNT/rw/home/.oros-selftest"
+	PHOME="$PMNT/rw/home"
 else
-	mkdir -p "$PMNT/home/rw"
-	touch "$PMNT/home/rw/.oros-selftest"
+	PHOME="$PMNT/home/rw"
+fi
+mkdir -p "$PHOME"
+touch "$PHOME/.oros-selftest"
+if [ -n "${WATCHDOG_TEST:-}" ]; then
+	echo "$WATCHDOG_TEST" > "$PHOME/.oros-watchdog-test"
+else
+	rm -f "$PHOME/.oros-watchdog-test"
 fi
 umount "$PMNT"
 losetup -d "$PLOOP"
@@ -117,6 +126,13 @@ if [ -z "$(find "$MNT" -maxdepth 5 -path '*/.oros-network/oros-selftest.nmconnec
 	grep -a "oros-selftest\|NetworkManager" "$OUT/serial.log" | tail -20 >&2 || true
 	OK=0
 fi
+# The time zone set through the System button's sudo rule is kept too.
+TZF="$(find "$MNT" -maxdepth 4 -name .oros-timezone | head -1)"
+if [ -z "$TZF" ] || [ "$(cat "$TZF")" != "Europe/Athens" ]; then
+	echo "FAIL: the time zone was not saved in /home/.oros-timezone" >&2
+	grep -a "oros-selftest\|sudo" "$OUT/serial.log" | tail -20 >&2 || true
+	OK=0
+fi
 # The system log is kept for the problem report.
 if [ -z "$(find "$MNT" -path '*/.oros-journal/*' -name '*.journal' | head -1)" ]; then
 	echo "FAIL: no system log in /home/.oros-journal on the persistence partition" >&2
@@ -124,6 +140,18 @@ if [ -z "$(find "$MNT" -path '*/.oros-journal/*' -name '*.journal' | head -1)" ]
 fi
 SESSLOG="$(find "$MNT" -name session.log | head -1)"
 [ -z "$SESSLOG" ] || { echo "== session.log"; tail -20 "$SESSLOG"; }
+if [ -n "${WATCHDOG_TEST:-}" ]; then
+	# The sabotaged starts were restarted, the second with the GPU off, and
+	# orOS then showed with the GPU off.
+	for want in "restart 1 of 3 as before" "restart 2 of 3 with the GPU off" "start (GPU off)"; do
+		grep -qF "$want" "$SESSLOG" 2>/dev/null || { echo "FAIL: watchdog: no \"$want\" in session.log" >&2; OK=0; }
+	done
+	sed -n '/start (GPU off)/,$p' "$SESSLOG" 2>/dev/null | grep -q "watchdog: orOS is showing" ||
+		{ echo "FAIL: watchdog: orOS did not show after the restart with the GPU off" >&2; OK=0; }
+elif grep -q "watchdog: no sign of life" "$SESSLOG" 2>/dev/null; then
+	echo "FAIL: the session watchdog had to restart orOS on a normal start" >&2
+	OK=0
+fi
 if [ -n "${MARKER:-}" ] && [ -z "$(find "$MNT" -name "$MARKER" | head -1)" ]; then
 	echo "FAIL: $MARKER from the install is missing" >&2
 	OK=0

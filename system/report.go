@@ -19,6 +19,7 @@ var reportCommands = [][]string{
 	{"uname", "-a"},
 	{"cat", "/proc/cmdline"},
 	{"uptime"},
+	{"timedatectl"},
 	{"free", "-m"},
 	{"lspci", "-nnk"},
 	{"lsusb"},
@@ -53,6 +54,10 @@ func writeReport(home string) (string, error) {
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "orOS problem report %s\n", time.Now().Format(time.RFC3339))
+	data := filepath.Join(home, "oros", "data")
+	// First, what the session watchdog did (a window that never painted).
+	b.WriteString("\n===== recoveries (session watchdog)\n")
+	b.WriteString(watchdogLines(filepath.Join(data, "session.log")))
 	for _, c := range reportCommands {
 		fmt.Fprintf(&b, "\n===== %s\n", strings.Join(c, " "))
 		out, err := run(c[0], c[1:]...)
@@ -61,7 +66,6 @@ func writeReport(home string) (string, error) {
 			fmt.Fprintf(&b, "(%v)\n", err)
 		}
 	}
-	data := filepath.Join(home, "oros", "data")
 	for _, l := range reportLogs {
 		fmt.Fprintf(&b, "\n===== %s\n", l.name)
 		raw, err := os.ReadFile(filepath.Join(data, l.name))
@@ -73,6 +77,29 @@ func writeReport(home string) (string, error) {
 	}
 	p := filepath.Join(dir, "orOS-report-"+time.Now().Format("2006-01-02-150405")+".txt")
 	return p, os.WriteFile(p, []byte(b.String()), 0o644)
+}
+
+// watchdogLines picks the watchdog's lines out of session.log: each start
+// that showed no sign of life and how the session was started again.
+func watchdogLines(log string) string {
+	raw, err := os.ReadFile(log)
+	if err != nil {
+		return "(no session.log)\n"
+	}
+	var b strings.Builder
+	for _, l := range strings.SplitAfter(string(raw), "\n") {
+		if strings.Contains(l, "watchdog") {
+			b.WriteString(l)
+		}
+	}
+	if b.Len() == 0 {
+		return "(none)\n"
+	}
+	out := b.String()
+	if !strings.HasSuffix(out, "\n") {
+		out += "\n"
+	}
+	return out
 }
 
 func lastLines(s string, n int) string {
