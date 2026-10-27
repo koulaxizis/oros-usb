@@ -12,6 +12,8 @@ ca-certificates
 cage
 chromium
 chromium-sandbox
+# pkill for the session watchdog
+procps
 libgl1-mesa-dri
 libegl1
 mesa-vulkan-drivers
