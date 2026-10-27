@@ -25,6 +25,7 @@ The System button (Wi-Fi icon, top right) has Wi-Fi, sound, Bluetooth, printers,
 | Ctrl+Alt+F2 | network setup in text mode (nmtui) |
 | Ctrl+Alt+F1 | back to orOS |
 | Alt+Shift | switch keyboard English / Greek |
+| (touch screen) | orOS's on-screen keyboard opens when you tap a text field; the keyboard button in the top bar shows or hides it |
 | Power button | shut down |
 
 System › **Disks** lists Downloads, the computer's own disks (Windows, another Linux) and USB sticks (FAT, exFAT, NTFS, ext4, Btrfs, XFS; partitions of 1 GiB or more, never the disk orOS runs from). **Open** mounts one read-only under `/media/oros/<label>` and shows it in the Internet window; **Close** unmounts it. orOS's own files are in its Files app. From a terminal: `sudo /opt/oros/oros-system mount --dev /dev/sdX1 [--unmount]`.
