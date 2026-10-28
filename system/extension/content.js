@@ -161,6 +161,16 @@
   let webBtn = null;
   let btn = null, host = null, root = null, panel = null, view = "main", pollTimer = null;
 
+  // setInterval for async checks: a tick waits while the last one is still
+  // waiting for its answer, so a slow answer never runs the end twice.
+  const poll = (fn, ms) => {
+    let busy = false;
+    return setInterval(async () => {
+      if (busy) return;
+      busy = true;
+      try { await fn(); } finally { busy = false; }
+    }, ms);
+  };
   const el = (tag, attrs, ...kids) => {
     const n = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs || {})) {
@@ -387,7 +397,7 @@
       const s = await call({ cmd: "bt.pair", mac: d.mac });
       if (!s.ok) { found.replaceChildren(); err(s.error); return; }
       const started = Date.now();
-      const timer = setInterval(async () => {
+      const timer = poll(async () => {
         if (!box.isConnected || Date.now() - started > 90000) { clearInterval(timer); return; }
         const p = await call({ cmd: "bt.pairStatus" });
         if (p.passkey && !p.done) status.textContent = t("btPasskey", { k: p.passkey });
@@ -474,7 +484,7 @@
     const msg = el("div", { class: "muted" }, t("updating", { p: 0 }));
     const bar = el("progress", { max: "100", value: "0", style: "width:100%" });
     box.replaceChildren(msg, bar);
-    const timer = setInterval(async () => {
+    const timer = poll(async () => {
       if (!box.isConnected) { clearInterval(timer); return; }
       const st = await call({ cmd: "update.status" });
       const p = (st.progress) || {};
@@ -568,7 +578,7 @@
     const msg = el("div", { class: "msg" }, t("installing"));
     panel.replaceChildren(el("h2", {}, t("installTitle")), el("div", { class: "bar" }, fill), msg);
     clearInterval(pollTimer);
-    pollTimer = setInterval(async () => {
+    pollTimer = poll(async () => {
       const r = await call({ cmd: "install.status" });
       const p = (r && r.progress) || {};
       fill.style.width = (p.percent || 0) + "%";
