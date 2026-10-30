@@ -8,6 +8,9 @@
   // keyboard, so on a touch screen it opens by itself and its top-bar
   // button is always there.
   document.documentElement.setAttribute("data-oros-kiosk", "usb");
+  // orOS's Quick settings (qsettings.js) leaves its Network button to our
+  // Wi-Fi button in its panel (see "Quick settings" below).
+  document.documentElement.setAttribute("data-oros-qs-sys", "1");
 
   // orOS already is the system here: no browser "Install app" prompt (it
   // only opened an empty window in the kiosk).
@@ -49,6 +52,7 @@
       printers: "Printers", printTest: "Test page", printSent: "Test page sent to {p}.",
       printNone: "No printers yet. Printers that support AirPrint or IPP Everywhere appear by themselves when they are on the same network or plugged in by USB.",
       printHint: "Print from any app with Ctrl+P.",
+      qsReboot: "Restart the computer", qsMore: "Printers, disks, update…", volume: "Volume",
     },
     el: {
       system: "Σύστημα", wifi: "Wi-Fi", wired: "Ενσύρματο δίκτυο", connectedTo: "Συνδεδεμένο στο {n}",
@@ -82,6 +86,7 @@
       printers: "Εκτυπωτές", printTest: "Δοκιμαστική σελίδα", printSent: "Η δοκιμαστική σελίδα στάλθηκε στον {p}.",
       printNone: "Δεν υπάρχουν ακόμη εκτυπωτές. Όσοι υποστηρίζουν AirPrint ή IPP Everywhere εμφανίζονται μόνοι τους όταν είναι στο ίδιο δίκτυο ή συνδεθούν με USB.",
       printHint: "Εκτύπωση από κάθε εφαρμογή με Ctrl+P.",
+      qsReboot: "Επανεκκίνηση του υπολογιστή", qsMore: "Εκτυπωτές, δίσκοι, ενημέρωση…", volume: "Ένταση",
     },
   };
   const lang = () => ((localStorage.getItem("oros-lang") || navigator.language || "en").slice(0, 2) === "el" ? "el" : "en");
@@ -113,6 +118,12 @@
     drive: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M5 13l2.5-8h9L19 13"/><circle cx="17" cy="16.5" r=".8" fill="currentColor"/></svg>',
     usb: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="9" width="10" height="13" rx="2"/><path d="M9 9V3h6v6M11 5.5h0M13 5.5h0"/></svg>',
     folder: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>',
+    speaker: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>',
+    speakerOff: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>',
+    sun: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+    bt: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg>',
+    gear: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+    more: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
     lock: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   };
 
@@ -192,6 +203,10 @@
     if (state.battery) txt = " " + state.battery.percent + "%";
     btn.innerHTML = icon + '<span style="margin-left:4px">' + txt + "</span>";
     btn.title = t("system");
+    // orOS's Quick settings shows the battery from this.
+    if (state.battery) document.documentElement.setAttribute("data-oros-sys-battery", state.battery.percent + ":" + (state.battery.charging ? 1 : 0));
+    else document.documentElement.removeAttribute("data-oros-sys-battery");
+    qsStep();
   }
 
   async function refresh() {
@@ -597,6 +612,101 @@
     }, 1000);
   }
 
+  // Quick settings: a newer orOS has a GNOME-style panel of its own
+  // (qsettings.js, #qs-btn at the right of the bar). Then our System button
+  // steps back and the panel gets the computer's parts: volume and
+  // brightness sliders, Wi-Fi and Bluetooth buttons and "System" (this
+  // file's full panel: printers, disks, time, update, install, report), and
+  // its power menu gets Restart the computer and Shut down. orOS sends the
+  // DOM event "oros-qs" ("open" / "close"); the elements use its classes.
+  // An older orOS without #qs-btn keeps the System button as it was.
+  const qsPanel = () => document.getElementById("qs-panel");
+  function qsStep() {
+    if (btn && document.getElementById("qs-btn")) btn.hidden = true;
+  }
+  function qsCloseShell() {
+    const b = document.getElementById("qs-btn");
+    if (b && qsPanel()) b.click();
+  }
+  function qsPill(icon, title, sub, on, onMain, onMore) {
+    const box = el("div", { class: "qs-pill" + (on ? " on" : "") });
+    const main = el("button", { type: "button", class: "qs-pill-main", html: icon,
+      onclick: (e) => { e.stopPropagation(); onMain(); } });
+    if (on !== null) main.setAttribute("aria-pressed", on ? "true" : "false");
+    const txt = el("span", { class: "qs-pill-text" }, el("b", {}, title));
+    if (sub) txt.append(el("small", {}, sub));
+    main.append(txt);
+    box.append(main);
+    if (onMore) box.append(el("button", { type: "button", class: "qs-pill-more", html: ICON.more,
+      "aria-label": title + " · " + t("system"), title: t("system"), onclick: (e) => { e.stopPropagation(); onMore(); } }));
+    return box;
+  }
+  function qsSlider(icon, label, value, min, onButton, onValue, live) {
+    const range = el("input", { type: "range", min: String(min), max: "100", "aria-label": label });
+    range.value = String(value);
+    let busy = false;
+    const send = async () => {
+      if (busy) return;
+      busy = true;
+      const v = range.value;
+      await onValue(Number(v));
+      busy = false;
+      if (range.value !== v) send();
+    };
+    range.addEventListener(live ? "input" : "change", send);
+    const b = el("button", { type: "button", html: icon, "aria-label": label, title: label,
+      onclick: (e) => { e.stopPropagation(); if (onButton) onButton(); } });
+    return el("div", { class: "qs-slider" }, b, range);
+  }
+  // The full panel, opened from a button in orOS's panel.
+  const qsOpenSystem = () => { qsCloseShell(); if (!host) open(); };
+
+  async function qsFill() {
+    const sys = document.getElementById("qs-sys");
+    const pow = document.getElementById("qs-power-sys");
+    if (!sys) return;
+    await refresh();
+    const bt = await call({ cmd: "bt.list" });
+    if (!sys.isConnected) return;
+    const parts = [];
+    if (typeof state.volume === "number") {
+      parts.push(qsSlider(state.muted ? ICON.speakerOff : ICON.speaker, state.muted ? t("unmute") : t("mute"), state.volume, 0,
+        async () => { await call({ cmd: "volume.mute", on: !state.muted }); qsFill(); },
+        (v) => call({ cmd: "volume.set", value: v }), false));
+    }
+    if (typeof state.brightness === "number") {
+      parts.push(qsSlider(ICON.sun, t("brightness"), state.brightness, 5, null,
+        (v) => call({ cmd: "brightness.set", value: v }), true));
+    }
+    let wifiSub = t("notConnected");
+    if (state.wired) wifiSub = t("wired");
+    if (state.wifi) wifiSub = state.wifi.ssid;
+    if (state.wifiOn === false) wifiSub = t("wifiOff");
+    const grid = el("div", { class: "qs-grid" },
+      qsPill(state.wired && !state.wifi ? ICON.wired : (state.wifiOn === false ? ICON.wifiOff : ICON.wifi), t("wifi"), wifiSub, state.wifiOn !== false,
+        async () => { await call({ cmd: "wifi.radio", on: state.wifiOn === false }); qsFill(); }, qsOpenSystem));
+    if (bt && bt.ok) {
+      const conn = (bt.devices || []).filter((d) => d.connected).map((d) => d.name);
+      grid.append(qsPill(ICON.bt, t("bt"), bt.powered ? conn.join(", ") : t("btOff"), !!bt.powered,
+        async () => { await call({ cmd: "bt.power", on: !bt.powered }); qsFill(); }, qsOpenSystem));
+    }
+    grid.append(qsPill(ICON.gear, t("system"), t("qsMore"), null, qsOpenSystem, null));
+    // orOS puts our buttons first in its own grid (#qs-sys-pills).
+    const slot = document.getElementById("qs-sys-pills");
+    if (slot) slot.replaceChildren(...grid.childNodes);
+    else parts.push(grid);
+    sys.replaceChildren(...parts);
+    if (pow) {
+      const item = (label, cmd) => el("button", { type: "button", class: "qs-menu-item",
+        onclick: (e) => { e.stopPropagation(); call({ cmd }); } }, label);
+      pow.replaceChildren(item(t("qsReboot"), "power.reboot"), item(t("shutdown"), "power.off"));
+    }
+  }
+  document.addEventListener("oros-qs", (e) => {
+    qsStep();
+    if (e.detail === "open") qsFill();
+  });
+
   function mount() {
     const bar = document.querySelector("#oros-bar .bar-right");
     if (!bar || btn) return !!btn;
@@ -609,6 +719,8 @@
       onclick: (e) => { e.stopPropagation(); call({ cmd: "web.open" }); } });
     bar.append(webBtn, btn);
     paintButton();
+    qsStep();
+    setTimeout(qsStep, 3000);   // orOS adds #qs-btn at its own boot
     refresh();
     setInterval(refresh, 30000);
     return true;
