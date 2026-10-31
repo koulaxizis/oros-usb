@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the orOS USB image. Run as root on Debian 13 (or in a privileged
-# debian:trixie container) with live-build, golang-go and git installed.
+# debian:trixie container) with live-build, golang-go, git, curl, gnupg, jq and unzip installed.
 #   scripts/build.sh [version]   ->  out/orOS-USB-<version>.iso
 #                                    out/orOS-USB-<version>-sources.txt, -packages.txt
 set -euo pipefail
@@ -24,6 +24,12 @@ git clone -q --depth 1 https://github.com/koulaxizis/oros-portable "$WORK/portab
 (cd "$WORK/portable/launcher" && CGO_ENABLED=0 go build -trimpath \
 	-ldflags "-s -w -X main.version=usb-$VERSION" -o "$OPT/oros-portable" .)
 PORTABLE_COMMIT="$(git -C "$WORK/portable" rev-parse HEAD)"
+
+echo "== Tor Browser signing key (the Tor button checks downloads with it)"
+scripts/tor-key.sh "$OPT/tor-browser-developers.gpg"
+
+echo "== uBlock Origin Lite for the Internet window"
+scripts/ubol.sh "$OPT/ubol"
 
 echo "== system bridge and extension"
 (cd system && CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags "-s -w" -o "$OPT/oros-system" .)

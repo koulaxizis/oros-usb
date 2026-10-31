@@ -132,9 +132,12 @@ func TestOpenWeb(t *testing.T) {
 	if err := os.WriteFile(stub, []byte("#!/bin/sh\necho \"$@\" > "+out+"\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	old := webBrowser
+	old, oldA := webBrowser, webAdblock
 	webBrowser = stub
-	defer func() { webBrowser = old }()
+	webAdblock = filepath.Join(dir, "ubol")
+	defer func() { webBrowser, webAdblock = old, oldA }()
+	must(t, os.MkdirAll(webAdblock, 0o755))
+	must(t, os.WriteFile(filepath.Join(webAdblock, "manifest.json"), []byte("{}"), 0o644))
 	if r := handle(request{Cmd: "web.open"}); r["ok"] != true {
 		t.Fatalf("web.open: %v", r)
 	}
@@ -145,6 +148,9 @@ func TestOpenWeb(t *testing.T) {
 	}
 	if !strings.Contains(string(b), "--user-data-dir="+filepath.Join(dir, "oros", "data", "web")) {
 		t.Fatalf("args: %q", b)
+	}
+	if !strings.Contains(string(b), "--load-extension="+webAdblock) {
+		t.Fatalf("no adblocker in args: %q", b)
 	}
 }
 

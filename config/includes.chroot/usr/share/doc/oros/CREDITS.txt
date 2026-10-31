@@ -46,6 +46,11 @@ The system underneath: Debian 13 "trixie"  https://www.debian.org/
   Plymouth            GPL-2.0+, Plymouth contributors (boot screen)
   ntfs-3g             GPL-2.0+, Tuxera and the NTFS-3G contributors
   exfatprogs          GPL-2.0+, exfatprogs contributors
+  uBlock Origin Lite  GPL-3.0, Raymond Hill and contributors (ad blocker in
+                      the Internet window; source: github.com/uBlockOrigin/uBOL-home)
+  Xwayland            MIT, X.Org Foundation and contributors (X apps in cage)
+  GnuPG gpgv, xz      GPL-3.0+ (gpgv), 0BSD and public domain (xz), checking
+                      and unpacking the Tor Browser download
   Noto fonts          SIL Open Font License 1.1, Google and the Noto project
   Firmware            linux-firmware, Debian's firmware-* and bluez-firmware: each
                       file keeps its vendor's licence (redistribution allowed;
