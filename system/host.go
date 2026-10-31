@@ -424,6 +424,10 @@ const webHome = "https://duckduckgo.com/"
 // it over orOS; closing it brings orOS back.
 var webBrowser = "/usr/bin/chromium"
 
+// webAdblock is uBlock Origin Lite, unpacked into the image at build time
+// (scripts/ubol.sh); the Internet window loads it when it is there.
+var webAdblock = "/opt/oros/ubol"
+
 func webArgs(home, url string) []string {
 	args := []string{
 		"--ozone-platform=wayland",
@@ -437,6 +441,9 @@ func webArgs(home, url string) []string {
 	// it stayed blank; the Internet window would stay blank the same way.
 	if os.Getenv("OROS_GPU_OFF") == "1" {
 		args = append(args, "--disable-gpu")
+	}
+	if _, err := os.Stat(filepath.Join(webAdblock, "manifest.json")); err == nil {
+		args = append(args, "--load-extension="+webAdblock)
 	}
 	return append(args, url)
 }

@@ -33,6 +33,7 @@ The extension and its sign-in are kept only when the stick has a persistence par
 - Anyone who finds the stick can see the Internet window's history and sign-ins: the persistence partition is not encrypted (orOS's own vault is).
 - For really sensitive searches, the **Tor** button next to Internet opens Tor Browser (free and open source, from torproject.org). It hides more than a VPN, but it is too slow for video, and your internet provider can see that you use Tor. The first press downloads it (about 110 MB, signature checked); with persistence it stays on the stick.
 - Even without a VPN, orOS USB looks up site names over an encrypted connection (DNS over HTTPS), so your internet provider no longer sees those lookups. It still sees which servers you connect to, so this is no replacement for a VPN.
+- The Internet window has an ad and tracker blocker built in (uBlock Origin Lite, free and open source). If a site breaks, click its icon and turn it off for that site.
 - A private (incognito) window hides nothing from your internet provider; it only keeps no history on the stick.
 
 ---
@@ -72,4 +73,5 @@ The extension and its sign-in are kept only when the stick has a persistence par
 - Όποιος βρει το stick βλέπει το ιστορικό και τις συνδέσεις του παραθύρου Internet: το persistence partition δεν είναι κρυπτογραφημένο (το vault του orOS είναι).
 - Για πραγματικά ευαίσθητες αναζητήσεις, το κουμπί **Tor** δίπλα στο Internet ανοίγει το Tor Browser (δωρεάν και ανοιχτού κώδικα, από το torproject.org). Κρύβει περισσότερα από ένα VPN, αλλά είναι πολύ αργό για βίντεο, και ο πάροχος internet βλέπει ότι χρησιμοποιείς Tor. Το πρώτο πάτημα το κατεβάζει (περίπου 110 MB, με έλεγχο υπογραφής)· με persistence μένει στο stick.
 - Ακόμα και χωρίς VPN, το orOS USB ψάχνει τα ονόματα των σελίδων μέσα από κρυπτογραφημένη σύνδεση (DNS over HTTPS), οπότε ο πάροχος internet δεν βλέπει πια αυτές τις αναζητήσεις. Βλέπει όμως ακόμα σε ποιους servers συνδέεσαι, άρα δεν αντικαθιστά το VPN.
+- Το παράθυρο Internet έχει ενσωματωμένο μπλοκάρισμα διαφημίσεων και trackers (uBlock Origin Lite, δωρεάν και ανοιχτού κώδικα). Αν χαλάσει κάποια σελίδα, πάτα το εικονίδιό του και απενεργοποίησέ το για εκείνη τη σελίδα.
 - Ένα ιδιωτικό (incognito) παράθυρο δεν κρύβει τίποτα από τον πάροχο internet· απλώς δεν κρατά ιστορικό στο stick.

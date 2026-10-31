@@ -37,7 +37,7 @@ jobs:
             debootstrap xorriso squashfs-tools dosfstools mtools grub-efi-amd64-bin grub-pc-bin \
             syslinux syslinux-common isolinux qemu-system-x86 qemu-utils ovmf socat netpbm \
             fdisk parted e2fsprogs util-linux udev tesseract-ocr ntfs-3g unzip curl initramfs-tools-core \
-            gnupg gpgv xz-utils
+            gnupg gpgv xz-utils jq
       - uses: actions/checkout@v4
       - name: Version
         id: v
@@ -68,6 +68,8 @@ jobs:
       - name: Session watchdog test (fake cage, no VM)
         run: scripts/test-session-watchdog.sh
       - name: Build image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: scripts/build.sh "${{ steps.v.outputs.version }}"
       - name: Boot menus in the image
         run: |
