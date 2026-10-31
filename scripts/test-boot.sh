@@ -93,10 +93,10 @@ sleep 5
 mon "screendump $OUT/network.ppm"
 mon "sendkey ctrl-alt-f1"
 sleep 3
-# The orOS boot screen showed: a frame with the logo's gold (#c8a96e).
+# The orOS boot screen showed: a frame with the logo's gold (#d4af37).
 SPLASH=""
 for f in $(ls "$OUT"/boot-*.ppm 2>/dev/null | sort -V); do
-	if ppmhist -noheader "$f" 2>/dev/null | awk '$1 == 200 && $2 == 169 && $3 == 110 { found = 1 } END { exit !found }'; then
+	if ppmhist -noheader "$f" 2>/dev/null | awk '$1 == 212 && $2 == 175 && $3 == 55 { found = 1 } END { exit !found }'; then
 		SPLASH="$(basename "${f%.ppm}")"
 		break
 	fi
