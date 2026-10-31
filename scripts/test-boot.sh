@@ -111,7 +111,7 @@ if command -v tesseract >/dev/null; then
 		[ -n "$words" ] || continue
 		echo "== $(basename "$f")"
 		echo "$words" | head -8
-		if echo "$words" | grep -qiE 'login:|GNU/Linux|Debian GNU|Begin:|Welcome to|live-boot|tty1|\[ *OK *\]|Loading Linux|Loading initial ramdisk'; then
+		if echo "$words" | grep -qiE 'login:|GNU/Linux|Debian GNU|Begin:|Welcome to Debian|live-boot|tty1|\[ *OK *\]|Loading Linux|Loading initial ramdisk'; then
 			TEXT_SEEN="$TEXT_SEEN $(basename "${f%.png}")"
 		fi
 	done
