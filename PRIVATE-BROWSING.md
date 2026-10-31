@@ -31,7 +31,8 @@ The extension and its sign-in are kept only when the stick has a persistence par
 - Only the window with the extension is covered. Streams opened inside orOS (Television, Radio) use your normal connection.
 - A browser extension is a proxy, not a full VPN. Before you press Connect, or if the connection drops, the window uses your normal connection. Check the icon first.
 - Anyone who finds the stick can see the Internet window's history and sign-ins: the persistence partition is not encrypted (orOS's own vault is).
-- For really sensitive searches, Tor Browser (torproject.org, free and open source) hides more than a VPN, but it is too slow for video. Your internet provider can see that you use Tor.
+- For really sensitive searches, the **Tor** button next to Internet opens Tor Browser (free and open source, from torproject.org). It hides more than a VPN, but it is too slow for video, and your internet provider can see that you use Tor. The first press downloads it (about 110 MB, signature checked); with persistence it stays on the stick.
+- Even without a VPN, orOS USB looks up site names over an encrypted connection (DNS over HTTPS), so your internet provider no longer sees those lookups. It still sees which servers you connect to, so this is no replacement for a VPN.
 - A private (incognito) window hides nothing from your internet provider; it only keeps no history on the stick.
 
 ---
@@ -69,5 +70,6 @@ The extension and its sign-in are kept only when the stick has a persistence par
 - Καλύπτεται μόνο το παράθυρο με το extension. Ό,τι ανοίγει μέσα στο orOS (Television, Radio) περνά από την κανονική σου σύνδεση.
 - Ένα extension είναι proxy, όχι πλήρες VPN. Πριν πατήσεις σύνδεση, ή αν πέσει η σύνδεση, το παράθυρο βγαίνει από την κανονική σου σύνδεση. Κοίτα πρώτα το εικονίδιο.
 - Όποιος βρει το stick βλέπει το ιστορικό και τις συνδέσεις του παραθύρου Internet: το persistence partition δεν είναι κρυπτογραφημένο (το vault του orOS είναι).
-- Για πραγματικά ευαίσθητες αναζητήσεις, το Tor Browser (torproject.org, δωρεάν και ανοιχτού κώδικα) κρύβει περισσότερα από ένα VPN, αλλά είναι πολύ αργό για βίντεο. Ο πάροχος internet βλέπει ότι χρησιμοποιείς Tor.
+- Για πραγματικά ευαίσθητες αναζητήσεις, το κουμπί **Tor** δίπλα στο Internet ανοίγει το Tor Browser (δωρεάν και ανοιχτού κώδικα, από το torproject.org). Κρύβει περισσότερα από ένα VPN, αλλά είναι πολύ αργό για βίντεο, και ο πάροχος internet βλέπει ότι χρησιμοποιείς Tor. Το πρώτο πάτημα το κατεβάζει (περίπου 110 MB, με έλεγχο υπογραφής)· με persistence μένει στο stick.
+- Ακόμα και χωρίς VPN, το orOS USB ψάχνει τα ονόματα των σελίδων μέσα από κρυπτογραφημένη σύνδεση (DNS over HTTPS), οπότε ο πάροχος internet δεν βλέπει πια αυτές τις αναζητήσεις. Βλέπει όμως ακόμα σε ποιους servers συνδέεσαι, άρα δεν αντικαθιστά το VPN.
 - Ένα ιδιωτικό (incognito) παράθυρο δεν κρύβει τίποτα από τον πάροχο internet· απλώς δεν κρατά ιστορικό στο stick.

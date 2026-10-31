@@ -20,6 +20,12 @@ mesa-vulkan-drivers
 fonts-noto-core
 fonts-noto-color-emoji
 
+# Tor button: X apps (Tor Browser) inside cage, and what checks and
+# unpacks the Tor Browser download (oros-system tor)
+xwayland
+gpgv
+xz-utils
+
 # Network (Wi-Fi from orOS's System button, or nmtui on tty2)
 network-manager
 wpasupplicant

@@ -174,6 +174,10 @@ func handle(req request) reply {
 		return printTest(req.Printer)
 	case "web.open":
 		return openWeb(webHome)
+	case "tor.open":
+		return openTor()
+	case "tor.status":
+		return torStatus()
 	case "report":
 		return report()
 	case "disks.list":
