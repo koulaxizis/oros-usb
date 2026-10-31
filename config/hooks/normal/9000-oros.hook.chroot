@@ -5,7 +5,7 @@ if ! id oros >/dev/null 2>&1; then
 	useradd --create-home --shell /bin/bash --comment "orOS" oros
 	passwd --lock oros
 fi
-for g in audio video input render netdev plugdev systemd-journal bluetooth; do
+for g in audio video input render netdev plugdev systemd-journal bluetooth scanner lp; do
 	if getent group "$g" >/dev/null; then usermod -aG "$g" oros; fi
 done
 
