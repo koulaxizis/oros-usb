@@ -1,0 +1,15 @@
+# Boot tests only (/home/.oros-selftest on the persistence partition): once
+# orOS runs, use Files' computer files the way the orOS page does, on the
+# test's USB stick labelled OROSTEST (open it, write, list, close) and in
+# the home folder (write, Trash). Results: ~/.oros-selftest-files.
+[Unit]
+Description=orOS boot self-test of computer files
+ConditionPathExists=/home/.oros-selftest
+
+[Service]
+Type=oneshot
+User=oros
+ExecStart=/opt/oros/oros-system selftest-files
+
+[Install]
+WantedBy=multi-user.target

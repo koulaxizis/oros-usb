@@ -36,6 +36,7 @@
       disks: "Disks", downloads: "Downloads", diskInternal: "This computer", diskUsb: "USB",
       diskOpen: "Open", diskClose: "Close", diskNone: "No other disks. A USB stick appears here when you plug it in.",
       disksHint: "Disks open read-only in the Internet window. orOS's own files are in the Files app.",
+      disksHintFiles: "Disks open in Files › This computer. Windows disks are read-only.", diskReadOnly: "read-only",
       report: "Problem report", reportMaking: "Preparing the report…", reportSaved: "Saved in Downloads: {f}. You can attach it to a message from the Internet window.",
       update: "System update", updateCheck: "Check for updates", updateNone: "This is the newest system ({v}).",
       updateAvail: "New system {v} ({mb} MB). Your files and settings stay.", updateNow: "Download and install",
@@ -70,6 +71,7 @@
       disks: "Δίσκοι", downloads: "Λήψεις", diskInternal: "Αυτός ο υπολογιστής", diskUsb: "USB",
       diskOpen: "Άνοιγμα", diskClose: "Κλείσιμο", diskNone: "Δεν υπάρχουν άλλοι δίσκοι. Ένα USB stick εμφανίζεται εδώ μόλις το συνδέσεις.",
       disksHint: "Οι δίσκοι ανοίγουν μόνο για ανάγνωση στο παράθυρο Internet. Τα αρχεία του ίδιου του orOS είναι στην εφαρμογή Αρχεία.",
+      disksHintFiles: "Οι δίσκοι ανοίγουν στα Αρχεία › Αυτός ο υπολογιστής. Οι δίσκοι των Windows είναι μόνο για ανάγνωση.", diskReadOnly: "μόνο ανάγνωση",
       report: "Αναφορά προβλήματος", reportMaking: "Ετοιμάζεται η αναφορά…", reportSaved: "Αποθηκεύτηκε στις Λήψεις: {f}. Μπορείς να το επισυνάψεις σε μήνυμα από το παράθυρο Internet.",
       update: "Ενημέρωση συστήματος", updateCheck: "Έλεγχος για ενημερώσεις", updateNone: "Έχεις το νεότερο σύστημα ({v}).",
       updateAvail: "Νέο σύστημα {v} ({mb} MB). Τα αρχεία και οι ρυθμίσεις σου μένουν.", updateNow: "Λήψη και εγκατάσταση",
@@ -318,14 +320,24 @@
   function showDisks(box) {
     const list = el("div", {});
     const msg = el("div", {});
-    box.replaceChildren(list, msg, el("div", { class: "muted", style: "font-size:12px;margin-top:4px" }, t("disksHint")));
+    // orOS with "This computer" in Files (4.x, wave 3 of the computer files
+    // plan) marks the page; disks then open there instead of the Internet
+    // window.
+    const inFiles = () => document.documentElement.getAttribute("data-oros-computer-files") === "1";
+    box.replaceChildren(list, msg, el("div", { class: "muted", style: "font-size:12px;margin-top:4px" }, t(inFiles() ? "disksHintFiles" : "disksHint")));
     const gb = (n) => { const g = n / 1e9; return (g < 10 ? g.toFixed(1) : Math.round(g)) + " GB"; };
     const row = (icon, title, sub, ...buttons) => el("div", { class: "disk" }, el("span", { html: icon }),
       el("div", { class: "name" }, el("div", {}, title), sub ? el("div", { class: "muted", style: "font-size:12px" }, sub) : null), ...buttons);
     const act = async (cmd, path) => {
       msg.replaceChildren();
-      const r = await call({ cmd, disk: path });
+      const files = cmd === "disks.open" && inFiles();
+      const r = await call({ cmd: files ? "disks.mount" : cmd, disk: path });
       if (!r.ok) msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error })));
+      else if (files && r.mount) {
+        // orOS Files opens this place ("/home/..." or "/disks/<name>").
+        const at = r.mount.startsWith("/media/oros/") ? "/disks/" + r.mount.slice(12) : "/home/Downloads";
+        document.dispatchEvent(new CustomEvent("oros-files-open", { detail: at }));
+      }
       last = "";
       load();
     };
@@ -341,7 +353,7 @@
       for (const v of (r.volumes || [])) {
         const where = v.usb ? t("diskUsb") : t("diskInternal");
         const title = v.label || v.model || v.path.replace("/dev/", "");
-        const sub = [where, title === v.model ? "" : v.model, gb(v.size), v.fstype.toUpperCase()].filter(Boolean).join(" · ");
+        const sub = [where, title === v.model ? "" : v.model, gb(v.size), v.fstype.toUpperCase(), v.readonly ? t("diskReadOnly") : ""].filter(Boolean).join(" · ");
         const buttons = [el("button", { onclick: () => act("disks.open", v.path) }, t("diskOpen"))];
         if (v.mount) buttons.push(el("button", { onclick: () => act("disks.close", v.path) }, t("diskClose")));
         rows.push(row(v.usb ? ICON.usb : ICON.drive, title, sub, ...buttons));

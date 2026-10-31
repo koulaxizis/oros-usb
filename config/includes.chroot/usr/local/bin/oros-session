@@ -20,6 +20,13 @@ if [ ! -f "$ROOT/app/index.html" ] || [ "$IMAGE_BUILD" != "$(cat "$ROOT/.image-b
 fi
 
 export LANG=C.UTF-8
+# orOS Files' "This computer": the launcher lets the orOS page (only it)
+# reach the home folder and the disks under /media/oros, and lists and
+# opens disks with oros-system. The usual folders are there from the start
+# (English names on the disk; Files shows them translated).
+export OROS_COMPUTER_FILES=1
+export OROS_FS_HELPER=/opt/oros/oros-system
+mkdir -p "$HOME/Documents" "$HOME/Downloads" "$HOME/Pictures" "$HOME/Music" "$HOME/Videos" "$HOME/Desktop"
 export OROS_PORTABLE_ROOT="$ROOT"
 export OROS_PORTABLE_BROWSER=/usr/bin/chromium
 # The orOS system extension adds the System button (Wi-Fi, sound, power,

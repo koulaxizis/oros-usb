@@ -12,9 +12,9 @@ import (
 	"strings"
 )
 
-// The System button's Disks section: the computer's own disks (Windows,
-// another Linux) and USB sticks or drives, opened read-only under
-// /media/oros so orOS and the Internet window can read them.
+// The System button's Disks section and orOS Files' "This computer": the
+// computer's own disks (Windows, another Linux) and USB sticks or drives,
+// opened under /media/oros (Windows disks read-only, see mountVolume).
 
 var mediaRoot = "/media/oros"
 
@@ -27,6 +27,7 @@ type volume struct {
 	Model    string `json:"model"`
 	USB      bool   `json:"usb"`
 	Mount    string `json:"mount,omitempty"`
+	ReadOnly bool   `json:"readonly,omitempty"` // mounted read-only
 	Internal bool   `json:"internal"`
 }
 
@@ -68,7 +69,31 @@ func listVolumes() ([]volume, error) {
 	if err != nil {
 		return nil, err
 	}
-	return pickVolumes(out, systemDisks())
+	vs, err := pickVolumes(out, systemDisks())
+	if err != nil {
+		return nil, err
+	}
+	ro := readOnlyMounts()
+	for i := range vs {
+		vs[i].ReadOnly = vs[i].Mount != "" && ro[vs[i].Mount]
+	}
+	return vs, nil
+}
+
+// disksMain is "oros-system disks": the Disks list as JSON, for the orOS
+// launcher's computer files (Files' "This computer"). No root needed.
+func disksMain() int {
+	vs, err := listVolumes()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error: "+err.Error())
+		return 1
+	}
+	if vs == nil {
+		vs = []volume{}
+	}
+	b, _ := json.Marshal(vs)
+	fmt.Println(string(b))
+	return 0
 }
 
 // pickVolumes keeps partitions with a readable filesystem, at least 1 GiB
@@ -163,8 +188,12 @@ func findVolume(path string) (volume, error) {
 	return volume{}, errors.New("this disk cannot be opened")
 }
 
-// mountVolume mounts v read-only and returns where. Already mounted
-// volumes return their place.
+// mountVolume mounts v and returns where. USB sticks and drives and the
+// computer's other Linux disks open writable; Windows disks (NTFS inside
+// the computer, or any NTFS that holds Windows) open read-only, because
+// writing while Windows hibernates (Fast Startup) can damage them. A disk
+// that refuses to open writable (not shut down cleanly) opens read-only.
+// Already mounted volumes return their place.
 func mountVolume(v volume, uid, gid string) (string, error) {
 	if v.Mount != "" {
 		return v.Mount, nil
@@ -176,7 +205,36 @@ func mountVolume(v volume, uid, gid string) (string, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
+	if v.FSType == "ntfs" {
+		// Read-only first, to look for Windows before writing anything.
+		out, err := mountAs(v, dir, uid, gid, false)
+		if err != nil {
+			_ = os.Remove(dir)
+			return "", cmdErr("mount", out, err)
+		}
+		if !v.USB || holdsWindows(dir) {
+			return dir, nil
+		}
+		if out, err := run("umount", dir); err != nil {
+			return "", cmdErr("umount", out, err)
+		}
+	}
+	out, err := mountAs(v, dir, uid, gid, true)
+	if err != nil {
+		out, err = mountAs(v, dir, uid, gid, false)
+	}
+	if err != nil {
+		_ = os.Remove(dir)
+		return "", cmdErr("mount", out, err)
+	}
+	return dir, nil
+}
+
+func mountAs(v volume, dir, uid, gid string, rw bool) (string, error) {
 	opts := "ro,nosuid,nodev,noexec"
+	if rw {
+		opts = "rw,nosuid,nodev,noexec"
+	}
 	fstype := v.FSType
 	switch v.FSType {
 	case "vfat", "exfat", "ntfs":
@@ -186,19 +244,40 @@ func mountVolume(v volume, uid, gid string) (string, error) {
 			fstype = "ntfs3"
 		}
 	case "ext4", "ext3":
-		// Read-only even if the journal needs replaying (Linux not shut down).
-		opts += ",noload"
+		if !rw {
+			// Read-only even if the journal needs replaying (Linux not shut down).
+			opts += ",noload"
+		}
 	}
 	out, err := run("mount", "-t", fstype, "-o", opts, v.Path, dir)
 	if err != nil && v.FSType == "ntfs" {
 		// The FUSE driver, if the kernel one is missing or refuses.
 		out, err = run("mount", "-t", "ntfs-3g", "-o", opts, v.Path, dir)
 	}
-	if err != nil {
-		_ = os.Remove(dir)
-		return "", cmdErr("mount", out, err)
+	return out, err
+}
+
+// holdsWindows tells a Windows system disk by its files.
+func holdsWindows(dir string) bool {
+	for _, n := range []string{"Windows/System32", "WINDOWS/system32", "windows/system32", "hiberfil.sys", "pagefile.sys", "swapfile.sys"} {
+		if _, err := os.Stat(filepath.Join(dir, n)); err == nil {
+			return true
+		}
 	}
-	return dir, nil
+	return false
+}
+
+// readOnlyMounts are the mount points mounted read-only now.
+func readOnlyMounts() map[string]bool {
+	set := map[string]bool{}
+	b, _ := os.ReadFile("/proc/mounts")
+	for _, line := range strings.Split(string(b), "\n") {
+		f := strings.Fields(line)
+		if len(f) > 3 && (f[3] == "ro" || strings.HasPrefix(f[3], "ro,")) {
+			set[f[1]] = true
+		}
+	}
+	return set
 }
 
 func isMountpoint(dir string) bool {
@@ -280,7 +359,9 @@ func disksList() reply {
 	return reply{"ok": true, "volumes": vs}
 }
 
-func diskOpen(path string) reply {
+// diskMount opens a disk (or Downloads) and says where, without showing
+// it: orOS Files shows it when orOS has "This computer".
+func diskMount(path string) reply {
 	dir := downloadsDir()
 	if path != "downloads" {
 		out, err := rootRun("mount", "--dev", path)
@@ -292,7 +373,18 @@ func diskOpen(path string) reply {
 	} else if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fail(err, "")
 	}
-	r := openWeb("file://" + dir + "/")
+	return reply{"ok": true, "mount": dir}
+}
+
+// diskOpen opens a disk and shows it in the Internet window (orOS
+// versions without "This computer" in Files).
+func diskOpen(path string) reply {
+	r := diskMount(path)
+	if r["ok"] != true {
+		return r
+	}
+	dir := r["mount"].(string)
+	r = openWeb("file://" + dir + "/")
 	r["mount"] = dir
 	return r
 }
