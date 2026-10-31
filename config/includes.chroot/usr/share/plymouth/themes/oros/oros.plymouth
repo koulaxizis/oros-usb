@@ -1,15 +1,26 @@
 [Plymouth Theme]
 Name=orOS
-Description=orOS logo while the computer starts
+Description=orOS logo while the computer starts and shuts down
 ModuleName=two-step
 
 [two-step]
 ImageDir=/usr/share/plymouth/themes/oros
 HorizontalAlignment=.5
-VerticalAlignment=.75
+VerticalAlignment=.66
 WatermarkHorizontalAlignment=.5
 WatermarkVerticalAlignment=.45
+DialogHorizontalAlignment=.5
+DialogVerticalAlignment=.75
 Transition=none
 TransitionDuration=0.0
 BackgroundStartColor=0x1b1a18
 BackgroundEndColor=0x1b1a18
+
+[boot-up]
+UseEndAnimation=false
+
+[shutdown]
+UseEndAnimation=false
+
+[reboot]
+UseEndAnimation=false

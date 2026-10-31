@@ -30,14 +30,22 @@ echo "== system bridge and extension"
 rm -rf "$OPT/system-ext" && cp -a system/extension "$OPT/system-ext"
 echo "$VERSION" > "$OPT/version"
 
-echo "== boot menus: start orOS by itself after 3 seconds"
-# live-build's menus wait for a key forever; take its own templates and set
-# a timeout (GRUB for UEFI, isolinux for BIOS).
+echo "== boot menus: hidden, orOS starts by itself after 2 seconds"
+# live-build's menus wait for a key forever; take its own templates and
+# hide them: the screen stays on the orOS picture and Esc (or any key on
+# BIOS) shows the menu with the fail-safe entries. GRUB for UEFI, isolinux
+# for BIOS.
 rm -rf config/bootloaders && mkdir -p config/bootloaders
 cp -a /usr/share/live/build/bootloaders/grub-pc /usr/share/live/build/bootloaders/isolinux config/bootloaders/
-printf '\nset default=0\nset timeout=3\n' >> config/bootloaders/grub-pc/config.cfg
-sed -i 's/^timeout .*/timeout 30/' config/bootloaders/isolinux/isolinux.cfg
-grep -q '^timeout 30' config/bootloaders/isolinux/isolinux.cfg
+printf '\nset default=0\nset timeout_style=hidden\nset timeout=2\n' >> config/bootloaders/grub-pc/config.cfg
+sed -i 's/^timeout .*/timeout 20/' config/bootloaders/isolinux/isolinux.cfg
+grep -q '^timeout 20' config/bootloaders/isolinux/isolinux.cfg
+# vesamenu shows only its countdown line while hidden; draw it in no colour.
+cat >> config/bootloaders/isolinux/isolinux.cfg <<'ISOLINUX'
+menu hidden
+menu color timeout_msg 0 #00000000 #00000000 none
+menu color timeout 0 #00000000 #00000000 none
+ISOLINUX
 # System updates (oros-system update) put a newer system on the persistence
 # partition with its own menu entries in /oros-system/boot.cfg; they come
 # first. UEFI only (isolinux cannot read ext4); the stick's own system
@@ -53,9 +61,10 @@ if [ -n "$orosupd" ]; then
 	source ($orosupd)/oros-system/boot.cfg
 fi
 GRUB
-# orOS splash instead of Debian's (640x480 for both menus).
+# orOS splash instead of Debian's (scripts/boot-art.py): Full HD for GRUB,
+# which scales it to its screen, 640x480 for isolinux, which needs that.
 find config/bootloaders -name 'splash.svg' -delete
-cp assets/splash.png config/bootloaders/grub-pc/splash.png
+cp assets/splash-hd.png config/bootloaders/grub-pc/splash.png
 cp assets/splash.png config/bootloaders/isolinux/splash.png
 
 echo "== live-build: system"

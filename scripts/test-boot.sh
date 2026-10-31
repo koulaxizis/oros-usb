@@ -73,12 +73,12 @@ qemu-system-x86_64 \
 QEMU=$!
 
 mon() { echo "$1" | socat - UNIX-CONNECT:"$MON" >/dev/null 2>&1 || true; }
-# The first seconds: firmware and boot menu.
-for t in 4 8 12; do
-	sleep 4
+# The first minute, every 3 seconds: firmware, the hidden boot menu, the
+# orOS boot screen and the hand-over to orOS. None of it may show text.
+for t in $(seq 3 3 60); do
+	sleep 3
 	mon "screendump $OUT/boot-$t.ppm"
 done
-sleep 18
 for t in $(seq 30 30 "$WAIT"); do
 	sleep 30
 	mon "screendump $OUT/screen-$t.ppm"
@@ -93,6 +93,14 @@ sleep 5
 mon "screendump $OUT/network.ppm"
 mon "sendkey ctrl-alt-f1"
 sleep 3
+# The orOS boot screen showed: a frame with the logo's gold (#c8a96e).
+SPLASH=""
+for f in $(ls "$OUT"/boot-*.ppm 2>/dev/null | sort -V); do
+	if ppmhist -noheader "$f" 2>/dev/null | awk '$1 == 200 && $2 == 169 && $3 == 110 { found = 1 } END { exit !found }'; then
+		SPLASH="$(basename "${f%.ppm}")"
+		break
+	fi
+done
 # Small JPEG copies in the log ("SHOT name base64"), readable where the
 # artifact is not.
 for f in "$OUT"/boot-*.ppm "$OUT/screen-$WAIT.ppm" "$OUT/desktop.ppm" "$OUT/network.ppm"; do
@@ -105,7 +113,19 @@ kill "$QEMU" 2>/dev/null || true
 wait "$QEMU" 2>/dev/null || true
 for f in "$OUT"/*.ppm; do [ -f "$f" ] && pnmtopng "$f" > "${f%.ppm}.png" && rm "$f"; done
 # Screen text in the log, so a failure can be read without the artifact.
+# The boot frames must not show the text console: kernel, live-boot,
+# systemd or a login (the firmware's own lines are not ours).
+TEXT_SEEN=""
 if command -v tesseract >/dev/null; then
+	for f in $(ls "$OUT"/boot-*.png | sort -V); do
+		words="$(tesseract "$f" - 2>/dev/null | grep -v '^\s*$' || true)"
+		[ -n "$words" ] || continue
+		echo "== $(basename "$f")"
+		echo "$words" | head -8
+		if echo "$words" | grep -qiE 'login:|GNU/Linux|Debian GNU|Begin:|Welcome to Debian|live-boot|tty1|\[ *OK *\]|Loading Linux|Loading initial ramdisk'; then
+			TEXT_SEEN="$TEXT_SEEN $(basename "${f%.png}")"
+		fi
+	done
 	for f in $(ls "$OUT"/screen-*.png | sort -V); do
 		echo "== $(basename "$f")"
 		tesseract "$f" - 2>/dev/null | grep -v '^\s*$' | head -15 || true
@@ -186,6 +206,17 @@ if [ -n "${WATCHDOG_TEST:-}" ]; then
 		{ echo "FAIL: watchdog: orOS did not show after the restart with the GPU off" >&2; OK=0; }
 elif grep -q "watchdog: no sign of life" "$SESSLOG" 2>/dev/null; then
 	echo "FAIL: the session watchdog had to restart orOS on a normal start" >&2
+	OK=0
+fi
+# A graphical start from the menu to orOS.
+if [ -n "$TEXT_SEEN" ]; then
+	echo "FAIL: text console on the screen while starting:$TEXT_SEEN" >&2
+	OK=0
+fi
+if [ -n "$SPLASH" ]; then
+	echo "== the orOS boot screen showed ($SPLASH)"
+else
+	echo "FAIL: the orOS boot screen (Plymouth) never showed in the first minute" >&2
 	OK=0
 fi
 if [ -n "${MARKER:-}" ] && [ -z "$(find "$MNT" -name "$MARKER" | head -1)" ]; then
