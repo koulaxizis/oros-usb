@@ -4,6 +4,8 @@
   "MetricsReportingEnabled": false,
   "SafeBrowsingProtectionLevel": 0,
   "SearchSuggestEnabled": false,
+  "DnsOverHttpsMode": "automatic",
+  "DnsOverHttpsTemplates": "https://dns.quad9.net/dns-query",
   "TranslateEnabled": false,
   "SpellCheckServiceEnabled": false,
   "UrlKeyedAnonymizedDataCollectionEnabled": false,

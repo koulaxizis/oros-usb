@@ -43,6 +43,10 @@
       updating: "Downloading the new system… {p}%", updated: "Done. Restart to start the new system.",
       updateNoPersist: "Updates need a persistence partition on the stick.",
       error: "Error: {e}", web: "Internet", webTitle: "Open a web browser window (close it to return to orOS)",
+      tor: "Tor", torTitle: "Open Tor Browser for private browsing (close it to return to orOS)",
+      torAsk: "The first time, Tor Browser (about 110 MB) is downloaded from torproject.org and checked. Continue?",
+      torAskNoPersist: "This stick has no persistence partition, so Tor Browser is downloaded again after every restart.",
+      torGetting: "Getting Tor Browser… {p}%", torError: "Tor Browser could not be set up: {e}",
       screen: "Screen", brightness: "Brightness", time: "Time", timeZone: "Time zone",
       timeSynced: "The clock is set from the internet.", timeNotSynced: "The clock is set from the internet once you are online.",
       timeZoneInstall: "Time zone of this computer",
@@ -78,6 +82,10 @@
       updating: "Λήψη του νέου συστήματος… {p}%", updated: "Έτοιμο. Κάνε επανεκκίνηση για να ξεκινήσει το νέο σύστημα.",
       updateNoPersist: "Οι ενημερώσεις χρειάζονται διαμέρισμα persistence στο stick.",
       error: "Σφάλμα: {e}", web: "Internet", webTitle: "Άνοιγμα παραθύρου για το διαδίκτυο (κλείσ' το για να γυρίσεις στο orOS)",
+      tor: "Tor", torTitle: "Άνοιγμα του Tor Browser για ιδιωτική περιήγηση (κλείσ' το για να γυρίσεις στο orOS)",
+      torAsk: "Την πρώτη φορά το Tor Browser (περίπου 110 MB) κατεβαίνει από το torproject.org και ελέγχεται. Συνέχεια;",
+      torAskNoPersist: "Αυτό το stick δεν έχει persistence partition, οπότε το Tor Browser κατεβαίνει ξανά μετά από κάθε επανεκκίνηση.",
+      torGetting: "Λήψη του Tor Browser… {p}%", torError: "Το Tor Browser δεν μπόρεσε να εγκατασταθεί: {e}",
       screen: "Οθόνη", brightness: "Φωτεινότητα", time: "Ώρα", timeZone: "Ζώνη ώρας",
       timeSynced: "Η ώρα ρυθμίζεται από το διαδίκτυο.", timeNotSynced: "Η ώρα θα ρυθμιστεί από το διαδίκτυο μόλις συνδεθείς.",
       timeZoneInstall: "Ζώνη ώρας αυτού του υπολογιστή",
@@ -114,6 +122,7 @@
     wifiOff: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.5a15 15 0 0 1 20 0" opacity=".35"/><path d="M5 12a10.5 10.5 0 0 1 14 0" opacity=".35"/><path d="M8.5 15.5a5.5 5.5 0 0 1 7 0" opacity=".35"/><path d="M3 3l18 18"/></svg>',
     wired: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 14v-4h10v4M12 10V4"/></svg>',
     power: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/></svg>',
+    onion: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3c-1 2-1 3 0 4"/><path d="M12 7c4 2 7 5 7 8.5A7 6.5 0 0 1 5 15.5C5 12 8 9 12 7z"/><path d="M12 10c2 1.5 3.5 3.3 3.5 5.5S14 19 12 19s-3.5-1.3-3.5-3.5S10 11.5 12 10z"/></svg>',
     globe: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
     eye: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
     eyeOff: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg>',
@@ -171,7 +180,7 @@
   `;
 
   let state = {};
-  let webBtn = null;
+  let webBtn = null, torBtn = null, torTimer = null;
   let btn = null, host = null, root = null, panel = null, view = "main", pollTimer = null;
 
   // setInterval for async checks: a tick waits while the last one is still
@@ -719,6 +728,38 @@
     if (e.detail === "open") qsFill();
   });
 
+  // Tor: the first press asks, then downloads Tor Browser into the home
+  // folder (oros-system checks its signature); later presses start it at
+  // once. While it downloads, the button shows how far it is.
+  function torLabel(text) {
+    if (torBtn) torBtn.lastChild.textContent = text;
+  }
+  async function openTor() {
+    if (torTimer) return;
+    const st = await call({ cmd: "tor.status" });
+    if (st.ok && st.running) return followTor(true);
+    if (st.ok && !st.installed) {
+      let q = t("torAsk");
+      if (st.persistent === false) q = t("torAskNoPersist") + "\n\n" + q;
+      if (!confirm(q)) return;
+    }
+    const r = await call({ cmd: "tor.open" });
+    if (!r.ok) alert(t("torError", { e: r.error }));
+    else if (r.downloading) followTor(true);
+  }
+  function followTor(tell) {
+    if (torTimer) return;
+    torTimer = poll(async () => {
+      const st = await call({ cmd: "tor.status" });
+      const p = (st.ok && st.progress) || {};
+      if (st.ok && st.running) { torLabel(t("torGetting", { p: p.percent || 0 })); return; }
+      clearInterval(torTimer);
+      torTimer = null;
+      torLabel(t("tor"));
+      if (tell && p.error) alert(t("torError", { e: p.error }));
+    }, 1500);
+  }
+
   function mount() {
     const bar = document.querySelector("#oros-bar .bar-right");
     if (!bar || btn) return !!btn;
@@ -729,7 +770,13 @@
       style: "display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:inherit;font:inherit;padding:4px 6px;cursor:pointer",
       html: ICON.globe + "<span>" + t("web") + "</span>", title: t("webTitle"),
       onclick: (e) => { e.stopPropagation(); call({ cmd: "web.open" }); } });
-    bar.append(webBtn, btn);
+    // Tor: the official Tor Browser over orOS, downloaded on first use.
+    torBtn = el("button", { type: "button", id: "oros-tor-btn",
+      style: "display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:inherit;font:inherit;padding:4px 6px;cursor:pointer",
+      html: ICON.onion + "<span>" + t("tor") + "</span>", title: t("torTitle"),
+      onclick: (e) => { e.stopPropagation(); openTor(); } });
+    bar.append(webBtn, torBtn, btn);
+    call({ cmd: "tor.status" }).then((st) => { if (st.ok && st.running) followTor(false); });
     paintButton();
     qsStep();
     setTimeout(qsStep, 3000);   // orOS adds #qs-btn at its own boot
