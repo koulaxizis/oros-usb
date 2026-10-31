@@ -1,0 +1,37 @@
+# orOS full screen on tty1 (cage + Chromium, /usr/local/bin/oros-session),
+# started the way a display manager is: the boot screen stays until it
+# takes over, so no login text shows in between. Plymouth leaves its last
+# picture on the screen (--retain-splash) and cage takes the display from
+# there. tty2 keeps its autologin to the network screen.
+[Unit]
+Description=orOS session
+After=systemd-user-sessions.service systemd-logind.service plymouth-start.service getty@tty1.service plymouth-quit.service
+Wants=systemd-logind.service
+Conflicts=getty@tty1.service plymouth-quit.service
+# If the session cannot start at all, take the boot screen down so the
+# computer does not look frozen.
+OnFailure=plymouth-quit.service
+
+[Service]
+Type=simple
+User=oros
+PAMName=oros-session
+WorkingDirectory=~
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+UtmpIdentifier=tty1
+UtmpMode=user
+Environment=XDG_SESSION_TYPE=wayland XDG_SESSION_CLASS=user
+ExecStartPre=-+/usr/bin/plymouth quit --retain-splash
+ExecStart=/usr/local/bin/oros-session
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical.target
+Alias=display-manager.service

@@ -8,7 +8,9 @@
 # the install copied, which must still be there. With WATCHDOG_TEST=N the
 # first N starts come up without the System extension (no ping), and the
 # session watchdog must restart them, the second time with the GPU off.
-# Without it, a start the watchdog had to restart fails the test.
+# Without it, a start the watchdog had to restart fails the test. A USB
+# stick labelled OROSTEST is plugged in too: the image's self-test opens it
+# and writes to it through Files' computer files (oros-selftest-files).
 #   sudo scripts/test-boot.sh out/orOS-USB-x.iso test-out
 set -euo pipefail
 
@@ -48,6 +50,13 @@ fi
 umount "$PMNT"
 losetup -d "$PLOOP"
 
+# A FAT32 USB stick for the computer files self-test (the Disks list
+# leaves out anything under 1 GiB).
+FSTICK="$OUT/usb-files.img"
+rm -f "$FSTICK"
+truncate -s 1100M "$FSTICK"
+mkfs.vfat -F 32 -n OROSTEST "$FSTICK" >/dev/null
+
 cp /usr/share/OVMF/OVMF_VARS_4M.ms.fd "$OUT/vars.fd"
 MON="$OUT/monitor.sock"
 qemu-system-x86_64 \
@@ -56,18 +65,20 @@ qemu-system-x86_64 \
 	-drive if=pflash,format=raw,unit=0,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.secboot.fd \
 	-drive if=pflash,format=raw,unit=1,file="$OUT/vars.fd" \
 	-drive file="$IMG",format=raw,if=virtio \
+	-device qemu-xhci -drive if=none,id=fstick,file="$FSTICK",format=raw \
+	-device usb-storage,drive=fstick,removable=on \
 	-vga virtio -display none \
 	-monitor unix:"$MON",server,nowait \
 	-serial file:"$OUT/serial.log" &
 QEMU=$!
 
 mon() { echo "$1" | socat - UNIX-CONNECT:"$MON" >/dev/null 2>&1 || true; }
-# The first seconds: firmware and boot menu.
-for t in 4 8 12; do
-	sleep 4
+# The first minute, every 3 seconds: firmware, the hidden boot menu, the
+# orOS boot screen and the hand-over to orOS. None of it may show text.
+for t in $(seq 3 3 60); do
+	sleep 3
 	mon "screendump $OUT/boot-$t.ppm"
 done
-sleep 18
 for t in $(seq 30 30 "$WAIT"); do
 	sleep 30
 	mon "screendump $OUT/screen-$t.ppm"
@@ -82,6 +93,14 @@ sleep 5
 mon "screendump $OUT/network.ppm"
 mon "sendkey ctrl-alt-f1"
 sleep 3
+# The orOS boot screen showed: a frame with the logo's gold (#c8a96e).
+SPLASH=""
+for f in $(ls "$OUT"/boot-*.ppm 2>/dev/null | sort -V); do
+	if ppmhist -noheader "$f" 2>/dev/null | awk '$1 == 200 && $2 == 169 && $3 == 110 { found = 1 } END { exit !found }'; then
+		SPLASH="$(basename "${f%.ppm}")"
+		break
+	fi
+done
 # Small JPEG copies in the log ("SHOT name base64"), readable where the
 # artifact is not.
 for f in "$OUT"/boot-*.ppm "$OUT/screen-$WAIT.ppm" "$OUT/desktop.ppm" "$OUT/network.ppm"; do
@@ -94,7 +113,19 @@ kill "$QEMU" 2>/dev/null || true
 wait "$QEMU" 2>/dev/null || true
 for f in "$OUT"/*.ppm; do [ -f "$f" ] && pnmtopng "$f" > "${f%.ppm}.png" && rm "$f"; done
 # Screen text in the log, so a failure can be read without the artifact.
+# The boot frames must not show the text console: kernel, live-boot,
+# systemd or a login (the firmware's own lines are not ours).
+TEXT_SEEN=""
 if command -v tesseract >/dev/null; then
+	for f in $(ls "$OUT"/boot-*.png | sort -V); do
+		words="$(tesseract "$f" - 2>/dev/null | grep -v '^\s*$' || true)"
+		[ -n "$words" ] || continue
+		echo "== $(basename "$f")"
+		echo "$words" | head -8
+		if echo "$words" | grep -qiE 'login:|GNU/Linux|Debian GNU|Begin:|Welcome to Debian|live-boot|tty1|\[ *OK *\]|Loading Linux|Loading initial ramdisk'; then
+			TEXT_SEEN="$TEXT_SEEN $(basename "${f%.png}")"
+		fi
+	done
 	for f in $(ls "$OUT"/screen-*.png | sort -V); do
 		echo "== $(basename "$f")"
 		tesseract "$f" - 2>/dev/null | grep -v '^\s*$' | head -15 || true
@@ -144,6 +175,20 @@ if [ -z "$DEVF" ] || ! grep -qx "/var/lib/bluetooth" "$DEVF"; then
 	echo "FAIL: Bluetooth pairings are not kept in /home/.oros-bluetooth" >&2
 	OK=0
 fi
+# Files' computer files: the launcher's API opened the stick writable,
+# wrote to it and to the home folder, and closed it again.
+FILESF="$(find "$MNT" -maxdepth 5 -name .oros-selftest-files | head -1)"
+[ -z "$FILESF" ] || { echo "== computer files self-test"; cat "$FILESF"; }
+if [ -n "${WATCHDOG_TEST:-}" ]; then
+	:
+elif [ -z "$FILESF" ] || ! grep -qx "PASS" "$FILESF"; then
+	echo "FAIL: Files' computer files could not open and write the USB stick" >&2
+	grep -a "selftest-files\|oros-portable\|computer files" "$OUT/serial.log" | tail -20 >&2 || true
+	OK=0
+elif [ "$(mtype -i "$FSTICK" ::hello.txt 2>/dev/null)" != "orOS computer files" ]; then
+	echo "FAIL: hello.txt written through Files is not on the USB stick" >&2
+	OK=0
+fi
 # The system log is kept for the problem report.
 if [ -z "$(find "$MNT" -path '*/.oros-journal/*' -name '*.journal' | head -1)" ]; then
 	echo "FAIL: no system log in /home/.oros-journal on the persistence partition" >&2
@@ -161,6 +206,17 @@ if [ -n "${WATCHDOG_TEST:-}" ]; then
 		{ echo "FAIL: watchdog: orOS did not show after the restart with the GPU off" >&2; OK=0; }
 elif grep -q "watchdog: no sign of life" "$SESSLOG" 2>/dev/null; then
 	echo "FAIL: the session watchdog had to restart orOS on a normal start" >&2
+	OK=0
+fi
+# A graphical start from the menu to orOS.
+if [ -n "$TEXT_SEEN" ]; then
+	echo "FAIL: text console on the screen while starting:$TEXT_SEEN" >&2
+	OK=0
+fi
+if [ -n "$SPLASH" ]; then
+	echo "== the orOS boot screen showed ($SPLASH)"
+else
+	echo "FAIL: the orOS boot screen (Plymouth) never showed in the first minute" >&2
 	OK=0
 fi
 if [ -n "${MARKER:-}" ] && [ -z "$(find "$MNT" -name "$MARKER" | head -1)" ]; then

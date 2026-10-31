@@ -3,7 +3,8 @@
 // system" extension (Wi-Fi, sound, battery, power, disks, install, update), and
 // root runs it as "oros-system install" to put orOS on an internal disk and
 // as "oros-system update" to download a new system and "oros-system mount"
-// to open another disk read-only, and "oros-system time" to set the time zone.
+// to open another disk (Windows disks read-only), "oros-system disks"
+// lists them as JSON, and "oros-system time" to set the time zone.
 package main
 
 import (
@@ -25,6 +26,12 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "tor" {
 		os.Exit(torMain(os.Args[2:]))
 	}
+	if len(os.Args) > 1 && os.Args[1] == "selftest-files" {
+		os.Exit(selftestFilesMain())
+	}
+	if len(os.Args) > 1 && os.Args[1] == "disks" {
+		os.Exit(disksMain())
+	}
 	if len(os.Args) > 1 && os.Args[1] == "mount" {
 		os.Exit(mountMain(os.Args[2:]))
 	}
@@ -36,6 +43,6 @@ func main() {
 		}
 		return
 	}
-	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | time --zone Area/City | time --apply  (or run by Chromium)")
+	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply  (or run by Chromium)")
 	os.Exit(2)
 }

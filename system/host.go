@@ -184,6 +184,8 @@ func handle(req request) reply {
 		return disksList()
 	case "disks.open":
 		return diskOpen(req.Disk)
+	case "disks.mount":
+		return diskMount(req.Disk)
 	case "disks.close":
 		return diskClose(req.Disk)
 	case "install.disks":

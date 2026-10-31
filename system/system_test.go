@@ -312,6 +312,12 @@ func TestPickVolumes(t *testing.T) {
 	if p.Path != "/dev/sdb" || !p.USB || p.Internal || p.Mount != "/media/oros/PHOTOS" {
 		t.Fatalf("stick %+v", p)
 	}
+	// A stick without partitions has no parent; an empty name in the
+	// system set (lsblk PKNAME of a whole disk) must not hide it.
+	vs, err = pickVolumes(j, map[string]bool{"sda": true, "sda1": true, "": true})
+	if err != nil || len(vs) != 2 || vs[1].Path != "/dev/sdb" {
+		t.Fatalf("whole-disk stick hidden: %+v %v", vs, err)
+	}
 	if d := mountDir(volume{Path: "/dev/sdc1", Label: "My Disk/../x"}); d != filepath.Join(mediaRoot, "My_Disk_.._x") {
 		t.Fatalf("dir %q", d)
 	}
@@ -320,8 +326,8 @@ func TestPickVolumes(t *testing.T) {
 	}
 }
 
-// TestMountVolume mounts real filesystems read-only (root and loop devices
-// only, as in CI).
+// TestMountVolume mounts real filesystems (root and loop devices only, as
+// in CI): writable, except NTFS inside the computer or holding Windows.
 func TestMountVolume(t *testing.T) {
 	if os.Getuid() != 0 {
 		t.Skip("needs root")
@@ -332,22 +338,34 @@ func TestMountVolume(t *testing.T) {
 	old := mediaRoot
 	mediaRoot = t.TempDir()
 	defer func() { mediaRoot = old }()
-	for fs, mkfs := range map[string][]string{
+	mkfsFor := map[string][]string{
 		"vfat": {"mkfs.vfat", "-n", "STICK"},
 		"ext4": {"mkfs.ext4", "-q", "-L", "LINUX"},
 		"ntfs": {"mkntfs", "-Q", "-q", "-F", "-L", "Windows"},
+	}
+	for _, c := range []struct {
+		name, fs     string
+		usb, windows bool
+		wantWritable bool
+	}{
+		{"vfat stick", "vfat", true, false, true},
+		{"ext4 disk", "ext4", false, false, true},
+		{"ntfs internal", "ntfs", false, false, false},
+		{"ntfs stick", "ntfs", true, false, true},
+		{"ntfs stick with Windows", "ntfs", true, true, false},
 	} {
+		mkfs := mkfsFor[c.fs]
 		if _, err := exec.LookPath(mkfs[0]); err != nil {
-			t.Logf("%s: no %s", fs, mkfs[0])
+			t.Logf("%s: no %s", c.name, mkfs[0])
 			continue
 		}
-		if b, _ := os.ReadFile("/proc/filesystems"); fs != "ntfs" && !strings.Contains(string(b), "\t"+fs+"\n") {
-			if exec.Command("modprobe", fs).Run() != nil {
-				t.Logf("%s: not in this kernel", fs)
+		if b, _ := os.ReadFile("/proc/filesystems"); c.fs != "ntfs" && !strings.Contains(string(b), "\t"+c.fs+"\n") {
+			if exec.Command("modprobe", c.fs).Run() != nil {
+				t.Logf("%s: not in this kernel", c.name)
 				continue
 			}
 		}
-		img := filepath.Join(t.TempDir(), fs+".img")
+		img := filepath.Join(t.TempDir(), c.fs+".img")
 		if err := os.WriteFile(img, nil, 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -355,31 +373,49 @@ func TestMountVolume(t *testing.T) {
 			t.Fatal(err)
 		}
 		if out, err := exec.Command(mkfs[0], append(mkfs[1:], img)...).CombinedOutput(); err != nil {
-			t.Fatalf("%s: %v %s", fs, err, out)
+			t.Fatalf("%s: %v %s", c.name, err, out)
 		}
 		out, err := exec.Command("losetup", "-f", "--show", img).Output()
 		if err != nil {
 			t.Skipf("losetup: %v", err)
 		}
 		dev := strings.TrimSpace(string(out))
-		v := volume{Path: dev, Label: "Disk-" + fs, FSType: fs}
+		if c.windows {
+			// Put Windows' folder on it first.
+			tmp := t.TempDir()
+			if out, err := exec.Command("mount", "-t", "ntfs-3g", dev, tmp).CombinedOutput(); err != nil {
+				t.Logf("%s: cannot prepare: %v %s", c.name, err, out)
+				_ = exec.Command("losetup", "-d", dev).Run()
+				continue
+			}
+			_ = os.MkdirAll(filepath.Join(tmp, "Windows", "System32"), 0o755)
+			_ = exec.Command("umount", tmp).Run()
+		}
+		v := volume{Path: dev, Label: "Disk-" + c.fs, FSType: c.fs, USB: c.usb, Internal: !c.usb}
 		dir, err := mountVolume(v, "1000", "1000")
 		if err != nil {
 			_ = exec.Command("losetup", "-d", dev).Run()
-			t.Fatalf("%s: %v", fs, err)
+			t.Fatalf("%s: %v", c.name, err)
 		}
-		if dir != filepath.Join(mediaRoot, "Disk-"+fs) {
-			t.Errorf("%s: dir %s", fs, dir)
+		if dir != filepath.Join(mediaRoot, "Disk-"+c.fs) {
+			t.Errorf("%s: dir %s", c.name, dir)
 		}
-		if err := os.WriteFile(filepath.Join(dir, "x"), []byte("x"), 0o644); err == nil {
-			t.Errorf("%s: mounted writable", fs)
+		err = os.WriteFile(filepath.Join(dir, "x"), []byte("x"), 0o644)
+		if c.wantWritable && err != nil {
+			t.Errorf("%s: not writable: %v", c.name, err)
+		}
+		if !c.wantWritable && err == nil {
+			t.Errorf("%s: mounted writable", c.name)
+		}
+		if readOnlyMounts()[dir] == c.wantWritable {
+			t.Errorf("%s: /proc/mounts says read-only=%v", c.name, !c.wantWritable)
 		}
 		v.Mount = dir
 		if err := unmountVolume(v); err != nil {
-			t.Errorf("%s: %v", fs, err)
+			t.Errorf("%s: %v", c.name, err)
 		}
 		if _, err := os.Stat(dir); err == nil {
-			t.Errorf("%s: mount folder left", fs)
+			t.Errorf("%s: mount folder left", c.name)
 		}
 		_ = exec.Command("losetup", "-d", dev).Run()
 	}
@@ -650,5 +686,47 @@ func TestParsePrinters(t *testing.T) {
 	}
 	if r := printTest("x;reboot"); r["ok"] != false {
 		t.Fatal("bad printer name accepted")
+	}
+}
+
+// TestSelftestFiles runs the boot self-test against a stand-in for the
+// launcher's computer files API.
+func TestSelftestFiles(t *testing.T) {
+	var calls []string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "oros_fs", Value: "k", Path: "/__oros/fs/"})
+	})
+	mux.HandleFunc("/__oros/fs/", func(w http.ResponseWriter, r *http.Request) {
+		if c, err := r.Cookie("oros_fs"); err != nil || c.Value != "k" || r.Header.Get("X-Oros-FS") != "1" {
+			w.WriteHeader(403)
+			return
+		}
+		calls = append(calls, r.Method+" "+strings.TrimPrefix(r.URL.Path, "/__oros/fs/"))
+		switch strings.TrimPrefix(r.URL.Path, "/__oros/fs/") {
+		case "disks":
+			fmt.Fprint(w, `[{"path":"/dev/sdb1","label":"OROSTEST"}]`)
+		case "op":
+			fmt.Fprint(w, `{"ok":true,"path":"/disks/OROSTEST"}`)
+		case "list":
+			fmt.Fprint(w, `[{"name":"hello.txt"}]`)
+		case "roots":
+			fmt.Fprint(w, `{"disks":[{"path":"/disks/OROSTEST","readonly":false}]}`)
+		default:
+			fmt.Fprint(w, `{}`)
+		}
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	var log bytes.Buffer
+	if err := selftestFiles(&log, srv.URL, "OROSTEST", 5*time.Second); err != nil {
+		t.Fatalf("%v\n%s", err, log.String())
+	}
+	want := "GET disks,POST op,PUT raw,GET list,GET roots,PUT raw,POST op,POST op"
+	if strings.Join(calls, ",") != want {
+		t.Fatalf("calls %s", strings.Join(calls, ","))
+	}
+	if err := selftestFiles(&log, srv.URL, "OTHER", 5*time.Second); err == nil {
+		t.Fatal("found a disk that is not there")
 	}
 }
