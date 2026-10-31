@@ -8,7 +8,9 @@
 # the install copied, which must still be there. With WATCHDOG_TEST=N the
 # first N starts come up without the System extension (no ping), and the
 # session watchdog must restart them, the second time with the GPU off.
-# Without it, a start the watchdog had to restart fails the test.
+# Without it, a start the watchdog had to restart fails the test. A USB
+# stick labelled OROSTEST is plugged in too: the image's self-test opens it
+# and writes to it through Files' computer files (oros-selftest-files).
 #   sudo scripts/test-boot.sh out/orOS-USB-x.iso test-out
 set -euo pipefail
 
@@ -48,6 +50,13 @@ fi
 umount "$PMNT"
 losetup -d "$PLOOP"
 
+# A FAT32 USB stick for the computer files self-test (the Disks list
+# leaves out anything under 1 GiB).
+FSTICK="$OUT/usb-files.img"
+rm -f "$FSTICK"
+truncate -s 1100M "$FSTICK"
+mkfs.vfat -F 32 -n OROSTEST "$FSTICK" >/dev/null
+
 cp /usr/share/OVMF/OVMF_VARS_4M.ms.fd "$OUT/vars.fd"
 MON="$OUT/monitor.sock"
 qemu-system-x86_64 \
@@ -56,6 +65,8 @@ qemu-system-x86_64 \
 	-drive if=pflash,format=raw,unit=0,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.secboot.fd \
 	-drive if=pflash,format=raw,unit=1,file="$OUT/vars.fd" \
 	-drive file="$IMG",format=raw,if=virtio \
+	-device qemu-xhci -drive if=none,id=fstick,file="$FSTICK",format=raw \
+	-device usb-storage,drive=fstick,removable=on \
 	-vga virtio -display none \
 	-monitor unix:"$MON",server,nowait \
 	-serial file:"$OUT/serial.log" &
@@ -162,6 +173,20 @@ if [ -z "$DEVF" ] || ! grep -q "scheduler is running" "$DEVF"; then
 fi
 if [ -z "$DEVF" ] || ! grep -qx "/var/lib/bluetooth" "$DEVF"; then
 	echo "FAIL: Bluetooth pairings are not kept in /home/.oros-bluetooth" >&2
+	OK=0
+fi
+# Files' computer files: the launcher's API opened the stick writable,
+# wrote to it and to the home folder, and closed it again.
+FILESF="$(find "$MNT" -maxdepth 5 -name .oros-selftest-files | head -1)"
+[ -z "$FILESF" ] || { echo "== computer files self-test"; cat "$FILESF"; }
+if [ -n "${WATCHDOG_TEST:-}" ]; then
+	:
+elif [ -z "$FILESF" ] || ! grep -qx "PASS" "$FILESF"; then
+	echo "FAIL: Files' computer files could not open and write the USB stick" >&2
+	grep -a "selftest-files\|oros-portable\|computer files" "$OUT/serial.log" | tail -20 >&2 || true
+	OK=0
+elif [ "$(mtype -i "$FSTICK" ::hello.txt 2>/dev/null)" != "orOS computer files" ]; then
+	echo "FAIL: hello.txt written through Files is not on the USB stick" >&2
 	OK=0
 fi
 # The system log is kept for the problem report.

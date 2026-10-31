@@ -86,18 +86,43 @@ jobs:
           echo "$(grep -c snapshot.debian.org/package /tmp/notices/SOURCES.txt) source packages listed"
       - name: Boot test (QEMU, UEFI Secure Boot, persistence)
         run: scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
+      - name: Free disk space (after the boot test)
+        # Each VM test leaves multi-GB disk images; the runner has room for
+        # only a few at once. Screenshots and logs stay for the upload.
+        if: always()
+        run: find test-out -name '*.img' -delete 2>/dev/null || true; df -h . | tail -1
       - name: Watchdog test (two starts that never show orOS, then the GPU off)
         run: WATCHDOG_TEST=2 BOOT_WAIT=420 scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/watchdog
+      - name: Free disk space (after the watchdog test)
+        # Each VM test leaves multi-GB disk images; the runner has room for
+        # only a few at once. Screenshots and logs stay for the upload.
+        if: always()
+        run: find test-out -name '*.img' -delete 2>/dev/null || true; df -h . | tail -1
       - name: Rufus stick test (files on FAT32, ext3 persistence keeping the whole system)
         # Reproduces Chris's real-PC first start; reported, not yet blocking.
         continue-on-error: true
         run: scripts/test-rufus.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/rufus
+      - name: Free disk space (after the Rufus test)
+        # Each VM test leaves multi-GB disk images; the runner has room for
+        # only a few at once. Screenshots and logs stay for the upload.
+        if: always()
+        run: find test-out -name '*.img' -delete 2>/dev/null || true; df -h . | tail -1
       - name: Install test (install to a disk, boot it without the stick)
         run: scripts/test-install.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/install
+      - name: Free disk space (after the install test)
+        # Each VM test leaves multi-GB disk images; the runner has room for
+        # only a few at once. Screenshots and logs stay for the upload.
+        if: always()
+        run: find test-out -name '*.img' -delete 2>/dev/null || true; df -h . | tail -1
       - name: Combo stick test (image + orOS Portable on NTFS, then boot it)
         run: |
           curl -fsSL -o /tmp/portable.zip https://github.com/koulaxizis/oros-portable/releases/download/v0.1.0/orOS-Portable-lite-0.1.0.zip
           scripts/test-combo-sticks.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" /tmp/portable.zip test-out/combo
+      - name: Free disk space (after the combo test)
+        # Each VM test leaves multi-GB disk images; the runner has room for
+        # only a few at once. Screenshots and logs stay for the upload.
+        if: always()
+        run: find test-out -name '*.img' -delete 2>/dev/null || true; df -h . | tail -1
       - name: Update test (system update onto the persistence partition, then boot it)
         run: scripts/test-update.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/update
       - name: Screenshots and logs
