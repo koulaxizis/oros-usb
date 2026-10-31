@@ -115,6 +115,7 @@
     appUpdating: "Downloading orOS… {mb} MB", appUpdated: "Done. Close orOS and start it again to use the new version.",
     appUpdateNone: "This is the newest orOS ({v}).",
     reportSavedPc: "Saved in this computer's Downloads folder: {f}.", qsMorePc: "Update, problem report…",
+    btSettings: "Bluetooth settings of this computer", btSettingsSub: "Opens the computer's settings",
   });
   Object.assign(TEXT.el, {
     exit: "Έξοδος από το orOS", sleep: "Αναστολή", winFull: "Πλήρης οθόνη", winWindow: "Εμφάνιση σε παράθυρο",
@@ -124,6 +125,7 @@
     appUpdating: "Λήψη του orOS… {mb} MB", appUpdated: "Έτοιμο. Κλείσε το orOS και άνοιξέ το ξανά για τη νέα έκδοση.",
     appUpdateNone: "Έχεις το νεότερο orOS ({v}).",
     reportSavedPc: "Αποθηκεύτηκε στις Λήψεις αυτού του υπολογιστή: {f}.", qsMorePc: "Ενημέρωση, αναφορά προβλήματος…",
+    btSettings: "Ρυθμίσεις Bluetooth του υπολογιστή", btSettingsSub: "Ανοίγει τις ρυθμίσεις του υπολογιστή",
   });
   const lang = () => ((localStorage.getItem("oros-lang") || navigator.language || "en").slice(0, 2) === "el" ? "el" : "en");
   const t = (k, v) => {
@@ -221,7 +223,8 @@
   function applyPlatform() {
     if (!portable()) return;
     document.documentElement.removeAttribute("data-oros-kiosk");
-    if (!has("wifi")) document.documentElement.removeAttribute("data-oros-qs-sys");
+    if (has("wifi")) document.documentElement.setAttribute("data-oros-qs-sys", "1");
+    else document.documentElement.removeAttribute("data-oros-qs-sys");
     if (webBtn) webBtn.hidden = !has("web");
     if (torBtn) torBtn.hidden = !has("tor");
   }
@@ -243,6 +246,7 @@
   // The window and leaving orOS go through bg.js (chrome.windows).
   const setWindow = (mode) => call({ cmd: "window.mode", mode }).then(refresh);
   const exitOros = () => call({ cmd: "session.exit" });
+  const openBtSettings = () => { qsCloseShell(); call({ cmd: "bt.settings" }); };
   let webBtn = null, torBtn = null, torTimer = null;
   let btn = null, host = null, root = null, panel = null, view = "main", pollTimer = null;
 
@@ -368,7 +372,7 @@
       reportMsg.replaceChildren(el("div", { class: r.ok ? "msg" : "msg err" }, r.ok ? t(portable() ? "reportSavedPc" : "reportSaved", { f: r.file }) : t("error", { e: r.error })));
     } }, t("report"));
     if (portable()) {
-      renderPortable({ range, mute, soundRow, noSound, battery, light, screenBox, updateBox, reportBtn, reportMsg });
+      renderPortable({ wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, light, screenBox, updateBox, reportBtn, reportMsg });
       return;
     }
     panel.append(el("h2", {}, t("system")),
@@ -393,10 +397,14 @@
   }
 
   // The panel of orOS Portable and the desktop apps: only what the
-  // launcher offers on this computer (Wi-Fi, Bluetooth, disks and the
-  // rest follow in later versions).
+  // launcher offers on this computer. Bluetooth opens the computer's own
+  // settings (pairing stays where it is safe and familiar).
   function renderPortable(p) {
     const parts = [el("h2", {}, t("system"))];
+    if (has("wifi")) parts.push(el("h3", {}, t("wifi")), el("div", { class: "row" }, p.wifiText, p.sw), p.nets);
+    if (has("btSettings")) {
+      parts.push(el("h3", {}, t("bt")), el("button", { style: "width:100%", onclick: openBtSettings }, t("btSettings")));
+    }
     if (has("sound")) parts.push(el("h3", {}, t("sound")), p.soundRow, p.noSound);
     parts.push(p.battery);
     if (has("screen")) parts.push(p.screenBox);
@@ -415,7 +423,8 @@
     parts.push(row1, row2);
     panel.append(...parts);
     main = { range: p.range, mute: p.mute, soundRow: p.soundRow, noSound: p.noSound, battery: p.battery,
-      light: p.light, screenBox: p.screenBox, win, portable: true };
+      light: p.light, screenBox: p.screenBox, win, portable: true,
+      wifiText: p.wifiText, sw: p.sw, nets: p.nets, list: p.list };
     paintMain();
     if (has("update")) showUpdate(p.updateBox);
   }
@@ -565,9 +574,16 @@
     const m = main;
     if (m.portable) {
       m.win.textContent = state.window === "fullscreen" ? t("winWindow") : t("winFull");
+      if (has("wifi")) paintWifi(m);
       paintSound(m);
       return;
     }
+    paintWifi(m);
+    paintSound(m);
+    m.install.hidden = !state.canInstall;
+  }
+
+  function paintWifi(m) {
     let wifiText = t("notConnected");
     if (state.wired) wifiText = t("wired");
     if (state.wifi) wifiText = t("connectedTo", { n: state.wifi.ssid });
@@ -577,8 +593,6 @@
     m.sw.setAttribute("aria-pressed", state.wifiOn ? "true" : "false");
     m.nets.hidden = state.wifiOn === false;
     if (state.wifiOn === false) m.list.replaceChildren();
-    paintSound(m);
-    m.install.hidden = !state.canInstall;
   }
 
   // Sound, battery and brightness: the same on every edition.
@@ -824,6 +838,7 @@
       grid.append(qsPill(state.wired && !state.wifi ? ICON.wired : (state.wifiOn === false ? ICON.wifiOff : ICON.wifi), t("wifi"), wifiSub, state.wifiOn !== false,
         async () => { await call({ cmd: "wifi.radio", on: state.wifiOn === false }); qsFill(); }, qsOpenSystem));
     }
+    if (portable() && has("btSettings")) grid.append(qsPill(ICON.bt, t("bt"), t("btSettingsSub"), null, openBtSettings, null));
     if (bt && bt.ok) {
       const conn = (bt.devices || []).filter((d) => d.connected).map((d) => d.name);
       grid.append(qsPill(ICON.bt, t("bt"), bt.powered ? conn.join(", ") : t("btOff"), !!bt.powered,
