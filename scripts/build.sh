@@ -31,6 +31,18 @@ scripts/tor-key.sh "$OPT/tor-browser-developers.gpg"
 echo "== uBlock Origin Lite for the Internet window"
 scripts/ubol.sh "$OPT/ubol"
 
+echo "== orOS Bridge (plugins and the sound card for Studio)"
+# Built from its main branch like the launcher; no tests or ASIO module here.
+# Its own third-party sources (VST 3 SDK, CLAP, nlohmann/json, miniaudio)
+# are pinned in its CMakeLists.txt and listed in its THIRD_PARTY.md.
+git clone -q --depth 1 https://github.com/koulaxizis/oros-bridge "$WORK/bridge"
+cmake -S "$WORK/bridge" -B "$WORK/bridge/build" -DCMAKE_BUILD_TYPE=Release \
+	-DOROS_BRIDGE_TESTS=OFF -DOROS_BRIDGE_ASIO=OFF > "$WORK/bridge-cmake.log"
+cmake --build "$WORK/bridge/build" --parallel "$(nproc)" > "$WORK/bridge-build.log"
+install -m 0755 "$WORK/bridge/build/oros-bridge" "$OPT/oros-bridge"
+"$OPT/oros-bridge" --help | head -1
+BRIDGE_COMMIT="$(git -C "$WORK/bridge" rev-parse HEAD)"
+
 echo "== system bridge and extension"
 (cd system && CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags "-s -w" -o "$OPT/oros-system" .)
 rm -rf "$OPT/system-ext" && cp -a system/extension "$OPT/system-ext"
@@ -89,11 +101,13 @@ DOC=chroot/usr/share/doc/oros
 cp LICENSE "$DOC/orOS-USB-MIT.txt"
 cp "$OPT/app/LICENSE" "$DOC/orOS-MIT.txt"
 cp "$WORK/portable/LICENSE" "$DOC/orOS-Portable-MIT.txt"
+cp "$WORK/bridge/LICENSE" "$DOC/orOS-Bridge-MIT.txt"
+cp "$WORK/bridge/THIRD_PARTY.md" "$DOC/orOS-Bridge-THIRD_PARTY.md"
 # Go's licence for the Go-built oros-system and launcher; Debian's golang-go
 # has no GOROOT/LICENSE, so the text is kept in the repository.
 cp licenses/Go-BSD.txt "$DOC/Go-BSD.txt"
 USB_COMMIT="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo "${GITHUB_SHA:-unknown}")"
-scripts/sources-manifest.sh chroot "$DOC" "$VERSION" "$USB_COMMIT" "$OROS_COMMIT" "$PORTABLE_COMMIT"
+scripts/sources-manifest.sh chroot "$DOC" "$VERSION" "$USB_COMMIT" "$OROS_COMMIT" "$PORTABLE_COMMIT" "$BRIDGE_COMMIT"
 grep -Eq '^linux(-signed-amd64)? ' "$DOC/SOURCES.txt"
 grep -q '^chromium ' "$DOC/SOURCES.txt"
 rm -rf config/includes.binary && mkdir -p config/includes.binary

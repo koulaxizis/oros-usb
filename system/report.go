@@ -45,6 +45,7 @@ var reportLogs = []struct {
 	{"install.log", 200},
 	{"update.log", 200},
 	{"oros-system.log", 200},
+	{"bridge.log", 100},
 	{"web.log", 200},
 	{"profile/chrome_debug.log", 400},
 	{"web/chrome_debug.log", 200},

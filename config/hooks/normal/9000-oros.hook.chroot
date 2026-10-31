@@ -19,7 +19,7 @@ HandleLidSwitch=suspend
 EOF
 # The launcher and the system bridge must be executable even if they were
 # copied without the bit; sudo ignores rule files with loose permissions.
-chmod 0755 /opt/oros/oros-portable /opt/oros/oros-system
+chmod 0755 /opt/oros/oros-portable /opt/oros/oros-system /opt/oros/oros-bridge /usr/local/bin/oros-kiosk
 chmod 0440 /etc/sudoers.d/oros-install
 systemctl enable oros-selftest.service oros-selftest-files.service oros-journal.service oros-time.service oros-bluetooth.service
 # The system log lives in /home, which orOS keeps (oros-journal.service).

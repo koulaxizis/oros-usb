@@ -66,6 +66,7 @@
       printNone: "No printers yet. Printers that support AirPrint or IPP Everywhere appear by themselves when they are on the same network or plugged in by USB.",
       printHint: "Print from any app with Ctrl+P.",
       qsReboot: "Restart the computer", qsMore: "Printers, disks, update…", volume: "Volume",
+      bridgeCode: "orOS Bridge pairing code: type it in orOS Studio",
     },
     el: {
       system: "Σύστημα", wifi: "Wi-Fi", wired: "Ενσύρματο δίκτυο", connectedTo: "Συνδεδεμένο στο {n}",
@@ -118,6 +119,7 @@
     btSettings: "Bluetooth settings of this computer", btSettingsSub: "Opens the computer's settings",
   });
   Object.assign(TEXT.el, {
+    bridgeCode: "Κωδικός σύζευξης του orOS Bridge: πληκτρολόγησέ τον στο orOS Studio",
     exit: "Έξοδος από το orOS", sleep: "Αναστολή", winFull: "Πλήρης οθόνη", winWindow: "Εμφάνιση σε παράθυρο",
     pcRestart: "Επανεκκίνηση του υπολογιστή", pcShutdown: "Τερματισμός του υπολογιστή", pcSleep: "Αναστολή του υπολογιστή",
     sure: "{a}; Πάτα ξανά για επιβεβαίωση.", appUpdate: "Ενημέρωση του orOS",
@@ -935,11 +937,46 @@
     return true;
   }
 
+  // orOS Bridge (plugins and the sound card for Studio) runs here without a
+  // window of its own, so when Studio asks to pair, its code shows over orOS.
+  // The ping's answer carries the open code (oros-system reads the bridge's
+  // --code-file); while one is open it is checked every 1.5 s and the box
+  // goes once the code is used. orOS Portable's launcher sends none.
+  let codeBox = null, codeTimer = null;
+  function bridgeCode(code) {
+    code = /^\d{6}$/.test(code || "") ? code : "";
+    if (!code) {
+      if (codeBox) codeBox.remove();
+      codeBox = null;
+      clearInterval(codeTimer);
+      codeTimer = null;
+      return;
+    }
+    if (!codeBox) {
+      codeBox = el("div", { role: "status", "aria-live": "polite" });
+      const sh = codeBox.attachShadow({ mode: "open" });
+      sh.append(el("style", {}, `
+        .box { position: fixed; top: 54px; left: 50%; transform: translateX(-50%); z-index: 2147483001;
+          background: #1f1d1a; color: #e8e4dc; border: 1px solid #c8a96e; border-radius: 12px; padding: 12px 18px;
+          font: 14px/1.4 system-ui, "Noto Sans", sans-serif; box-shadow: 0 12px 40px rgba(0,0,0,.5); text-align: center; }
+        .code { font-size: 34px; font-weight: 700; letter-spacing: .08em; color: #c8a96e; margin-top: 4px; }`),
+        el("div", { class: "box" }, el("div", { class: "t" }), el("div", { class: "code" })));
+      document.documentElement.append(codeBox);
+      codeTimer = poll(async () => {
+        const r = await call({ cmd: "bridge.code" });
+        if (r.ok) bridgeCode(r.code);
+      }, 1500);
+    }
+    const sh = codeBox.shadowRoot;
+    sh.querySelector(".t").textContent = t("bridgeCode");
+    sh.querySelector(".code").textContent = code.slice(0, 3) + " " + code.slice(3);
+  }
+
   // Sign of life for oros-session's watchdog: the first ping waits for a
   // painted frame (a window that never paints sends none), then one every
   // 10 s while the page runs. A timer, not frames, keeps it going while the
   // Internet window covers orOS.
-  const ping = () => call({ cmd: "ping" });
+  const ping = () => call({ cmd: "ping" }).then((r) => { if (r.ok) bridgeCode(r.bridgeCode); });
   requestAnimationFrame(() => requestAnimationFrame(() => {
     ping();
     setInterval(ping, 10000);

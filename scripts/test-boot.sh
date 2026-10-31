@@ -189,6 +189,15 @@ elif [ "$(mtype -i "$FSTICK" ::hello.txt 2>/dev/null)" != "orOS computer files" 
 	echo "FAIL: hello.txt written through Files is not on the USB stick" >&2
 	OK=0
 fi
+# orOS Bridge starts with the session (oros-kiosk) and listens for Studio.
+BRIDGELOG="$(find "$MNT" -name bridge.log | head -1)"
+[ -z "$BRIDGELOG" ] || { echo "== bridge.log"; tail -5 "$BRIDGELOG"; }
+if [ -n "${WATCHDOG_TEST:-}" ]; then
+	:
+elif [ -z "$BRIDGELOG" ] || ! grep -q "is ready on 127.0.0.1:47621" "$BRIDGELOG"; then
+	echo "FAIL: orOS Bridge did not start in the session" >&2
+	OK=0
+fi
 # The system log is kept for the problem report.
 if [ -z "$(find "$MNT" -path '*/.oros-journal/*' -name '*.journal' | head -1)" ]; then
 	echo "FAIL: no system log in /home/.oros-journal on the persistence partition" >&2

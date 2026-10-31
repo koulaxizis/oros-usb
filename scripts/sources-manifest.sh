@@ -2,9 +2,9 @@
 # Writes the source manifest of an orOS USB build from its chroot:
 #   <out>/packages.txt  every installed package: name, version, source, source version
 #   <out>/SOURCES.txt   the exact source of every program in the image
-# Usage: sources-manifest.sh <chroot> <out-dir> <version> <oros-usb-commit> <oros-commit> <oros-portable-commit>
+# Usage: sources-manifest.sh <chroot> <out-dir> <version> <oros-usb-commit> <oros-commit> <oros-portable-commit> <oros-bridge-commit>
 set -euo pipefail
-CHROOT="$1" OUT="$2" VERSION="$3" USB_COMMIT="$4" OROS_COMMIT="$5" PORTABLE_COMMIT="$6"
+CHROOT="$1" OUT="$2" VERSION="$3" USB_COMMIT="$4" OROS_COMMIT="$5" PORTABLE_COMMIT="$6" BRIDGE_COMMIT="$7"
 mkdir -p "$OUT"
 
 dpkg-query --admindir="$CHROOT/var/lib/dpkg" -W \
@@ -29,6 +29,11 @@ orOS web app (MIT), commit $OROS_COMMIT
 
 orOS Portable launcher (MIT), commit $PORTABLE_COMMIT
   https://github.com/koulaxizis/oros-portable/tree/$PORTABLE_COMMIT
+
+orOS Bridge (MIT), commit $BRIDGE_COMMIT
+  https://github.com/koulaxizis/oros-bridge/tree/$BRIDGE_COMMIT
+  with the VST 3 SDK, CLAP, nlohmann/json and miniaudio at the versions
+  pinned in its CMakeLists.txt (licences in orOS-Bridge-THIRD_PARTY.md)
 
 Debian 13 "trixie" source packages
 ----------------------------------
