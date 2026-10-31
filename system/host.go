@@ -28,6 +28,9 @@ type request struct {
 	Zone     string `json:"zone,omitempty"`
 	Mac      string `json:"mac,omitempty"`
 	Printer  string `json:"printer,omitempty"`
+	// Web is orOS's own part of a problem report (Settings › System ›
+	// Report a problem, already shown to the person).
+	Web string `json:"web,omitempty"`
 }
 
 type reply map[string]any
@@ -181,7 +184,7 @@ func handle(req request) reply {
 	case "tor.status":
 		return torStatus()
 	case "report":
-		return report()
+		return report(req.Web)
 	case "disks.list":
 		return disksList()
 	case "disks.open":

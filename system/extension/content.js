@@ -223,6 +223,10 @@
   // The first status of a portable copy takes back what only the USB
   // kiosk wants (osk.js's always-on keyboard, the Network button's place).
   function applyPlatform() {
+    // orOS's Settings › Report a problem offers "Save with this computer's
+    // logs" while this is set (see "Problem report from orOS" below).
+    if (has("report")) document.documentElement.setAttribute("data-oros-report", "1");
+    else document.documentElement.removeAttribute("data-oros-report");
     if (!portable()) return;
     document.documentElement.removeAttribute("data-oros-kiosk");
     if (has("wifi")) document.documentElement.setAttribute("data-oros-qs-sys", "1");
@@ -288,6 +292,23 @@
     else document.documentElement.removeAttribute("data-oros-sys-battery");
     qsStep();
   }
+
+  // Problem report from orOS: Settings sends its own part (already shown
+  // to the person) as a JSON string; the host adds this computer's logs
+  // and saves one file in Downloads. Details are strings both ways, so
+  // they cross between the page and this script unchanged.
+  let reportBusy = false;
+  document.addEventListener("oros-report", async (ev) => {
+    const answer = (r) => document.dispatchEvent(new CustomEvent("oros-report-done", { detail: JSON.stringify(r) }));
+    let web = "";
+    try { web = String(JSON.parse(String(ev.detail)).text || ""); } catch (e) {}
+    if (!web || !has("report")) { answer({ ok: false, error: "not available" }); return; }
+    if (reportBusy) { answer({ ok: false, error: "busy" }); return; }
+    reportBusy = true;
+    const r = await call({ cmd: "report", web: web.slice(0, 512 * 1024) });
+    reportBusy = false;
+    answer(r.ok ? { ok: true, file: String(r.file || "") } : { ok: false, error: String(r.error || "error") });
+  });
 
   async function refresh() {
     const r = await call({ cmd: "status" });

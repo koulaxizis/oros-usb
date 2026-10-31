@@ -51,13 +51,29 @@ var reportLogs = []struct {
 	{"web/chrome_debug.log", 200},
 }
 
-func writeReport(home string) (string, error) {
+// maxWebReport bounds orOS's part of a report (it is a few KB).
+const maxWebReport = 512 << 10
+
+// writeReport writes the report; web is orOS's own part from Settings
+// (it comes first), or "" from the System panel.
+func writeReport(home, web string) (string, error) {
 	dir := filepath.Join(home, "Downloads")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "orOS problem report %s\n", time.Now().Format(time.RFC3339))
+	if web != "" {
+		if len(web) > maxWebReport {
+			web = web[:maxWebReport] + "\n(cut)\n"
+		}
+		b.WriteString("\n===== orOS (Settings › Report a problem)\n")
+		b.WriteString(web)
+		if !strings.HasSuffix(web, "\n") {
+			b.WriteString("\n")
+		}
+		b.WriteString("\n===== this computer\n")
+	}
 	data := filepath.Join(home, "oros", "data")
 	// First, what the session watchdog did (a window that never painted).
 	b.WriteString("\n===== recoveries (session watchdog)\n")
@@ -118,15 +134,20 @@ func lastLines(s string, n int) string {
 	return out
 }
 
-// report writes the file and shows it in the Internet window.
-func report() reply {
+// report writes the file. From the System panel it also shows it in the
+// Internet window; from orOS's Settings (web set) the person has just read
+// orOS's part there, so the file only lands in Downloads.
+func report(web string) reply {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return fail(err, "")
 	}
-	p, err := writeReport(home)
+	p, err := writeReport(home, web)
 	if err != nil {
 		return fail(err, "")
+	}
+	if web != "" {
+		return reply{"ok": true, "file": filepath.Base(p)}
 	}
 	r := openWeb("file://" + p)
 	r["file"] = filepath.Base(p)

@@ -469,7 +469,7 @@ func TestReport(t *testing.T) {
 	}
 	_ = os.WriteFile(filepath.Join(data, "chrome_debug.log"), []byte(log.String()), 0o644)
 	_ = os.WriteFile(filepath.Join(home, "oros", "data", "session.log"), []byte("== start\n"), 0o644)
-	p, err := writeReport(home)
+	p, err := writeReport(home, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -757,5 +757,21 @@ func TestSelftestFiles(t *testing.T) {
 	}
 	if err := selftestFiles(&log, srv.URL, "OTHER", 5*time.Second); err == nil {
 		t.Fatal("found a disk that is not there")
+	}
+}
+
+func TestReportWithOrosPart(t *testing.T) {
+	home := t.TempDir()
+	p, err := writeReport(home, "orOS problem report\nversion: 4.67.00")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(p)
+	s := string(b)
+	i := strings.Index(s, "===== orOS (Settings › Report a problem)\norOS problem report\nversion: 4.67.00\n")
+	j := strings.Index(s, "===== this computer\n")
+	k := strings.Index(s, "===== uname -a")
+	if i < 0 || j < i || k < j {
+		t.Fatalf("orOS part missing or out of order: %d %d %d", i, j, k)
 	}
 }
