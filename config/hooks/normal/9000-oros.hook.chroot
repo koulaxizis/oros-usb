@@ -26,8 +26,20 @@ systemctl enable oros-selftest.service oros-journal.service oros-time.service or
 rm -rf /var/log/journal
 ln -s /home/.oros-journal /var/log/journal
 
-# orOS boot splash: the spinner theme's images with the orOS logo.
-if [ -d /usr/share/plymouth/themes/spinner ]; then
-	cp -n /usr/share/plymouth/themes/spinner/*.png /usr/share/plymouth/themes/oros/
-fi
+# orOS boot screen (Plymouth, start and shut down): the logo and three
+# breathing dots from scripts/boot-art.py on orOS's own background, the
+# colour Chromium shows before orOS paints. From Debian's spinner theme
+# only the images of a password prompt, never its spinner.
+for f in bullet capslock entry keyboard keymap-render lock; do
+	if [ -f "/usr/share/plymouth/themes/spinner/$f.png" ]; then
+		cp -n "/usr/share/plymouth/themes/spinner/$f.png" /usr/share/plymouth/themes/oros/
+	fi
+done
 plymouth-set-default-theme -R oros
+
+# orOS runs as a system service on tty1 (oros-session.service), the way a
+# display manager does, so the boot screen stays until it takes over and
+# no login text shows in between. tty2 keeps its autologin to the network
+# screen (Ctrl+Alt+F2).
+systemctl enable oros-session.service
+systemctl set-default graphical.target

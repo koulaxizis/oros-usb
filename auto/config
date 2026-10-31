@@ -2,6 +2,9 @@
 # live-build configuration for the orOS USB image (Debian 13 "trixie").
 set -e
 
+# The kernel line keeps the screen free of text: quiet, splash (the orOS
+# boot screen), only errors from the kernel and udev, no systemd status
+# lines, no blinking cursor. The serial console is for the CI boot tests.
 lb config noauto \
 	--distribution trixie \
 	--archive-areas "main contrib non-free non-free-firmware" \
@@ -17,5 +20,5 @@ lb config noauto \
 	--apt-recommends false \
 	--security true \
 	--updates true \
-	--bootappend-live "boot=live components quiet splash persistence console=ttyS0,115200 console=tty0 username=oros hostname=oros" \
+	--bootappend-live "boot=live components quiet splash loglevel=3 udev.log_level=3 systemd.show_status=false vt.global_cursor_default=0 persistence console=ttyS0,115200 console=tty0 username=oros hostname=oros" \
 	"${@}"

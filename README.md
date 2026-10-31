@@ -9,7 +9,7 @@ A bootable USB image that starts straight into [orOS](https://useoros.online). M
 - Debian 13 (trixie) live system, built with live-build, with the usual non-free firmware for Wi-Fi, graphics and sound.
 - [cage](https://github.com/cage-kiosk/cage), a kiosk Wayland compositor, showing only Debian's Chromium (no Google sign-in, sync, Safe Browsing or metrics; see `config/includes.chroot/etc/chromium/policies/managed/oros.json`).
 - The [orOS Portable](https://github.com/koulaxizis/oros-portable) launcher serving orOS from `http://localhost:47800/`, the same address as orOS Portable, so its Dropbox sign-in works here too.
-- UEFI with Secure Boot (Debian's signed shim and GRUB) and legacy BIOS boot, with an orOS boot screen.
+- UEFI with Secure Boot (Debian's signed shim and GRUB) and legacy BIOS boot, with a graphical start: no text from the menu to orOS (see **Boot screen** below).
 - A **System** button in orOS's top bar (the `system/extension` Chromium extension) for Wi-Fi, sound, battery, restart, shut down and installing orOS on the computer's disk. It talks to `oros-system` (`system/`), a small native messaging host that uses NetworkManager, PipeWire and systemd.
 
 ## Using it
@@ -22,6 +22,7 @@ The System button (Wi-Fi icon, top right) has Wi-Fi, sound, Bluetooth, printers,
 
 | Keys | |
 |---|---|
+| Esc while starting | the boot menu (fail-safe mode, older systems after an update) |
 | Ctrl+Alt+F2 | network setup in text mode (nmtui) |
 | Ctrl+Alt+F1 | back to orOS |
 | Alt+Shift | switch keyboard English / Greek |
@@ -31,6 +32,8 @@ The System button (Wi-Fi icon, top right) has Wi-Fi, sound, Bluetooth, printers,
 System › **Disks** lists Downloads, the computer's own disks (Windows, another Linux) and USB sticks (FAT, exFAT, NTFS, ext4, Btrfs, XFS; partitions of 1 GiB or more, never the disk orOS runs from). **Open** mounts one read-only under `/media/oros/<label>` and shows it in the Internet window; **Close** unmounts it. orOS's own files are in its Files app. From a terminal: `sudo /opt/oros/oros-system mount --dev /dev/sdX1 [--unmount]`.
 
 Saved Wi-Fi networks and their passwords are kept in `/home/.oros-network` (NetworkManager's keyfile folder, set in `/etc/NetworkManager/conf.d/oros.conf`), so they survive a restart; the installer copies them to the computer. System › **Problem report** writes `~/Downloads/orOS-report-<date>.txt` (hardware, disks, network state, this and the previous start's system log, and the logs below) and shows it in the Internet window, from where it can be attached to a message. The system log is kept across restarts in `/home/.oros-journal` (100 MB at most). Logs for when something goes wrong: `~/oros/data/session.log` (the kiosk), `~/oros/data/profile/chrome_debug.log` (the orOS window), `~/oros/data/web.log` (the Internet window) and `~/oros/data/oros-system.log` (the System button), `~/oros/data/install.log` and `update.log`.
+
+**Boot screen.** From the computer's own logo to orOS no text shows. The boot menu is hidden: orOS starts after 2 seconds, and Esc (BIOS: any key) in that time shows the menu. The kernel line (`auto/config`) asks for `quiet splash loglevel=3 udev.log_level=3 systemd.show_status=false vt.global_cursor_default=0`, and Plymouth shows the orOS logo with three breathing gold dots on orOS's dark background (`/usr/share/plymouth/themes/oros`, two-step), also when the computer restarts or shuts down. orOS itself runs as `oros-session.service` on tty1, started the way a display manager is (`Conflicts=plymouth-quit.service`, PAM service `oros-session` for a logind session): Plymouth leaves its last picture on the screen (`plymouth quit --retain-splash`) and cage takes over from there, so no login prompt shows in between. tty2 keeps its autologin to the network screen. The pictures come from `scripts/boot-art.py` (Pillow; the PNGs are in the repository). The CI boot test takes a screenshot every 3 seconds in the first minute and fails if one shows the text console or none shows the boot screen.
 
 **Session watchdog.** `oros-session` restarts orOS when its window shows no sign of life: the System extension pings `oros-system` every 10 s once the window has painted a frame, and the time lands in a file in RAM (`$XDG_RUNTIME_DIR/oros-alive-<uid>`). No ping within 60 s of a start, or none for 40 s later, stops the session and starts it again: the first time as it was, from the second time with the GPU off (`--disable-gpu`, also for the Internet window) for the rest of that boot. At most 3 restarts per boot. Each one is a `watchdog:` line in `session.log` and in the Problem report's first section. CI tests it with a fake compositor (`scripts/test-session-watchdog.sh`) and in QEMU with two starts that never ping (`WATCHDOG_TEST=2 scripts/test-boot.sh`); a normal boot test fails if the watchdog had to restart.
 
