@@ -44,6 +44,8 @@ The system underneath: Debian 13 "trixie"  https://www.debian.org/
   ALSA                LGPL-2.1+ and BSD-3-Clause (UCM profiles), ALSA project
   Mesa                MIT, Mesa contributors (graphics drivers)
   Plymouth            GPL-2.0+, Plymouth contributors (boot screen)
+  cryptsetup          GPL-2.0+ (LGPL-2.1+ library), cryptsetup contributors
+                      (encrypted data, optional)
   ntfs-3g             GPL-2.0+, Tuxera and the NTFS-3G contributors
   exfatprogs          GPL-2.0+, exfatprogs contributors
   uBlock Origin Lite  GPL-3.0, Raymond Hill and contributors (ad blocker in

@@ -67,6 +67,14 @@ bluez-firmware
 # Boot splash
 plymouth
 plymouth-themes
+# Text on the boot screen: the passphrase prompt of encrypted data
+plymouth-label
+
+# Encrypted data (optional, LUKS2): cryptsetup in the system and in the
+# initramfs, where oros-unlock asks for the passphrase on the boot screen
+cryptsetup
+cryptsetup-initramfs
+dmsetup
 
 # Sound
 pipewire

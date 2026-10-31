@@ -8,6 +8,10 @@ repository, so the build needs no Python; run this after changing the look.
                          the logo on the Plymouth screen (start and shut down)
 - .../throbber-0001.png ... throbber-0036.png
                          three gold dots that breathe one after the other
+- .../entry.png, bullet.png, lock.png
+                         the passphrase prompt of encrypted data: a dark
+                         field with a gold edge, gold dots for the typed
+                         characters, a gold padlock beside it
 The logo is orOS's icon.svg (koulaxizis/oros): the mountain in #c8a96e on
 #1b1a18, the same colour Chromium shows before orOS paints. No words other
 than the name: the language is not known yet while the computer starts.
@@ -76,6 +80,34 @@ def throbber(frames=36, w=104, h=24, r=6):
     return out
 
 
+def dialog():
+    """The passphrase prompt (Plymouth two-step draws entry, bullets, lock)."""
+    w, h, r = 320, 44, 10
+    img = Image.new("RGBA", (w * SS, h * SS), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([SS, SS, (w - 1) * SS, (h - 1) * SS], radius=r * SS,
+                        fill=(0x26, 0x24, 0x20, 255), outline=GOLD + (255,), width=2 * SS)
+    entry = img.resize((w, h), Image.LANCZOS)
+
+    b = 12
+    img = Image.new("RGBA", (b * SS, b * SS), (0, 0, 0, 0))
+    ImageDraw.Draw(img).ellipse([SS, SS, (b - 1) * SS, (b - 1) * SS], fill=NAME + (255,))
+    bullet = img.resize((b, b), Image.LANCZOS)
+
+    lw, lh = 30, 38
+    img = Image.new("RGBA", (lw * SS, lh * SS), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    # Shackle, then the body with a keyhole.
+    d.arc([6 * SS, 2 * SS, 24 * SS, 24 * SS], 180, 360, fill=GOLD + (255,), width=4 * SS)
+    d.line([(6 * SS, 13 * SS), (6 * SS, 18 * SS)], fill=GOLD + (255,), width=4 * SS)
+    d.line([(24 * SS, 13 * SS), (24 * SS, 18 * SS)], fill=GOLD + (255,), width=4 * SS)
+    d.rounded_rectangle([1 * SS, 17 * SS, 29 * SS, 37 * SS], radius=4 * SS, fill=GOLD + (255,))
+    d.ellipse([12 * SS, 22 * SS, 18 * SS, 28 * SS], fill=BG + (255,))
+    d.rectangle([14 * SS, 26 * SS, 16 * SS, 32 * SS], fill=BG + (255,))
+    lock = img.resize((lw, lh), Image.LANCZOS)
+    return {"entry": entry, "bullet": bullet, "lock": lock}
+
+
 def main():
     logo(640, 480, 220, 44, BG).convert("RGB").save(os.path.join(ROOT, "assets/splash.png"), optimize=True)
     logo(1920, 1080, 440, 88, BG).convert("RGB").save(os.path.join(ROOT, "assets/splash-hd.png"), optimize=True)
@@ -85,6 +117,8 @@ def main():
             os.remove(os.path.join(THEME, f))
     for i, img in enumerate(throbber(), 1):
         img.save(os.path.join(THEME, "throbber-%04d.png" % i), optimize=True)
+    for name, img in dialog().items():
+        img.save(os.path.join(THEME, name + ".png"), optimize=True)
 
 
 if __name__ == "__main__":

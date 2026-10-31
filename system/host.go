@@ -25,9 +25,11 @@ type request struct {
 	Value    int    `json:"value,omitempty"`
 	Disk     string `json:"disk,omitempty"`
 	KeepData bool   `json:"keepData,omitempty"`
-	Zone     string `json:"zone,omitempty"`
-	Mac      string `json:"mac,omitempty"`
-	Printer  string `json:"printer,omitempty"`
+	// Passphrase encrypts the installed disk's data (install.start).
+	Passphrase string `json:"passphrase,omitempty"`
+	Zone       string `json:"zone,omitempty"`
+	Mac        string `json:"mac,omitempty"`
+	Printer    string `json:"printer,omitempty"`
 }
 
 type reply map[string]any
@@ -383,8 +385,31 @@ func startInstall(req request) reply {
 		home, _ := os.UserHomeDir()
 		args = append(args, "--home", home)
 	}
+	if req.Passphrase != "" {
+		if err := checkPassphrase(req.Passphrase); err != nil {
+			return reply{"ok": false, "error": err.Error()}
+		}
+		args = append(args, "--encrypt")
+	}
 	cmd := exec.Command("sudo", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	// The passphrase goes through a pipe, never on the command line. It is
+	// written before the start and fits the pipe's buffer, so the installer
+	// gets it even after this short-lived host process has gone.
+	if req.Passphrase != "" {
+		r, w, err := os.Pipe()
+		if err != nil {
+			return fail(err, "")
+		}
+		_, werr := w.Write([]byte(req.Passphrase + "\n"))
+		w.Close()
+		if werr != nil {
+			r.Close()
+			return fail(werr, "")
+		}
+		cmd.Stdin = r
+		defer r.Close()
+	}
 	// Its steps go to a log file, not a pipe: the installer outlives this
 	// short-lived host process, and writing to a closed pipe would stop it.
 	if f := logFile("install.log"); f != nil {

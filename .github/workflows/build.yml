@@ -37,7 +37,7 @@ jobs:
             debootstrap xorriso squashfs-tools dosfstools mtools grub-efi-amd64-bin grub-pc-bin \
             syslinux syslinux-common isolinux qemu-system-x86 qemu-utils ovmf socat netpbm \
             fdisk parted e2fsprogs util-linux udev tesseract-ocr ntfs-3g unzip curl initramfs-tools-core \
-            gnupg gpgv xz-utils jq cmake g++ make libx11-dev
+            gnupg gpgv xz-utils jq cmake g++ make libx11-dev cryptsetup-bin
       - uses: actions/checkout@v4
       - name: Version
         id: v
@@ -135,6 +135,21 @@ jobs:
         run: find test-out -name '*.img' -delete 2>/dev/null || true; df -h . | tail -1
       - name: Update test (system update onto the persistence partition, then boot it)
         run: scripts/test-update.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/update
+      - name: Free disk space (after the update test)
+        if: always()
+        run: find test-out -name '*.img' -delete 2>/dev/null || true; df -h . | tail -1
+      - name: Encrypted stick test (passphrase on the boot screen, wrong then right; system update on orossys)
+        # A test passphrase, only for this throwaway disk image.
+        env:
+          OROS_TEST_PASSPHRASE: orostest2026
+        run: scripts/test-update.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/encrypted
+      - name: Free disk space (after the encrypted stick test)
+        if: always()
+        run: find test-out -name '*.img' -delete 2>/dev/null || true; df -h . | tail -1
+      - name: Encrypted install test (install with --encrypt, boot the disk alone with the passphrase)
+        env:
+          OROS_TEST_PASSPHRASE: orostest2026
+        run: scripts/test-install.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/install-encrypted
       - name: Screenshots and logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -154,6 +169,11 @@ jobs:
             test-out/watchdog/*.log
             test-out/rufus/*.png
             test-out/rufus/*.log
+            test-out/encrypted/*.png
+            test-out/encrypted/*.log
+            test-out/install-encrypted/*.png
+            test-out/install-encrypted/*.log
+            test-out/install-encrypted/*.json
             test-out/*.txt
             build.log
           retention-days: 14

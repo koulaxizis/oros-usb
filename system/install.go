@@ -33,15 +33,20 @@ type progress struct {
 
 type installOpts struct {
 	disk, medium, home, progress string
+	// passphrase, when set, keeps the data partition encrypted (crypt.go).
+	passphrase string
 }
 
 // installMain puts orOS on an internal disk the way it runs from the stick:
 // a FAT partition with the boot files and the system image (UEFI, Secure
-// Boot), and an ext4 partition that keeps the home folder.
+// Boot), and an ext4 partition that keeps the home folder. With --encrypt
+// that partition is a LUKS2 container, and an orossys partition between
+// the two takes the system updates.
 func installMain(args []string) int {
 	fl := flag.NewFlagSet("install", flag.ContinueOnError)
 	var o installOpts
-	var yes bool
+	var yes, encrypt bool
+	fl.BoolVar(&encrypt, "encrypt", false, "keep the data encrypted (LUKS2); the passphrase is read from the first line of standard input")
 	fl.StringVar(&o.disk, "disk", "", "target disk (/dev/sdX) or image file; everything on it is erased")
 	fl.StringVar(&o.medium, "medium", liveMedium(), "folder with the orOS USB files (the mounted ISO or stick)")
 	fl.StringVar(&o.home, "home", "", "home folder to copy onto the disk (optional)")
@@ -66,6 +71,14 @@ func installMain(args []string) int {
 	if !yes {
 		fmt.Fprintf(os.Stderr, "This erases everything on %s. Run again with --yes.\n", o.disk)
 		return 2
+	}
+	if encrypt {
+		p, err := readPassphrase(os.Stdin)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
+		o.passphrase = p
 	}
 	last := progress{Percent: -1}
 	report := func(p progress) {
@@ -204,6 +217,20 @@ func install(o installOpts, step func(string, int)) error {
 		}
 	}
 
+	if o.passphrase != "" {
+		size := st.Size()
+		if isDev {
+			out, err := run("blockdev", "--getsize64", o.disk)
+			if err != nil {
+				return cmdErr("blockdev", out, err)
+			}
+			size, _ = strconv.ParseInt(strings.TrimSpace(out), 10, 64)
+		}
+		if size < 16e9 {
+			return errors.New("an encrypted install needs a disk of 16 GB or more")
+		}
+	}
+
 	step("prepare", 2)
 	total, err := treeSize(o.medium)
 	if err != nil {
@@ -216,7 +243,11 @@ func install(o installOpts, step func(string, int)) error {
 	if out, err := run("wipefs", "-a", o.disk); err != nil {
 		return cmdErr("wipefs", out, err)
 	}
-	table := fmt.Sprintf("label: gpt\nsize=%dMiB, type=U, name=orOS\ntype=L, name=orOS-data\n", espMiB)
+	table, nparts := fmt.Sprintf("label: gpt\nsize=%dMiB, type=U, name=orOS\ntype=L, name=orOS-data\n", espMiB), 2
+	if o.passphrase != "" {
+		table = fmt.Sprintf("label: gpt\nsize=%dMiB, type=U, name=orOS\nsize=%dMiB, type=L, name=orOS-system\ntype=L, name=orOS-data\n", espMiB, sysMiB)
+		nparts = 3
+	}
 	cmd := exec.Command("sfdisk", "--wipe", "always", "--wipe-partitions", "always", o.disk)
 	cmd.Stdin = strings.NewReader(table)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -226,8 +257,8 @@ func install(o installOpts, step func(string, int)) error {
 	if err != nil {
 		return err
 	}
-	if len(parts) != 2 {
-		return fmt.Errorf("expected 2 partitions, found %d", len(parts))
+	if len(parts) != nparts {
+		return fmt.Errorf("expected %d partitions, found %d", nparts, len(parts))
 	}
 	// Loop devices over each partition work the same on a disk and on an
 	// image file, with or without udev.
@@ -249,7 +280,21 @@ func install(o installOpts, step func(string, int)) error {
 	if out, err := run("mkfs.vfat", "-F", "32", "-n", "OROS", loops[0]); err != nil {
 		return cmdErr("mkfs.vfat", out, err)
 	}
-	if out, err := run("mkfs.ext4", "-q", "-F", "-L", diskLabel, loops[1]); err != nil {
+	dataDev := loops[1]
+	if o.passphrase != "" {
+		if out, err := run("mkfs.ext4", "-q", "-F", "-L", sysLabel, loops[1]); err != nil {
+			return cmdErr("mkfs.ext4", out, err)
+		}
+		step("encrypt", 6)
+		name := fmt.Sprintf("oros-install-%d", os.Getpid())
+		dev, err := makeEncrypted(loops[2], cryptLabel(diskLabel), name, o.passphrase)
+		if err != nil {
+			return err
+		}
+		defer closeEncrypted(name)
+		dataDev = dev
+	}
+	if out, err := run("mkfs.ext4", "-q", "-F", "-L", diskLabel, dataDev); err != nil {
 		return cmdErr("mkfs.ext4", out, err)
 	}
 
@@ -271,7 +316,7 @@ func install(o installOpts, step func(string, int)) error {
 	}
 
 	step("data", 86)
-	data, err := mountTmp(loops[1])
+	data, err := mountTmp(dataDev)
 	if err != nil {
 		return err
 	}
