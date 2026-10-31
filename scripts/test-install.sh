@@ -26,7 +26,7 @@ if [ -n "${OROS_TEST_PASSPHRASE:-}" ]; then
 	# shellcheck source=test-data.sh
 	. "$ROOT/scripts/test-data.sh"
 	test_dm_prepare
-	truncate -s 14G "$OUT/disk.img"
+	truncate -s 16G "$OUT/disk.img"
 	printf '%s\n' "$OROS_TEST_PASSPHRASE" | OROS_LUKS_TEST=1 "$BIN" install --encrypt --disk "$OUT/disk.img" --medium "$MNT" --home "$HOMES/oros" --progress "$OUT/install.json" --yes
 else
 	truncate -s 10G "$OUT/disk.img"
