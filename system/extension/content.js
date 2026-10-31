@@ -40,6 +40,11 @@
       keepData: "Copy my orOS data from this stick", understand: "I understand that everything on this disk will be erased",
       installNow: "Erase and install", back: "Back", installing: "Installing… do not turn off the computer.",
       installed: "orOS is installed. Shut down, remove the USB stick, then turn the computer on.",
+      encrypt: "Encrypt my data with a passphrase",
+      encryptNote: "orOS asks for it every time the computer starts. Without it nobody can read your files and settings, not even you: there is no way to recover it, so keep it safe.",
+      passphrase: "Passphrase (at least 10 characters)", passphraseAgain: "The same passphrase again",
+      passShort: "The passphrase needs at least 10 characters.", passDiffer: "The two passphrases differ.",
+      passAscii: "Use only Latin letters, digits, spaces and symbols: while the computer starts the keyboard is English (US), so other letters could not be typed.",
       failed: "Install failed: {e}", restart: "Restart", shutdown: "Shut down", close: "Close",
       disks: "Disks", downloads: "Downloads", diskInternal: "This computer", diskUsb: "USB",
       diskOpen: "Open", diskClose: "Close", diskNone: "No other disks. A USB stick appears here when you plug it in.",
@@ -80,6 +85,11 @@
       keepData: "Αντιγραφή των δεδομένων μου του orOS από αυτό το stick", understand: "Καταλαβαίνω ότι θα σβηστούν όλα όσα υπάρχουν σε αυτόν τον δίσκο",
       installNow: "Διαγραφή και εγκατάσταση", back: "Πίσω", installing: "Εγκατάσταση… μην κλείσεις τον υπολογιστή.",
       installed: "Το orOS εγκαταστάθηκε. Κλείσε τον υπολογιστή, βγάλε το USB stick και άνοιξέ τον ξανά.",
+      encrypt: "Κρυπτογράφηση των δεδομένων μου με κωδικό",
+      encryptNote: "Το orOS τον ζητά σε κάθε εκκίνηση του υπολογιστή. Χωρίς αυτόν κανείς δεν διαβάζει τα αρχεία και τις ρυθμίσεις σου, ούτε κι εσύ: δεν ανακτάται με κανέναν τρόπο, οπότε φύλαξέ τον καλά.",
+      passphrase: "Κωδικός (τουλάχιστον 10 χαρακτήρες)", passphraseAgain: "Ο ίδιος κωδικός ξανά",
+      passShort: "Ο κωδικός θέλει τουλάχιστον 10 χαρακτήρες.", passDiffer: "Οι δύο κωδικοί διαφέρουν.",
+      passAscii: "Μόνο λατινικά γράμματα, ψηφία, κενά και σύμβολα: όσο ξεκινά ο υπολογιστής το πληκτρολόγιο είναι αγγλικό (US), οπότε άλλα γράμματα δεν θα γράφονταν.",
       failed: "Η εγκατάσταση απέτυχε: {e}", restart: "Επανεκκίνηση", shutdown: "Τερματισμός", close: "Κλείσιμο",
       disks: "Δίσκοι", downloads: "Λήψεις", diskInternal: "Αυτός ο υπολογιστής", diskUsb: "USB",
       diskOpen: "Άνοιγμα", diskClose: "Κλείσιμο", diskNone: "Δεν υπάρχουν άλλοι δίσκοι. Ένα USB stick εμφανίζεται εδώ μόλις το συνδέσεις.",
@@ -680,24 +690,30 @@
       item.addEventListener("click", () => {
         if (n.inUse) return;
         if (!n.secure) { connect(n.ssid, "", box); return; }
-        const pw = el("input", { type: "password", placeholder: t("password"), autocomplete: "off" });
+        const { wrap, input: pw } = pwField(t("password"));
         const go = el("button", { class: "primary", onclick: () => connect(n.ssid, pw.value, box) }, t("connect"));
         pw.addEventListener("keydown", (e) => { if (e.key === "Enter") go.click(); });
-        const eye = el("button", { type: "button", class: "eye", title: t("showPw"), "aria-label": t("showPw"), "aria-pressed": "false", html: ICON.eye });
-        eye.addEventListener("click", () => {
-          const show = pw.type === "password";
-          pw.type = show ? "text" : "password";
-          eye.innerHTML = show ? ICON.eyeOff : ICON.eye;
-          eye.title = t(show ? "hidePw" : "showPw");
-          eye.setAttribute("aria-label", eye.title);
-          eye.setAttribute("aria-pressed", String(show));
-          pw.focus();
-        });
-        box.replaceChildren(el("div", { class: "pw" }, pw, eye), go);
+        box.replaceChildren(wrap, go);
         pw.focus();
       });
       list.append(item, box);
     }
+  }
+
+  // A password field with a show/hide button.
+  function pwField(placeholder) {
+    const input = el("input", { type: "password", placeholder, "aria-label": placeholder, autocomplete: "off" });
+    const eye = el("button", { type: "button", class: "eye", title: t("showPw"), "aria-label": t("showPw"), "aria-pressed": "false", html: ICON.eye });
+    eye.addEventListener("click", () => {
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      eye.innerHTML = show ? ICON.eyeOff : ICON.eye;
+      eye.title = t(show ? "hidePw" : "showPw");
+      eye.setAttribute("aria-label", eye.title);
+      eye.setAttribute("aria-pressed", String(show));
+      input.focus();
+    });
+    return { wrap: el("div", { class: "pw" }, input, eye), input };
   }
 
   async function connect(ssid, password, box) {
@@ -726,16 +742,45 @@
     const keep = el("input", { type: "checkbox", checked: true });
     const sure = el("input", { type: "checkbox" });
     const go = el("button", { class: "danger", disabled: true }, t("installNow"));
-    sure.addEventListener("change", () => { go.disabled = !sure.checked; });
+    // Optional encryption of the installed disk's data (LUKS2): the
+    // passphrase goes to oros-system through a pipe and is asked on the
+    // boot screen at every start.
+    const enc = el("input", { type: "checkbox" });
+    const p1 = pwField(t("passphrase")), p2 = pwField(t("passphraseAgain"));
+    const passMsg = el("div", { class: "msg err", hidden: true });
+    const encBox = el("div", { hidden: true, style: "margin:4px 0 8px" },
+      el("p", { class: "muted" }, t("encryptNote")), p1.wrap, el("div", { style: "height:6px" }), p2.wrap, passMsg);
+    const passError = () => {
+      if (!enc.checked) return "";
+      if (!/^[\x20-\x7e]*$/.test(p1.input.value)) return t("passAscii");
+      if ([...p1.input.value].length < 10) return t("passShort");
+      if (p1.input.value !== p2.input.value) return t("passDiffer");
+      return "";
+    };
+    const sync = () => {
+      encBox.hidden = !enc.checked;
+      const e = passError();
+      const typed = p2.input.value !== "" || [...p1.input.value].length >= 10 || e === t("passAscii");
+      passMsg.hidden = !e || !typed;
+      passMsg.textContent = e;
+      go.disabled = !sure.checked || !!e;
+    };
+    for (const x of [enc, sure]) x.addEventListener("change", sync);
+    for (const x of [p1.input, p2.input]) x.addEventListener("input", sync);
     go.addEventListener("click", async () => {
+      if (passError()) return;
       go.disabled = true;
-      const s = await call({ cmd: "install.start", disk: chosen, keepData: keep.checked });
+      const req = { cmd: "install.start", disk: chosen, keepData: keep.checked };
+      if (enc.checked) req.passphrase = p1.input.value;
+      const s = await call(req);
+      p1.input.value = p2.input.value = "";
       if (!s.ok) { panel.append(el("div", { class: "msg err" }, t("failed", { e: s.error }))); return; }
       renderProgress();
     });
     const zoneBox = el("div", { style: "margin:10px 0" });
     showTime(zoneBox, true);
     panel.append(zoneBox, el("label", { class: "chk" }, keep, el("span", {}, t("keepData"))),
+      el("label", { class: "chk" }, enc, el("span", {}, t("encrypt"))), encBox,
       el("label", { class: "chk" }, sure, el("span", {}, t("understand"))),
       el("div", { class: "row" }, el("button", { onclick: renderMain }, t("back")), el("span", { class: "grow" }), go));
   }

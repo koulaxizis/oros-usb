@@ -2,6 +2,8 @@
 # Installs orOS from the ISO onto an empty disk image with oros-system (as
 # the System button does from a stick), then boots that disk alone with
 # UEFI Secure Boot and checks that orOS runs and the copied data is there.
+# With OROS_TEST_PASSPHRASE the install encrypts the data (--encrypt) and
+# the boot asks for the passphrase (test-boot.sh).
 #   sudo scripts/test-install.sh out/orOS-USB-x.iso test-out/install
 set -euo pipefail
 
@@ -20,8 +22,16 @@ echo kept > "$HOMES/oros/oros/data/install-marker"
 chown -R 1000:1000 "$HOMES/oros"
 
 rm -f "$OUT/disk.img"
-truncate -s 10G "$OUT/disk.img"
-"$BIN" install --disk "$OUT/disk.img" --medium "$MNT" --home "$HOMES/oros" --progress "$OUT/install.json" --yes
+if [ -n "${OROS_TEST_PASSPHRASE:-}" ]; then
+	# shellcheck source=test-data.sh
+	. "$ROOT/scripts/test-data.sh"
+	test_dm_prepare
+	truncate -s 14G "$OUT/disk.img"
+	printf '%s\n' "$OROS_TEST_PASSPHRASE" | OROS_LUKS_TEST=1 "$BIN" install --encrypt --disk "$OUT/disk.img" --medium "$MNT" --home "$HOMES/oros" --progress "$OUT/install.json" --yes
+else
+	truncate -s 10G "$OUT/disk.img"
+	"$BIN" install --disk "$OUT/disk.img" --medium "$MNT" --home "$HOMES/oros" --progress "$OUT/install.json" --yes
+fi
 umount "$MNT"
 sfdisk -l "$OUT/disk.img"
 

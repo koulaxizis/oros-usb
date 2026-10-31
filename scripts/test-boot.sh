@@ -11,6 +11,10 @@
 # Without it, a start the watchdog had to restart fails the test. A USB
 # stick labelled OROSTEST is plugged in too: the image's self-test opens it
 # and writes to it through Files' computer files (oros-selftest-files).
+# With OROS_TEST_PASSPHRASE the data is encrypted (add-persistence.sh
+# --encrypt, or the DISK given): the test types a wrong passphrase on the
+# boot screen first, then the right one, and checks both answers and that
+# the prompt shows its text.
 #   sudo scripts/test-boot.sh out/orOS-USB-x.iso test-out
 set -euo pipefail
 
@@ -18,21 +22,29 @@ ISO="$1"
 OUT="${2:-test-out}"
 WAIT="${BOOT_WAIT:-300}"
 mkdir -p "$OUT"
+# shellcheck source=test-data.sh
+. "$(dirname "$0")/test-data.sh"
+PASS="${OROS_TEST_PASSPHRASE:-}"
+[ -z "$PASS" ] || test_dm_prepare
 if [ -n "${DISK:-}" ]; then
 	IMG="$DISK"
 else
 	IMG="$OUT/usb.img"
 	rm -f "$IMG"
-	truncate -s 4G "$IMG"
-	dd if="$ISO" of="$IMG" conv=notrunc bs=4M status=none
-	OROS_YES=1 "$(dirname "$0")/add-persistence.sh" "$IMG"
+	if [ -n "$PASS" ]; then
+		truncate -s 10G "$IMG"
+		dd if="$ISO" of="$IMG" conv=notrunc bs=4M status=none
+		OROS_YES=1 OROS_PASSPHRASE="$PASS" OROS_LUKS_TEST=1 "$(dirname "$0")/add-persistence.sh" --encrypt "$IMG"
+	else
+		truncate -s 4G "$IMG"
+		dd if="$ISO" of="$IMG" conv=notrunc bs=4M status=none
+		OROS_YES=1 "$(dirname "$0")/add-persistence.sh" "$IMG"
+	fi
 fi
 
 # Ask the image's self-test to save a network (oros-selftest.service).
-read -r PSTART PSECTORS < <(partx -g -o START,SECTORS -n -1 "$IMG")
-PLOOP="$(losetup -f --show -o $((PSTART * 512)) --sizelimit $((PSECTORS * 512)) "$IMG")"
-PMNT="$(mktemp -d)"
-mount "$PLOOP" "$PMNT"
+data_mount "$IMG"
+PMNT="$DATA_MNT"
 if grep -qx "/ union" "$PMNT/persistence.conf" 2>/dev/null; then
 	# The whole system is kept (Rufus): changes live in rw/.
 	mkdir -p "$PMNT/rw/home"
@@ -47,8 +59,7 @@ if [ -n "${WATCHDOG_TEST:-}" ]; then
 else
 	rm -f "$PHOME/.oros-watchdog-test"
 fi
-umount "$PMNT"
-losetup -d "$PLOOP"
+data_umount
 
 # A FAT32 USB stick for the computer files self-test (the Disks list
 # leaves out anything under 1 GiB).
@@ -73,12 +84,50 @@ qemu-system-x86_64 \
 QEMU=$!
 
 mon() { echo "$1" | socat - UNIX-CONNECT:"$MON" >/dev/null 2>&1 || true; }
+# Encrypted data: oros-unlock writes "OROS-UNLOCK: asking" on the serial
+# console each time it asks. The first answer is wrong, the second right.
+UNLOCK_TYPED=0
+type_text() {
+	local s="$1" i c
+	for ((i = 0; i < ${#s}; i++)); do
+		c="${s:i:1}"
+		case "$c" in -) c=minus ;; " ") c=spc ;; esac
+		mon "sendkey $c"
+		sleep 0.15
+	done
+	mon "sendkey ret"
+}
+unlock_step() {
+	[ -n "$PASS" ] || return 0
+	local asks
+	asks="$(grep -ac 'OROS-UNLOCK: asking' "$OUT/serial.log" 2>/dev/null || true)"
+	if [ "$UNLOCK_TYPED" = 0 ] && [ "${asks:-0}" -ge 1 ]; then
+		sleep 2
+		mon "screendump $OUT/unlock-ask.ppm"
+		type_text "wrong-passphrase"
+		UNLOCK_TYPED=1
+	elif [ "$UNLOCK_TYPED" = 1 ] && [ "${asks:-0}" -ge 2 ]; then
+		sleep 2
+		mon "screendump $OUT/unlock-wrong.ppm"
+		type_text "$PASS"
+		UNLOCK_TYPED=2
+	fi
+}
 # The first minute, every 3 seconds: firmware, the hidden boot menu, the
 # orOS boot screen and the hand-over to orOS. None of it may show text.
 for t in $(seq 3 3 60); do
 	sleep 3
 	mon "screendump $OUT/boot-$t.ppm"
+	unlock_step
 done
+# A slow start can reach the passphrase after the first minute.
+if [ -n "$PASS" ]; then
+	for _ in $(seq 1 120); do
+		[ "$UNLOCK_TYPED" = 2 ] && break
+		unlock_step
+		sleep 1
+	done
+fi
 for t in $(seq 30 30 "$WAIT"); do
 	sleep 30
 	mon "screendump $OUT/screen-$t.ppm"
@@ -103,7 +152,7 @@ for f in $(ls "$OUT"/boot-*.ppm 2>/dev/null | sort -V); do
 done
 # Small JPEG copies in the log ("SHOT name base64"), readable where the
 # artifact is not.
-for f in "$OUT"/boot-*.ppm "$OUT/screen-$WAIT.ppm" "$OUT/desktop.ppm" "$OUT/network.ppm"; do
+for f in "$OUT"/boot-*.ppm "$OUT"/unlock-*.ppm "$OUT/screen-$WAIT.ppm" "$OUT/desktop.ppm" "$OUT/network.ppm"; do
 	[ -f "$f" ] || continue
 	echo "SHOT $(basename "${f%.ppm}") $(pnmscale -xsize 800 "$f" 2>/dev/null | pnmtojpeg -quality 70 2>/dev/null | base64 -w0)"
 done
@@ -131,11 +180,23 @@ if command -v tesseract >/dev/null; then
 		tesseract "$f" - 2>/dev/null | grep -v '^\s*$' | head -15 || true
 	done
 fi
+# The passphrase prompt: its text showed, a wrong answer was refused and
+# asked again, the right one opened the data.
+UNLOCK_FAIL=""
+if [ -n "$PASS" ]; then
+	echo "== serial console: oros-unlock"
+	grep -a 'OROS-UNLOCK' "$OUT/serial.log" || true
+	grep -aq 'OROS-UNLOCK: wrong' "$OUT/serial.log" || UNLOCK_FAIL="$UNLOCK_FAIL; a wrong passphrase was not refused"
+	grep -aq 'OROS-UNLOCK: unlocked' "$OUT/serial.log" || UNLOCK_FAIL="$UNLOCK_FAIL; the right passphrase did not open the data"
+	if command -v tesseract >/dev/null && [ -f "$OUT/unlock-ask.png" ]; then
+		words="$(tesseract "$OUT/unlock-ask.png" - 2>/dev/null | grep -v '^\s*$' || true)"
+		echo "== unlock-ask"; echo "$words" | head -5
+		echo "$words" | grep -qi 'passphrase' || UNLOCK_FAIL="$UNLOCK_FAIL; the prompt showed no text"
+	fi
+fi
 
-read -r START SECTORS < <(partx -g -o START,SECTORS -n -1 "$IMG")
-LOOP="$(losetup -f --show -o $((START * 512)) --sizelimit $((SECTORS * 512)) "$IMG")"
-MNT="$(mktemp -d)"
-mount -o ro "$LOOP" "$MNT"
+data_mount "$IMG" ro
+MNT="$DATA_MNT"
 PROFILE="$(find "$MNT" -type d -path '*oros/data/profile/Default' | head -1)"
 ls -la "$MNT" "$PROFILE" 2>&1 | tee "$OUT/persistence.txt" || true
 OK=0
@@ -232,8 +293,11 @@ if [ -n "${MARKER:-}" ] && [ -z "$(find "$MNT" -name "$MARKER" | head -1)" ]; th
 	echo "FAIL: $MARKER from the install is missing" >&2
 	OK=0
 fi
-umount "$MNT"
-losetup -d "$LOOP"
+if [ -n "$UNLOCK_FAIL" ]; then
+	echo "FAIL: encrypted data${UNLOCK_FAIL}" >&2
+	OK=0
+fi
+data_umount
 if [ "$OK" = 1 ]; then
 	echo "PASS: orOS started, the System button works and its data is on the persistence partition"
 else

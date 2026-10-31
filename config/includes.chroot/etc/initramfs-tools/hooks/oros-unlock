@@ -1,0 +1,19 @@
+#!/bin/sh
+# orOS: what scripts/live-realpremount/oros-unlock needs in the initramfs to
+# open an encrypted data partition, whether or not cryptsetup-initramfs
+# thinks the system needs it (it looks at /etc/crypttab, which is empty).
+PREREQ=""
+prereqs() { echo "$PREREQ"; }
+case "$1" in prereqs) prereqs; exit 0 ;; esac
+. /usr/share/initramfs-tools/hook-functions
+
+copy_exec /sbin/cryptsetup /sbin
+copy_exec /sbin/blkid /sbin
+if [ -x /lib/cryptsetup/askpass ]; then
+	copy_exec /lib/cryptsetup/askpass /lib/cryptsetup
+fi
+manual_add_modules dm_crypt
+# The ciphers LUKS2 uses (aes-xts-plain64, sha256), with the CPU's
+# accelerated versions; most are built into Debian's kernel already.
+copy_modules_dir kernel/crypto
+copy_modules_dir kernel/arch/x86/crypto
