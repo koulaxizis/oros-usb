@@ -306,6 +306,12 @@ func TestPickVolumes(t *testing.T) {
 	if p.Path != "/dev/sdb" || !p.USB || p.Internal || p.Mount != "/media/oros/PHOTOS" {
 		t.Fatalf("stick %+v", p)
 	}
+	// A stick without partitions has no parent; an empty name in the
+	// system set (lsblk PKNAME of a whole disk) must not hide it.
+	vs, err = pickVolumes(j, map[string]bool{"sda": true, "sda1": true, "": true})
+	if err != nil || len(vs) != 2 || vs[1].Path != "/dev/sdb" {
+		t.Fatalf("whole-disk stick hidden: %+v %v", vs, err)
+	}
 	if d := mountDir(volume{Path: "/dev/sdc1", Label: "My Disk/../x"}); d != filepath.Join(mediaRoot, "My_Disk_.._x") {
 		t.Fatalf("dir %q", d)
 	}

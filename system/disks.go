@@ -54,7 +54,7 @@ var systemDisks = func() map[string]bool {
 			continue
 		}
 		set[strings.TrimPrefix(f[1], "/dev/")] = true
-		if p, err := run("lsblk", "-n", "-o", "PKNAME", f[1]); err == nil {
+		if p, err := run("lsblk", "-n", "-o", "PKNAME", f[1]); err == nil && strings.TrimSpace(p) != "" {
 			set[strings.TrimSpace(p)] = true
 		}
 	}
@@ -142,7 +142,9 @@ func pickVolumes(lsblkJSON string, system map[string]bool) ([]volume, error) {
 		fs := str(b.FSType)
 		size, _ := b.Size.Int64()
 		label := str(b.Label)
-		if !volumeFS[fs] || size < 1<<30 || system[b.Name] || system[parent] {
+		// A whole disk (a stick formatted without partitions) has no
+		// parent: "" never names a system disk.
+		if !volumeFS[fs] || size < 1<<30 || system[b.Name] || (parent != "" && system[parent]) {
 			continue
 		}
 		if label == "persistence" || label == diskLabel {
