@@ -1,6 +1,14 @@
 // orOS USB: a System button in orOS's top bar with Wi-Fi, sound, battery,
 // install to disk and power. It talks to the computer through bg.js and
 // the oros-system native host.
+//
+// orOS Portable and the orOS desktop apps load the same extension; there
+// the launcher is the native host. Its status says platform "portable"
+// and lists in "caps" the parts this computer offers (sound, screen,
+// power, sleep, exit, window, report, update, web, wifi); only those are
+// shown, the power commands ask first, and the window can switch between
+// full screen and a window. Without "caps" (orOS USB) everything stays
+// as it was.
 (() => {
   if (window.top !== window) return;
 
@@ -99,12 +107,36 @@
       qsReboot: "Επανεκκίνηση του υπολογιστή", qsMore: "Εκτυπωτές, δίσκοι, ενημέρωση…", volume: "Ένταση",
     },
   };
+  Object.assign(TEXT.en, {
+    exit: "Exit orOS", sleep: "Sleep", winFull: "Full screen", winWindow: "Show in a window",
+    pcRestart: "Restart the computer", pcShutdown: "Shut down the computer", pcSleep: "Put the computer to sleep",
+    sure: "{a}? Click again to confirm.", appUpdate: "orOS update",
+    appUpdateAvail: "A newer orOS is ready to download ({v}). It opens the next time you start orOS.",
+    appUpdating: "Downloading orOS… {mb} MB", appUpdated: "Done. Close orOS and start it again to use the new version.",
+    appUpdateNone: "This is the newest orOS ({v}).",
+    reportSavedPc: "Saved in this computer's Downloads folder: {f}.", qsMorePc: "Update, problem report…",
+  });
+  Object.assign(TEXT.el, {
+    exit: "Έξοδος από το orOS", sleep: "Αναστολή", winFull: "Πλήρης οθόνη", winWindow: "Εμφάνιση σε παράθυρο",
+    pcRestart: "Επανεκκίνηση του υπολογιστή", pcShutdown: "Τερματισμός του υπολογιστή", pcSleep: "Αναστολή του υπολογιστή",
+    sure: "{a}; Πάτα ξανά για επιβεβαίωση.", appUpdate: "Ενημέρωση του orOS",
+    appUpdateAvail: "Υπάρχει νεότερο orOS για λήψη ({v}). Ανοίγει την επόμενη φορά που θα ξεκινήσεις το orOS.",
+    appUpdating: "Λήψη του orOS… {mb} MB", appUpdated: "Έτοιμο. Κλείσε το orOS και άνοιξέ το ξανά για τη νέα έκδοση.",
+    appUpdateNone: "Έχεις το νεότερο orOS ({v}).",
+    reportSavedPc: "Αποθηκεύτηκε στις Λήψεις αυτού του υπολογιστή: {f}.", qsMorePc: "Ενημέρωση, αναφορά προβλήματος…",
+  });
   const lang = () => ((localStorage.getItem("oros-lang") || navigator.language || "en").slice(0, 2) === "el" ? "el" : "en");
   const t = (k, v) => {
     let s = TEXT[lang()][k] || TEXT.en[k] || k;
     for (const [a, b] of Object.entries(v || {})) s = s.replace("{" + a + "}", b);
     return s;
   };
+
+  // bg.js asks after the browser starts, and loads the page again when
+  // nobody answers (see reloadBare there).
+  chrome.runtime.onMessage.addListener((msg, sender, send) => {
+    if (msg && msg.cmd === "oros-here") send(true);
+  });
 
   const call = (msg) => new Promise((resolve) => {
     try {
@@ -180,6 +212,37 @@
   `;
 
   let state = {};
+  // orOS Portable / desktop apps: the parts this computer offers. orOS USB
+  // sends no caps and has everything.
+  const portable = () => state.platform === "portable";
+  const has = (k) => !state.caps || !!state.caps[k];
+  // The first status of a portable copy takes back what only the USB
+  // kiosk wants (osk.js's always-on keyboard, the Network button's place).
+  function applyPlatform() {
+    if (!portable()) return;
+    document.documentElement.removeAttribute("data-oros-kiosk");
+    if (!has("wifi")) document.documentElement.removeAttribute("data-oros-qs-sys");
+    if (webBtn) webBtn.hidden = !has("web");
+    if (torBtn) torBtn.hidden = !has("tor");
+  }
+  // A power command on a computer that is not orOS's own asks first: the
+  // first click turns the button into "…? Click again", which stays for
+  // five seconds.
+  function confirmButton(b, label, run) {
+    let armed = 0;
+    b.textContent = label;
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!portable() || Date.now() - armed < 5000) { armed = 0; b.textContent = label; run(); return; }
+      armed = Date.now();
+      b.textContent = t("sure", { a: label });
+      setTimeout(() => { if (armed && Date.now() - armed >= 5000) { armed = 0; b.textContent = label; } }, 5100);
+    });
+    return b;
+  }
+  // The window and leaving orOS go through bg.js (chrome.windows).
+  const setWindow = (mode) => call({ cmd: "window.mode", mode }).then(refresh);
+  const exitOros = () => call({ cmd: "session.exit" });
   let webBtn = null, torBtn = null, torTimer = null;
   let btn = null, host = null, root = null, panel = null, view = "main", pollTimer = null;
 
@@ -207,7 +270,7 @@
 
   function paintButton() {
     if (!btn) return;
-    let icon = ICON.wifiOff;
+    let icon = has("wifi") ? ICON.wifiOff : ICON.gear;
     if (state.wired) icon = ICON.wired;
     else if (state.wifi) icon = ICON.wifi;
     let txt = "";
@@ -222,7 +285,7 @@
 
   async function refresh() {
     const r = await call({ cmd: "status" });
-    if (r.ok) state = r;
+    if (r.ok) { state = r; applyPlatform(); }
     paintButton();
     if (panel && view === "main" && main) paintMain();
   }
@@ -251,8 +314,10 @@
     document.body.append(host);
     document.addEventListener("keydown", onKey, true);
     document.addEventListener("mousedown", onOutside, true);
-    renderMain();
-    refresh();
+    // Which panel to build depends on the edition: wait for the first
+    // status if it has not come yet.
+    if (state.ok) { renderMain(); refresh(); }
+    else refresh().then(() => { if (panel) renderMain(); });
   }
 
   // The main view is built once per opening; refresh() only repaints its
@@ -300,8 +365,12 @@
       reportMsg.replaceChildren(el("div", { class: "muted" }, t("reportMaking")));
       const r = await call({ cmd: "report" });
       reportBtn.disabled = false;
-      reportMsg.replaceChildren(el("div", { class: r.ok ? "msg" : "msg err" }, r.ok ? t("reportSaved", { f: r.file }) : t("error", { e: r.error })));
+      reportMsg.replaceChildren(el("div", { class: r.ok ? "msg" : "msg err" }, r.ok ? t(portable() ? "reportSavedPc" : "reportSaved", { f: r.file }) : t("error", { e: r.error })));
     } }, t("report"));
+    if (portable()) {
+      renderPortable({ range, mute, soundRow, noSound, battery, light, screenBox, updateBox, reportBtn, reportMsg });
+      return;
+    }
     panel.append(el("h2", {}, t("system")),
       el("h3", {}, t("wifi")), el("div", { class: "row" }, wifiText, sw), nets,
       el("h3", {}, t("sound")), soundRow, noSound, battery, screenBox,
@@ -321,6 +390,34 @@
     showPrinters(printBox);
     showUpdate(updateBox);
     showDisks(disksBox);
+  }
+
+  // The panel of orOS Portable and the desktop apps: only what the
+  // launcher offers on this computer (Wi-Fi, Bluetooth, disks and the
+  // rest follow in later versions).
+  function renderPortable(p) {
+    const parts = [el("h2", {}, t("system"))];
+    if (has("sound")) parts.push(el("h3", {}, t("sound")), p.soundRow, p.noSound);
+    parts.push(p.battery);
+    if (has("screen")) parts.push(p.screenBox);
+    if (has("update")) parts.push(el("h3", {}, t("appUpdate")), p.updateBox);
+    if (has("report")) parts.push(el("div", { style: "margin-top:10px" }, p.reportBtn, p.reportMsg));
+    const win = el("button", { onclick: () => setWindow(state.window === "fullscreen" ? "window" : "fullscreen") });
+    const row1 = el("div", { class: "power" });
+    if (has("window")) row1.append(win);
+    if (has("exit")) row1.append(el("button", { class: "primary", html: ICON.power + " " + t("exit"), onclick: exitOros }));
+    const row2 = el("div", { class: "power" });
+    if (has("power") && has("sleep")) row2.append(confirmButton(el("button", {}), t("sleep"), () => call({ cmd: "power.sleep" })));
+    if (has("power")) {
+      row2.append(confirmButton(el("button", {}), t("restart"), () => call({ cmd: "power.reboot" })),
+        confirmButton(el("button", {}), t("shutdown"), () => call({ cmd: "power.off" })));
+    }
+    parts.push(row1, row2);
+    panel.append(...parts);
+    main = { range: p.range, mute: p.mute, soundRow: p.soundRow, noSound: p.noSound, battery: p.battery,
+      light: p.light, screenBox: p.screenBox, win, portable: true };
+    paintMain();
+    if (has("update")) showUpdate(p.updateBox);
   }
 
   // Disks: Downloads, the computer's own disks and USB sticks. Opening one
@@ -466,6 +563,11 @@
 
   function paintMain() {
     const m = main;
+    if (m.portable) {
+      m.win.textContent = state.window === "fullscreen" ? t("winWindow") : t("winFull");
+      paintSound(m);
+      return;
+    }
     let wifiText = t("notConnected");
     if (state.wired) wifiText = t("wired");
     if (state.wifi) wifiText = t("connectedTo", { n: state.wifi.ssid });
@@ -475,6 +577,12 @@
     m.sw.setAttribute("aria-pressed", state.wifiOn ? "true" : "false");
     m.nets.hidden = state.wifiOn === false;
     if (state.wifiOn === false) m.list.replaceChildren();
+    paintSound(m);
+    m.install.hidden = !state.canInstall;
+  }
+
+  // Sound, battery and brightness: the same on every edition.
+  function paintSound(m) {
     const hasVolume = typeof state.volume === "number";
     m.soundRow.hidden = !hasVolume;
     m.noSound.hidden = hasVolume;
@@ -484,7 +592,6 @@
     if (state.battery) {
       m.battery.textContent = t("battery", { p: state.battery.percent }) + (state.battery.charging ? " · " + t("charging") : "");
     }
-    m.install.hidden = !state.canInstall;
     m.screenBox.hidden = typeof state.brightness !== "number";
     if (typeof state.brightness === "number" && root.activeElement !== m.light) m.light.value = String(state.brightness);
   }
@@ -495,7 +602,7 @@
     const st = await call({ cmd: "update.status" });
     if (st.ok && st.running) return followUpdate(box);
     if (st.ok && st.progress && st.progress.done && !st.progress.error) {
-      box.replaceChildren(el("div", { class: "msg" }, t("updated")));
+      box.replaceChildren(el("div", { class: "msg" }, t(portable() ? "appUpdated" : "updated")));
       return;
     }
     box.replaceChildren(el("div", { class: "row" }, el("button", { onclick: () => checkUpdate(box) }, t("updateCheck"))));
@@ -506,8 +613,11 @@
     box.replaceChildren(el("div", { class: "muted" }, t("searching")));
     const r = await call({ cmd: "update.check" });
     if (!r.ok) { box.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error }))); return; }
-    if (!r.available) { box.replaceChildren(el("div", { class: "muted" }, t("updateNone", { v: r.current || "?" }))); return; }
-    box.replaceChildren(el("div", {}, t("updateAvail", { v: r.latest, mb: Math.round(r.size / 1048576) })));
+    // orOS Portable updates orOS itself (kind "app"): staged for the next start.
+    const app = r.kind === "app";
+    if (app && r.staged) { box.replaceChildren(el("div", { class: "msg" }, t("appUpdated"))); return; }
+    if (!r.available) { box.replaceChildren(el("div", { class: "muted" }, t(app ? "appUpdateNone" : "updateNone", { v: r.current || "?" }))); return; }
+    box.replaceChildren(el("div", {}, app ? t("appUpdateAvail", { v: r.latest }) : t("updateAvail", { v: r.latest, mb: Math.round(r.size / 1048576) })));
     if (!r.canUpdate) { box.append(el("div", { class: "msg err" }, t("updateNoPersist"))); return; }
     box.append(el("div", { class: "row", style: "margin-top:6px" }, el("button", { class: "primary", onclick: async () => {
       const s = await call({ cmd: "update.start" });
@@ -524,11 +634,17 @@
       if (!box.isConnected) { clearInterval(timer); return; }
       const st = await call({ cmd: "update.status" });
       const p = (st.progress) || {};
-      bar.value = p.percent || 0;
-      msg.textContent = t("updating", { p: p.percent || 0 });
+      if (portable()) {
+        // The launcher knows megabytes, not the size: the bar just moves.
+        bar.removeAttribute("value");
+        msg.textContent = t("appUpdating", { mb: p.mb || 0 });
+      } else {
+        bar.value = p.percent || 0;
+        msg.textContent = t("updating", { p: p.percent || 0 });
+      }
       if (!st.running && p.done) {
         clearInterval(timer);
-        box.replaceChildren(el("div", { class: p.error ? "msg err" : "msg" }, p.error ? t("error", { e: p.error }) : t("updated")));
+        box.replaceChildren(el("div", { class: p.error ? "msg err" : "msg" }, p.error ? t("error", { e: p.error }) : t(portable() ? "appUpdated" : "updated")));
       }
     }, 1500);
   }
@@ -687,15 +803,15 @@
     const pow = document.getElementById("qs-power-sys");
     if (!sys) return;
     await refresh();
-    const bt = await call({ cmd: "bt.list" });
+    const bt = has("bt") ? await call({ cmd: "bt.list" }) : null;
     if (!sys.isConnected) return;
     const parts = [];
-    if (typeof state.volume === "number") {
+    if (typeof state.volume === "number" && has("sound")) {
       parts.push(qsSlider(state.muted ? ICON.speakerOff : ICON.speaker, state.muted ? t("unmute") : t("mute"), state.volume, 0,
         async () => { await call({ cmd: "volume.mute", on: !state.muted }); qsFill(); },
         (v) => call({ cmd: "volume.set", value: v }), false));
     }
-    if (typeof state.brightness === "number") {
+    if (typeof state.brightness === "number" && has("screen")) {
       parts.push(qsSlider(ICON.sun, t("brightness"), state.brightness, 5, null,
         (v) => call({ cmd: "brightness.set", value: v }), true));
     }
@@ -703,15 +819,17 @@
     if (state.wired) wifiSub = t("wired");
     if (state.wifi) wifiSub = state.wifi.ssid;
     if (state.wifiOn === false) wifiSub = t("wifiOff");
-    const grid = el("div", { class: "qs-grid" },
-      qsPill(state.wired && !state.wifi ? ICON.wired : (state.wifiOn === false ? ICON.wifiOff : ICON.wifi), t("wifi"), wifiSub, state.wifiOn !== false,
+    const grid = el("div", { class: "qs-grid" });
+    if (has("wifi")) {
+      grid.append(qsPill(state.wired && !state.wifi ? ICON.wired : (state.wifiOn === false ? ICON.wifiOff : ICON.wifi), t("wifi"), wifiSub, state.wifiOn !== false,
         async () => { await call({ cmd: "wifi.radio", on: state.wifiOn === false }); qsFill(); }, qsOpenSystem));
+    }
     if (bt && bt.ok) {
       const conn = (bt.devices || []).filter((d) => d.connected).map((d) => d.name);
       grid.append(qsPill(ICON.bt, t("bt"), bt.powered ? conn.join(", ") : t("btOff"), !!bt.powered,
         async () => { await call({ cmd: "bt.power", on: !bt.powered }); qsFill(); }, qsOpenSystem));
     }
-    grid.append(qsPill(ICON.gear, t("system"), t("qsMore"), null, qsOpenSystem, null));
+    grid.append(qsPill(ICON.gear, t("system"), t(portable() ? "qsMorePc" : "qsMore"), null, qsOpenSystem, null));
     // orOS puts our buttons first in its own grid (#qs-sys-pills).
     const slot = document.getElementById("qs-sys-pills");
     if (slot) slot.replaceChildren(...grid.childNodes);
@@ -720,7 +838,23 @@
     if (pow) {
       const item = (label, cmd) => el("button", { type: "button", class: "qs-menu-item",
         onclick: (e) => { e.stopPropagation(); call({ cmd }); } }, label);
-      pow.replaceChildren(item(t("qsReboot"), "power.reboot"), item(t("shutdown"), "power.off"));
+      if (!portable()) pow.replaceChildren(item(t("qsReboot"), "power.reboot"), item(t("shutdown"), "power.off"));
+      else {
+        // Leaving orOS and the window first; the computer's own power
+        // commands ask again.
+        const menu = (label, run) => el("button", { type: "button", class: "qs-menu-item",
+          onclick: (e) => { e.stopPropagation(); run(); } }, label);
+        const items = [];
+        if (has("window")) {
+          items.push(menu(state.window === "fullscreen" ? t("winWindow") : t("winFull"),
+            () => { qsCloseShell(); setWindow(state.window === "fullscreen" ? "window" : "fullscreen"); }));
+        }
+        if (has("exit")) items.push(menu(t("exit"), exitOros));
+        const sure = (label, cmd) => confirmButton(el("button", { type: "button", class: "qs-menu-item" }), label, () => call({ cmd }));
+        if (has("power") && has("sleep")) items.push(sure(t("pcSleep"), "power.sleep"));
+        if (has("power")) items.push(sure(t("pcRestart"), "power.reboot"), sure(t("pcShutdown"), "power.off"));
+        pow.replaceChildren(...items);
+      }
     }
   }
   document.addEventListener("oros-qs", (e) => {
@@ -777,6 +911,7 @@
       onclick: (e) => { e.stopPropagation(); openTor(); } });
     bar.append(webBtn, torBtn, btn);
     call({ cmd: "tor.status" }).then((st) => { if (st.ok && st.running) followTor(false); });
+    applyPlatform();
     paintButton();
     qsStep();
     setTimeout(qsStep, 3000);   // orOS adds #qs-btn at its own boot
