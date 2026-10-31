@@ -1,0 +1,5 @@
+# oros-session.service: no password (the oros user has none, as with the
+# tty1 autologin before) and the same account and session modules as a
+# login, so cage gets a logind session on seat0 and a runtime folder.
+@include common-account
+@include common-session
