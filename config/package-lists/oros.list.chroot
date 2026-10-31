@@ -73,6 +73,9 @@ pipewire
 pipewire-pulse
 pipewire-alsa
 wireplumber
+# orOS Bridge (plugins and the sound card for Studio) reaches PipeWire as a
+# PulseAudio client, or through ALSA
+libpulse0
 # Sound card profiles; without them most laptops show no output at all.
 alsa-ucm-conf
 alsa-topology-conf

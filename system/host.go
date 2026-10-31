@@ -79,6 +79,8 @@ func handle(req request) reply {
 	switch req.Cmd {
 	case "ping":
 		return ping()
+	case "bridge.code":
+		return reply{"ok": true, "code": bridgeCode()}
 	case "status":
 		return status()
 	case "wifi.scan":
@@ -207,14 +209,38 @@ func handle(req request) reply {
 // Chromium) names a file in RAM, so the stick is not written every few
 // seconds.
 func ping() reply {
+	res := reply{"ok": true}
+	if c := bridgeCode(); c != "" {
+		res["bridgeCode"] = c
+	}
 	p := os.Getenv("OROS_ALIVE")
 	if p == "" {
-		return reply{"ok": true}
+		return res
 	}
 	if err := os.WriteFile(p, []byte(strconv.FormatInt(time.Now().UnixNano(), 10)+"\n"), 0o600); err != nil {
 		return fail(err, "")
 	}
-	return reply{"ok": true}
+	return res
+}
+
+// bridgeCode is orOS Bridge's open pairing code, or "". oros-session starts
+// the bridge with --code-file $OROS_BRIDGE_CODE (in RAM); the file holds six
+// digits and a newline while Studio waits for the code and is gone otherwise.
+// The System extension shows it over orOS, since the bridge has no window here.
+func bridgeCode() string {
+	p := os.Getenv("OROS_BRIDGE_CODE")
+	if p == "" {
+		return ""
+	}
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return ""
+	}
+	c := strings.TrimSpace(string(b))
+	if len(c) != 6 || strings.Trim(c, "0123456789") != "" {
+		return ""
+	}
+	return c
 }
 
 func fail(err error, out string) reply {

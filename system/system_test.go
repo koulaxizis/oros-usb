@@ -517,6 +517,35 @@ func TestPingWritesAliveQuietly(t *testing.T) {
 	}
 }
 
+func TestBridgeCode(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	code := filepath.Join(t.TempDir(), "oros-bridge-code")
+	t.Setenv("OROS_BRIDGE_CODE", code)
+	t.Setenv("OROS_ALIVE", "")
+	if r := handle(request{Cmd: "ping"}); r["bridgeCode"] != nil {
+		t.Fatalf("no file, no code: %v", r)
+	}
+	if err := os.WriteFile(code, []byte("042917\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if r := handle(request{Cmd: "ping"}); r["bridgeCode"] != "042917" {
+		t.Fatalf("ping carries the code: %v", r)
+	}
+	if r := handle(request{Cmd: "bridge.code"}); r["ok"] != true || r["code"] != "042917" {
+		t.Fatalf("bridge.code: %v", r)
+	}
+	for _, bad := range []string{"12345\n", "1234567\n", "12a456\n", ""} {
+		os.WriteFile(code, []byte(bad), 0o600)
+		if r := handle(request{Cmd: "bridge.code"}); r["code"] != "" {
+			t.Fatalf("%q is not a code: %v", bad, r)
+		}
+	}
+	os.Remove(code)
+	if r := handle(request{Cmd: "bridge.code"}); r["ok"] != true || r["code"] != "" {
+		t.Fatalf("gone: %v", r)
+	}
+}
+
 func TestWatchdogLinesInReport(t *testing.T) {
 	log := filepath.Join(t.TempDir(), "session.log")
 	if got := watchdogLines(log); !strings.Contains(got, "no session.log") {

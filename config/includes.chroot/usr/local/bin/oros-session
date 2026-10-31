@@ -47,6 +47,9 @@ export WLR_NO_HARDWARE_CURSORS=1
 # stayed white until a restart on some PCs). At most MAX restarts per boot,
 # so a system that cannot ping never ends up in a restart loop.
 export OROS_ALIVE="${XDG_RUNTIME_DIR:-/tmp}/oros-alive-$(id -u)"
+# orOS Bridge's pairing code while Studio waits for it (oros-kiosk; the
+# System extension shows it through oros-system).
+export OROS_BRIDGE_CODE="${XDG_RUNTIME_DIR:-/tmp}/oros-bridge-code-$(id -u)"
 FIRST="${OROS_WATCHDOG_FIRST:-60}"
 QUIET="${OROS_WATCHDOG_QUIET:-40}"
 MAX=3
@@ -111,6 +114,7 @@ stop() {
 	kill -KILL "$1" 2>/dev/null
 	pkill -KILL -u "$(id -u)" -f -- "--user-data-dir=$ROOT/data/profile" 2>/dev/null
 	pkill -KILL -u "$(id -u)" -x oros-portable 2>/dev/null
+	pkill -KILL -u "$(id -u)" -x oros-bridge 2>/dev/null
 	sleep 1
 }
 
@@ -119,7 +123,11 @@ while true; do
 	# Only one session runs, so browser lock files left by a crash, a power
 	# cut or the installer's copy are stale; Chromium would otherwise think
 	# the profile is open elsewhere and show a blank window.
-	rm -f "$ROOT"/data/*/Singleton* "$OROS_ALIVE"
+	rm -f "$ROOT"/data/*/Singleton* "$OROS_ALIVE" "$OROS_BRIDGE_CODE"
+	# a bridge left from the last start would hold its port, with an XWayland that is gone
+	pkill -KILL -u "$(id -u)" -x oros-bridge 2>/dev/null
+	BLOG="$ROOT/data/bridge.log"
+	[ "$(stat -c %s "$BLOG" 2>/dev/null || echo 0)" -lt 262144 ] || rm -f "$BLOG"
 	starts=$((starts + 1))
 	A="$ARGS"
 	[ "$OROS_GPU_OFF" = 1 ] && A="$A --disable-gpu"
@@ -134,7 +142,7 @@ while true; do
 	export OROS_PORTABLE_BROWSER_ARGS="$A"
 	# -s lets Ctrl+Alt+F2 switch to the network screen.
 	# A background job reads /dev/null unless told otherwise; cage keeps the tty.
-	cage -s -- /opt/oros/oros-portable <&0 >> "$LOG" 2>&1 &
+	cage -s -- /usr/local/bin/oros-kiosk <&0 >> "$LOG" 2>&1 &
 	pid=$!
 	watch "$pid"
 	wait "$pid"

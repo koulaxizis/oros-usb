@@ -1,0 +1,17 @@
+#!/bin/sh
+# What cage runs (oros-session): orOS Bridge in the background, then the
+# orOS Portable launcher, which opens the orOS window.
+#
+# orOS Bridge lets orOS Studio use the computer's VST3 and CLAP plugins and
+# record through the sound card (PipeWire, JACK, ALSA, MIDI keyboards). It
+# listens on 127.0.0.1 only and lets in only pages that paired with a code;
+# with no window of its own here (--console), it keeps the open code in
+# OROS_BRIDGE_CODE and the System extension shows it over orOS. It runs
+# inside cage so that DISPLAY is cage's XWayland: a plugin's window opens
+# over orOS and closing it brings orOS back. oros-session ends it with cage.
+if [ -x /opt/oros/oros-bridge ]; then
+	/opt/oros/oros-bridge --console --allow-origin http://localhost:47800 \
+		--code-file "${OROS_BRIDGE_CODE:-${XDG_RUNTIME_DIR:-/tmp}/oros-bridge-code}" \
+		< /dev/null >> "$HOME/oros/data/bridge.log" 2>&1 &
+fi
+exec /opt/oros/oros-portable
