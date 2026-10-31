@@ -8,7 +8,7 @@ repository, so the build needs no Python; run this after changing the look.
                          the logo on the Plymouth screen (start and shut down)
 - .../throbber-0001.png ... throbber-0036.png
                          three gold dots that breathe one after the other
-The logo is orOS's icon.svg (koulaxizis/oros): the mountain in #c8a96e on
+The logo is orOS's icon.svg (koulaxizis/oros): the mountain in #d4af37 on
 #1b1a18, the same colour Chromium shows before orOS paints. No words other
 than the name: the language is not known yet while the computer starts.
 """
@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 THEME = os.path.join(ROOT, "config/includes.chroot/usr/share/plymouth/themes/oros")
 BG = (0x1B, 0x1A, 0x18)
-GOLD = (0xC8, 0xA9, 0x6E)
+GOLD = (0xD4, 0xAF, 0x37)
 NAME = (0xE8, 0xE2, 0xD9)
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 SS = 4  # supersampling for smooth edges
