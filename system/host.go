@@ -154,6 +154,9 @@ func handle(req request) reply {
 	case "update.check":
 		return checkUpdate()
 	case "update.start":
+		if !ownerOnly() {
+			return reply{"ok": false, "error": "owner only"}
+		}
 		return startRoot("update", "--yes")
 	case "update.status":
 		return readProgress(updateProgressFile)
@@ -202,6 +205,9 @@ func handle(req request) reply {
 		}
 		return reply{"ok": true, "disks": disks}
 	case "install.start":
+		if !ownerOnly() {
+			return reply{"ok": false, "error": "owner only"}
+		}
 		return startInstall(req)
 	case "install.status":
 		return readProgress(progressFile)
@@ -295,6 +301,9 @@ func status() reply {
 	}
 	res["zone"] = currentZone()
 	res["canInstall"] = liveMedium() != "" && !installedSystem()
+	// Another user than the owner is signed in: the extension hides the
+	// system update and the install (and handle refuses them).
+	res["notOwner"] = !ownerOnly()
 	return res
 }
 
@@ -472,6 +481,22 @@ func startRoot(args ...string) reply {
 	return reply{"ok": true}
 }
 
+func webUserDir(home string) string {
+	dir, _ := signedInUser(home)
+	return dir
+}
+
+// ownerOnly: with users on the stick, the system update and the install
+// to a disk are the owner's (they change the computer for everybody).
+func ownerOnly() bool {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+	_, owner := signedInUser(home)
+	return owner
+}
+
 // webHome is the Internet button's first page.
 const webHome = "https://duckduckgo.com/"
 
@@ -487,7 +512,8 @@ var webAdblock = "/opt/oros/ubol"
 func webArgs(home, url string) []string {
 	args := []string{
 		"--ozone-platform=wayland",
-		"--user-data-dir=" + filepath.Join(home, "oros", "data", "web"),
+		// The signed-in user's own web profile (users.go).
+		"--user-data-dir=" + filepath.Join(webUserDir(home), "web"),
 		"--no-first-run",
 		"--disable-features=Translate",
 		"--enable-logging=stderr",
@@ -510,7 +536,7 @@ func openWeb(url string) reply {
 		return fail(err, "")
 	}
 	data := filepath.Join(home, "oros", "data")
-	if err := os.MkdirAll(filepath.Join(data, "web"), 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Join(webUserDir(home), "web"), 0o700); err != nil {
 		return fail(err, "")
 	}
 	cmd := exec.Command(webBrowser, webArgs(home, url)...)

@@ -112,7 +112,9 @@ stop() {
 	kill -TERM "$1" 2>/dev/null
 	for _ in 1 2 3 4 5 6 7 8 9 10; do running "$1" || break; sleep 1; done
 	kill -KILL "$1" 2>/dev/null
-	pkill -KILL -u "$(id -u)" -f -- "--user-data-dir=$ROOT/data/profile" 2>/dev/null
+	# every orOS profile: the first user's, the others' (data/users/<id>)
+	# and the sign-in window's (data/login)
+	pkill -KILL -u "$(id -u)" -f -- "--user-data-dir=$ROOT/data/" 2>/dev/null
 	pkill -KILL -u "$(id -u)" -x oros-portable 2>/dev/null
 	pkill -KILL -u "$(id -u)" -x oros-bridge 2>/dev/null
 	sleep 1
@@ -123,7 +125,12 @@ while true; do
 	# Only one session runs, so browser lock files left by a crash, a power
 	# cut or the installer's copy are stale; Chromium would otherwise think
 	# the profile is open elsewhere and show a blank window.
-	rm -f "$ROOT"/data/*/Singleton* "$OROS_ALIVE" "$OROS_BRIDGE_CODE"
+	# With users (orOS Portable launcher, users.go) the profiles are one
+	# and two folders deeper; who was signed in is forgotten too.
+	rm -f "$ROOT"/data/*/Singleton* "$ROOT"/data/*/*/Singleton* "$ROOT"/data/users/*/*/Singleton* \
+		"$ROOT/data/users/current.json" "$ROOT/data/users/signout" "$OROS_ALIVE" "$OROS_BRIDGE_CODE"
+	# a guest session cut off by a power cut leaves nothing behind
+	rm -rf "$ROOT/data/users/guest" "$ROOT/homes/guest"
 	# a bridge left from the last start would hold its port, with an XWayland that is gone
 	pkill -KILL -u "$(id -u)" -x oros-bridge 2>/dev/null
 	BLOG="$ROOT/data/bridge.log"

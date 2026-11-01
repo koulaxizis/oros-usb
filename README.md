@@ -57,6 +57,10 @@ Saved Wi-Fi networks and their passwords are kept in `/home/.oros-network` (Netw
 
 `~/oros/app` links to the orOS in the image; `/opt/oros/oros-portable update` replaces it with a newer copy on the persistence partition, and a newer image resets it.
 
+### Several users on one stick
+
+orOS Settings › Users adds people to the stick (the orOS Portable launcher's users, see its README). From then on orOS starts with a sign-in window (names, password or PIN, an optional guest; Restart and Shut down at the top right) and each user gets their own orOS: their own data, sync account, Internet window profile and, in Files › This computer, a home of their own (`~/oros/homes/<id>`; the first user keeps `/home/oros`). Signing out in orOS closes the user's windows and brings the sign-in window back. Only the owner sees System update and "Install orOS on this computer" (`oros-system` refuses them for the others). With the stick encrypted (see ENCRYPTION.md) the passphrase at boot protects everybody's data; the sign-in passwords keep users apart on the screen.
+
 ### System updates
 
 A new orOS USB is built and released every month (newer Chromium, kernel and firmware from Debian 13, and the latest orOS), after the same tests as every build. System › **System update** downloads its system (about 1.2 GB) onto the persistence partition, into slot A or B, whichever is not running, checks it against `update.json`, and writes `/oros-system/boot.cfg`. On the next start the boot menu (UEFI) starts the new system; the previous one and the stick's own system stay in the menu as a way back. Files and settings stay, because the persistence partition only keeps the home folder. Old BIOS computers keep starting the stick's own system. From a terminal: `sudo /opt/oros/oros-system update --yes`.

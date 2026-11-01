@@ -1,0 +1,47 @@
+package main
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestSignedInUser(t *testing.T) {
+	home := t.TempDir()
+	data := filepath.Join(home, "oros", "data")
+	write := func(name, body string) {
+		t.Helper()
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(data, name)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(data, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if d, o := signedInUser(home); d != data || !o {
+		t.Fatal("no users: the data folder, the owner")
+	}
+	write("users.json", `{"users":[{"id":"u00000001","owner":true,"dir":""},{"id":"u00000002","dir":"users/u00000002"},{"id":"u00000003","dir":"../../x"}],"guest":true}`)
+	if d, o := signedInUser(home); d != data || o {
+		t.Fatal("nobody signed in: not the owner")
+	}
+	write("users/current.json", `{"id":"u00000002"}`)
+	if d, o := signedInUser(home); d != filepath.Join(data, "users", "u00000002") || o {
+		t.Fatalf("Anna: %s %v", d, o)
+	}
+	if got := webArgs(home, webHome)[1]; got != "--user-data-dir="+filepath.Join(data, "users", "u00000002", "web") {
+		t.Fatalf("web profile %s", got)
+	}
+	write("users/current.json", `{"id":"u00000001"}`)
+	if d, o := signedInUser(home); d != data || !o {
+		t.Fatal("owner")
+	}
+	write("users/current.json", `{"id":"u00000003"}`)
+	if d, o := signedInUser(home); d != data || o {
+		t.Fatal("a folder outside data must never be used")
+	}
+	write("users/current.json", `{"id":"guest"}`)
+	if d, o := signedInUser(home); d != filepath.Join(data, "users", "guest") || o {
+		t.Fatal("guest")
+	}
+}
