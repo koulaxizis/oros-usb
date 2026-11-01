@@ -133,9 +133,10 @@ func TestOpenWeb(t *testing.T) {
 		t.Fatal(err)
 	}
 	old, oldE := webBrowser, webExtensions
+	old2 := webExtensions
 	webBrowser = stub
 	sysExt, addon, ubol := filepath.Join(dir, "system-ext"), filepath.Join(dir, "addon"), filepath.Join(dir, "ubol")
-	webExtensions = []string{sysExt, addon, filepath.Join(dir, "missing"), ubol}
+	webExtensions = func(string) []string { return []string{sysExt, addon, filepath.Join(dir, "missing"), ubol} }
 	defer func() { webBrowser, webExtensions = old, oldE }()
 	for _, d := range []string{sysExt, addon, ubol} {
 		must(t, os.MkdirAll(d, 0o755))
@@ -156,6 +157,10 @@ func TestOpenWeb(t *testing.T) {
 	}
 	if !strings.Contains(string(b), " --load-extension="+sysExt+","+addon+","+ubol+" ") {
 		t.Fatalf("extensions in args: %q", b)
+	}
+	// uBlock Origin Lite from oros-session's writable copy, never the image.
+	if l := old2(dir); l[2] != filepath.Join(dir, "oros", "ubol") || l[0] != "/opt/oros/system-ext" {
+		t.Fatalf("default extensions %v", l)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "oros", "data", "web")); err == nil {
 		t.Fatal("the old web profile is not made any more")

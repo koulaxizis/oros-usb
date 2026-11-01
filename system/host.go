@@ -514,10 +514,14 @@ var webBrowser = "/usr/bin/chromium"
 // webExtensions are the extensions the orOS window starts with
 // (oros-session ARGS): the System extension, the orOS add-on with its
 // address preset to this stick (scripts/addon.sh) and uBlock Origin Lite
-// (scripts/ubol.sh). The browser loads them when it starts; the Internet
-// window lists them too, for the case it is the first window on the
-// profile. Missing ones (a build without them) are left out.
-var webExtensions = []string{"/opt/oros/system-ext", "/opt/oros/addon", "/opt/oros/ubol"}
+// (scripts/ubol.sh), which runs from oros-session's writable copy in
+// ~/oros/ubol (Chromium writes its indexed rules into the folder). The
+// browser loads them when it starts; the Internet window lists them too,
+// for the case it is the first window on the profile. Missing ones (a
+// build without them) are left out.
+var webExtensions = func(home string) []string {
+	return []string{"/opt/oros/system-ext", "/opt/oros/addon", filepath.Join(home, "oros", "ubol")}
+}
 
 // webProfile is the signed-in user's orOS browser profile (users.go and
 // the launcher's browserCandidates).
@@ -540,7 +544,7 @@ func webArgs(home, url string) []string {
 		args = append(args, "--disable-gpu")
 	}
 	var ext []string
-	for _, d := range webExtensions {
+	for _, d := range webExtensions(home) {
 		if _, err := os.Stat(filepath.Join(d, "manifest.json")); err == nil {
 			ext = append(ext, d)
 		}
