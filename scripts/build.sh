@@ -31,6 +31,9 @@ scripts/tor-key.sh "$OPT/tor-browser-developers.gpg"
 echo "== uBlock Origin Lite for the Internet window"
 scripts/ubol.sh "$OPT/ubol"
 
+echo "== orOS add-on (Passwords fill and save in the Internet window)"
+scripts/addon.sh "$WORK/oros/extension" "$OPT/addon"
+
 echo "== orOS Bridge (plugins and the sound card for Studio)"
 # Built from its main branch like the launcher; no tests or ASIO module here.
 # Its own third-party sources (VST 3 SDK, CLAP, nlohmann/json, miniaudio)

@@ -132,12 +132,15 @@ func TestOpenWeb(t *testing.T) {
 	if err := os.WriteFile(stub, []byte("#!/bin/sh\necho \"$@\" > "+out+"\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	old, oldA := webBrowser, webAdblock
+	old, oldE := webBrowser, webExtensions
 	webBrowser = stub
-	webAdblock = filepath.Join(dir, "ubol")
-	defer func() { webBrowser, webAdblock = old, oldA }()
-	must(t, os.MkdirAll(webAdblock, 0o755))
-	must(t, os.WriteFile(filepath.Join(webAdblock, "manifest.json"), []byte("{}"), 0o644))
+	sysExt, addon, ubol := filepath.Join(dir, "system-ext"), filepath.Join(dir, "addon"), filepath.Join(dir, "ubol")
+	webExtensions = []string{sysExt, addon, filepath.Join(dir, "missing"), ubol}
+	defer func() { webBrowser, webExtensions = old, oldE }()
+	for _, d := range []string{sysExt, addon, ubol} {
+		must(t, os.MkdirAll(d, 0o755))
+		must(t, os.WriteFile(filepath.Join(d, "manifest.json"), []byte("{}"), 0o644))
+	}
 	if r := handle(request{Cmd: "web.open"}); r["ok"] != true {
 		t.Fatalf("web.open: %v", r)
 	}
@@ -146,11 +149,16 @@ func TestOpenWeb(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		b, _ = os.ReadFile(out)
 	}
-	if !strings.Contains(string(b), "--user-data-dir="+filepath.Join(dir, "oros", "data", "web")) {
+	// The orOS window's own profile, so the window joins that browser and
+	// the orOS add-on reaches Passwords.
+	if !strings.Contains(string(b), "--user-data-dir="+filepath.Join(dir, "oros", "data", "profile")+" ") {
 		t.Fatalf("args: %q", b)
 	}
-	if !strings.Contains(string(b), "--load-extension="+webAdblock) {
-		t.Fatalf("no adblocker in args: %q", b)
+	if !strings.Contains(string(b), " --load-extension="+sysExt+","+addon+","+ubol+" ") {
+		t.Fatalf("extensions in args: %q", b)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "oros", "data", "web")); err == nil {
+		t.Fatal("the old web profile is not made any more")
 	}
 }
 
