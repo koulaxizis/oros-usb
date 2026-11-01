@@ -58,6 +58,11 @@ ipp-usb
 ghostscript
 avahi-daemon
 libnss-mdns
+# Scanning for orOS Scan PDF through orOS Bridge (0.9.0+, which loads libsane
+# at run time): SANE, and sane-airscan for driverless scanners and
+# multifunction printers on the network (eSCL, WSD) and on USB (with ipp-usb)
+libsane1
+sane-airscan
 
 # Bluetooth: headphones and speakers (PipeWire), mice and keyboards
 bluez

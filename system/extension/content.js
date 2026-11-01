@@ -189,18 +189,18 @@
     .panel { position: fixed; top: 46px; right: 10px; width: 340px; max-height: calc(100vh - 60px); overflow: auto;
       background: #1f1d1a; color: #e8e4dc; border: 1px solid #3a352d; border-radius: 12px; padding: 14px;
       font: 14px/1.4 system-ui, "Noto Sans", sans-serif; box-shadow: 0 12px 40px rgba(0,0,0,.5); z-index: 2147483000; }
-    h2 { font-size: 15px; margin: 0 0 10px; color: #c8a96e; font-weight: 600; }
+    h2 { font-size: 15px; margin: 0 0 10px; color: #d4af37; font-weight: 600; }
     h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #a69d8e; margin: 14px 0 6px; font-weight: 600; }
     .row { display: flex; align-items: center; gap: 8px; }
     .grow { flex: 1; }
     .muted { color: #a69d8e; font-size: 13px; }
     button { font: inherit; color: #e8e4dc; background: #2c2924; border: 1px solid #3f3a32; border-radius: 8px; padding: 7px 10px; cursor: pointer; }
-    button:hover { border-color: #c8a96e; }
-    button.primary { background: #c8a96e; color: #1b1a18; border-color: #c8a96e; font-weight: 600; }
+    button:hover { border-color: #d4af37; }
+    button.primary { background: #d4af37; color: #1b1a18; border-color: #d4af37; font-weight: 600; }
     button.danger { background: #8c2f2f; border-color: #8c2f2f; color: #fff; font-weight: 600; }
     button:disabled { opacity: .45; cursor: default; }
     .net { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; margin: 3px 0; background: #26231f; }
-    .net.on { border-color: #c8a96e; }
+    .net.on { border-color: #d4af37; }
     input[type=password], input[type=text] { font: inherit; width: 100%; box-sizing: border-box; background: #14120f; color: #e8e4dc;
       border: 1px solid #3f3a32; border-radius: 8px; padding: 7px 9px; margin: 6px 0; }
     .disk { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
@@ -209,14 +209,14 @@
     .disk button { padding: 5px 10px; }
     .pw { display: flex; align-items: center; gap: 6px; }
     .pw button { padding: 6px 8px; line-height: 0; }
-    input[type=range] { width: 100%; accent-color: #c8a96e; }
+    input[type=range] { width: 100%; accent-color: #d4af37; }
     select { font: inherit; width: 100%; box-sizing: border-box; background: #14120f; color: #e8e4dc; border: 1px solid #3f3a32; border-radius: 8px; padding: 7px 8px; }
     .switch { position: relative; width: 40px; height: 22px; border-radius: 11px; background: #3f3a32; border: none; padding: 0; }
     .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #e8e4dc; transition: left .15s; }
-    .switch.on { background: #c8a96e; }
+    .switch.on { background: #d4af37; }
     .switch.on::after { left: 21px; }
     .bar { height: 8px; background: #2c2924; border-radius: 4px; overflow: hidden; margin: 8px 0; }
-    .bar > div { height: 100%; background: #c8a96e; width: 0; transition: width .4s; }
+    .bar > div { height: 100%; background: #d4af37; width: 0; transition: width .4s; }
     label.chk { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
     .msg { margin: 6px 0; font-size: 13px; }
     .msg.err { color: #f0a0a0; }
@@ -233,6 +233,10 @@
   // The first status of a portable copy takes back what only the USB
   // kiosk wants (osk.js's always-on keyboard, the Network button's place).
   function applyPlatform() {
+    // orOS's Settings › Report a problem offers "Save with this computer's
+    // logs" while this is set (see "Problem report from orOS" below).
+    if (has("report")) document.documentElement.setAttribute("data-oros-report", "1");
+    else document.documentElement.removeAttribute("data-oros-report");
     if (!portable()) return;
     document.documentElement.removeAttribute("data-oros-kiosk");
     if (has("wifi")) document.documentElement.setAttribute("data-oros-qs-sys", "1");
@@ -298,6 +302,23 @@
     else document.documentElement.removeAttribute("data-oros-sys-battery");
     qsStep();
   }
+
+  // Problem report from orOS: Settings sends its own part (already shown
+  // to the person) as a JSON string; the host adds this computer's logs
+  // and saves one file in Downloads. Details are strings both ways, so
+  // they cross between the page and this script unchanged.
+  let reportBusy = false;
+  document.addEventListener("oros-report", async (ev) => {
+    const answer = (r) => document.dispatchEvent(new CustomEvent("oros-report-done", { detail: JSON.stringify(r) }));
+    let web = "";
+    try { web = String(JSON.parse(String(ev.detail)).text || ""); } catch (e) {}
+    if (!web || !has("report")) { answer({ ok: false, error: "not available" }); return; }
+    if (reportBusy) { answer({ ok: false, error: "busy" }); return; }
+    reportBusy = true;
+    const r = await call({ cmd: "report", web: web.slice(0, 512 * 1024) });
+    reportBusy = false;
+    answer(r.ok ? { ok: true, file: String(r.file || "") } : { ok: false, error: String(r.error || "error") });
+  });
 
   async function refresh() {
     const r = await call({ cmd: "status" });
@@ -1002,9 +1023,9 @@
       const sh = codeBox.attachShadow({ mode: "open" });
       sh.append(el("style", {}, `
         .box { position: fixed; top: 54px; left: 50%; transform: translateX(-50%); z-index: 2147483001;
-          background: #1f1d1a; color: #e8e4dc; border: 1px solid #c8a96e; border-radius: 12px; padding: 12px 18px;
+          background: #1f1d1a; color: #e8e4dc; border: 1px solid #d4af37; border-radius: 12px; padding: 12px 18px;
           font: 14px/1.4 system-ui, "Noto Sans", sans-serif; box-shadow: 0 12px 40px rgba(0,0,0,.5); text-align: center; }
-        .code { font-size: 34px; font-weight: 700; letter-spacing: .08em; color: #c8a96e; margin-top: 4px; }`),
+        .code { font-size: 34px; font-weight: 700; letter-spacing: .08em; color: #d4af37; margin-top: 4px; }`),
         el("div", { class: "box" }, el("div", { class: "t" }), el("div", { class: "code" })));
       document.documentElement.append(codeBox);
       codeTimer = poll(async () => {

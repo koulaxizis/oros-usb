@@ -33,7 +33,10 @@ The system underneath: Debian 13 "trixie"  https://www.debian.org/
   CUPS,               Apache-2.0, OpenPrinting (printing)
   cups-browsed
   cups-filters        GPL-2.0+, LGPL-2.1+ and MIT parts, OpenPrinting
-  ipp-usb             BSD-2-Clause, OpenPrinting (USB printers)
+  ipp-usb             BSD-2-Clause, OpenPrinting (USB printers and scanners)
+  SANE backends       GPL-2.0+ with the SANE exception, SANE project (scanning)
+  sane-airscan        GPL-2.0+ with the SANE exception, Alexander Pevzner
+                      (driverless scanners)
   Ghostscript         AGPL-3.0+, Artifex Software (print rendering)
   Avahi, nss-mdns     LGPL-2.1+, Avahi and nss-mdns contributors
   BlueZ               GPL-2.0+ and LGPL-2.1+, BlueZ contributors
