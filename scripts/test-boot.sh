@@ -250,6 +250,22 @@ elif [ "$(mtype -i "$FSTICK" ::hello.txt 2>/dev/null)" != "orOS computer files" 
 	echo "FAIL: hello.txt written through Files is not on the USB stick" >&2
 	OK=0
 fi
+# Encrypted users: the data partition has the ext4 encrypt feature (set by
+# mkfs, or by the initramfs at the first start), and oros-system's
+# self-test encrypted, locked and opened a folder in the vault folder.
+# An ext3 stick (Rufus) has no vault: the helper must say so.
+grep -a 'OROS-FSCRYPT' "$OUT/serial.log" || true
+VAULTF="$(find "$MNT" -maxdepth 5 -name .oros-selftest-vault | head -1)"
+[ -z "$VAULTF" ] || { echo "== encrypted users self-test"; cat "$VAULTF"; }
+if [ -z "$VAULTF" ]; then
+	echo "FAIL: the encrypted users self-test did not run" >&2
+	OK=0
+elif grep -q 'not ext4' "$VAULTF"; then
+	echo "(no encrypted users: the data partition is not ext4)"
+elif ! grep -qx "PASS" "$VAULTF"; then
+	echo "FAIL: a folder could not be encrypted, locked and opened on the data partition" >&2
+	OK=0
+fi
 # orOS Bridge starts with the session (oros-kiosk) and listens for Studio.
 BRIDGELOG="$(find "$MNT" -name bridge.log | head -1)"
 [ -z "$BRIDGELOG" ] || { echo "== bridge.log"; tail -5 "$BRIDGELOG"; }

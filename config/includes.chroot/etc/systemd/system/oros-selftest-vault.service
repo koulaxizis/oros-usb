@@ -1,0 +1,16 @@
+# Boot tests only (/home/.oros-selftest on the persistence partition): the
+# round trip of encrypted users (oros-system selftest-vault, as the orOS
+# user): the vault folder through sudo, then encrypt, lock, open with a
+# throwaway key. Results: ~/.oros-selftest-vault.
+[Unit]
+Description=orOS boot self-test of encrypted users
+ConditionPathExists=/home/.oros-selftest
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=oros
+ExecStart=/opt/oros/oros-system selftest-vault
+
+[Install]
+WantedBy=multi-user.target

@@ -71,7 +71,7 @@ if [ -n "$ENCRYPT" ]; then
 	exit 0
 fi
 
-mkfs.ext4 -q -F -L persistence "$PART"
+mkfs.ext4 -q -F -O encrypt -L persistence "$PART"
 MNT="$(mktemp -d)"
 mount "$PART" "$MNT"
 echo "/home union" > "$MNT/persistence.conf"

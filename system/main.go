@@ -4,7 +4,8 @@
 // root runs it as "oros-system install" to put orOS on an internal disk and
 // as "oros-system update" to download a new system and "oros-system mount"
 // to open another disk (Windows disks read-only), "oros-system disks"
-// lists them as JSON, and "oros-system time" to set the time zone.
+// lists them as JSON, "oros-system time" to set the time zone, and
+// "oros-system vault-base" to make the folder for encrypted users (vault.go).
 package main
 
 import (
@@ -28,6 +29,12 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "selftest-files" {
 		os.Exit(selftestFilesMain())
+	}
+	if len(os.Args) > 1 && os.Args[1] == "vault-base" {
+		os.Exit(vaultBaseMain())
+	}
+	if len(os.Args) > 1 && os.Args[1] == "selftest-vault" {
+		os.Exit(selftestVaultMain())
 	}
 	if len(os.Args) > 1 && os.Args[1] == "disks" {
 		os.Exit(disksMain())
