@@ -4,35 +4,47 @@
 # restart). Writes several sticks at once, then verifies each one after
 # re-reading it from the stick.
 #
-# Usage: sudo scripts/make-combo-sticks.sh [--yes] [--persistence-gib N] ISO PORTABLE DEVICE...
+# Usage: sudo scripts/make-combo-sticks.sh [--yes] [--encrypt] [--persistence-gib N] ISO PORTABLE DEVICE...
 #   ISO       orOS-USB-<version>.iso
 #   PORTABLE  orOS-Portable-<version>.zip or an unpacked orOS-Portable folder
 #   DEVICE    whole disks, e.g. /dev/sdb /dev/sdc (everything on them is erased)
 #   --yes     skip the typed confirmation (for scripted runs)
+#   --encrypt keep the data of the booted orOS encrypted (LUKS2) with one
+#             passphrase for all the sticks, asked here twice (or taken from
+#             OROS_PASSPHRASE) and on the orOS boot screen at every start
 #   --persistence-gib  size of the partition that keeps data when orOS is
 #             booted from the stick; default half of the space after the image
 #
 # Layout: the image's own partitions, then NTFS "OROS" with orOS Portable
-# and SHA256SUMS.txt, then ext4 "persistence" ("/home union").
+# and SHA256SUMS.txt, then ext4 "persistence" ("/home union"). With
+# --encrypt the last part is the orossys partition (5 GiB, system updates)
+# and the LUKS2 data partition instead (scripts/encrypted-data.sh), inside
+# an extended partition on sticks with an MBR (it holds only four).
 # Needs: sfdisk, wipefs, partx, losetup, mkntfs (ntfs-3g), mkfs.ext4, unzip,
-# sha256sum, cmp.
+# sha256sum, cmp; cryptsetup for --encrypt.
 set -euo pipefail
 
-YES="" PGIB="" ALLOW_ANY="${OROS_STICKS_ALLOW_ANY:-}"
+YES="" ENCRYPT="" PGIB="" ALLOW_ANY="${OROS_STICKS_ALLOW_ANY:-}"
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--yes) YES=1; shift ;;
+		--encrypt) ENCRYPT=1; shift ;;
 		--persistence-gib) PGIB="$2"; shift 2 ;;
-		-h|--help) sed -n '2,19p' "$0"; exit 0 ;;
+		-h|--help) sed -n '2,26p' "$0"; exit 0 ;;
 		*) break ;;
 	esac
 done
-[ $# -ge 3 ] || { sed -n '2,19p' "$0"; exit 2; }
+[ $# -ge 3 ] || { sed -n '2,26p' "$0"; exit 2; }
 [ "$(id -u)" = 0 ] || { echo "run as root (sudo)"; exit 2; }
 for cmd in sfdisk wipefs partx losetup mkntfs mkfs.ext4 unzip sha256sum cmp lsblk; do
 	command -v "$cmd" >/dev/null || { echo "missing $cmd"; exit 2; }
 done
 [ -z "$PGIB" ] || [[ "$PGIB" =~ ^[1-9][0-9]*$ ]] || { echo "--persistence-gib needs a whole number"; exit 2; }
+if [ -n "$ENCRYPT" ]; then
+	command -v cryptsetup >/dev/null || { echo "missing cryptsetup"; exit 2; }
+	# shellcheck source=encrypted-data.sh
+	. "$(dirname "$0")/encrypted-data.sh"
+fi
 
 ISO="$1" SOURCE="$2"; shift 2
 [ -f "$ISO" ] || { echo "no image $ISO"; exit 2; }
@@ -50,6 +62,7 @@ fi
 [ -f "$FILES/orOS.exe" ] && [ -f "$FILES/orOS" ] || { echo "no orOS launcher in $SOURCE"; exit 2; }
 (cd "$FILES" && find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum) > "$WORK/SHA256SUMS.txt"
 NEED=$(( ISO_BYTES + $(du -sb "$FILES" | cut -f1) + 2 * 1024 * 1024 * 1024 ))
+[ -z "$ENCRYPT" ] || NEED=$(( NEED + OROS_SYS_MIB * 1024 * 1024 ))
 echo "image: $ISO ($((ISO_BYTES / 1024 / 1024)) MiB)"
 echo "portable: $FILES ($(wc -l < "$WORK/SHA256SUMS.txt") files)"
 
@@ -80,6 +93,7 @@ if [ -z "$YES" ]; then
 	read -r -p "Type ERASE to continue: " answer
 	[ "$answer" = ERASE ] || { echo "cancelled"; exit 1; }
 fi
+[ -z "$ENCRYPT" ] || oros_passphrase
 
 # A loop device over partition N of a disk. Works the same on sticks and
 # loop devices, without waiting for udev to make partition nodes.
@@ -90,7 +104,7 @@ part_loop() { # device number
 }
 
 write_one() { # device
-	local dev="$1" mnt="$WORK/mnt-$(basename "$1")" label free psize ntfs pers
+	local dev="$1" mnt="$WORK/mnt-$(basename "$1")" label free psize ntfs pers sys="" sysmib=0
 	mkdir -p "$mnt"
 	lsblk -nro NAME,MOUNTPOINT "$dev" | awk '$2!=""{print "/dev/"$1}' | xargs -r umount
 	wipefs -qa "$dev"
@@ -100,15 +114,29 @@ write_one() { # device
 	# Partitions 3 (NTFS, Portable) and 4 (persistence) after the image.
 	label="$(sfdisk --dump "$dev" | awk '/^label:/{print $2}')"
 	free=$(( ($(lsblk -bdno SIZE "$dev") - ISO_BYTES) / 1024 / 1024 ))
+	[ -z "$ENCRYPT" ] || sysmib=$((OROS_SYS_MIB + 8))
+	free=$((free - sysmib))
 	if [ -n "$PGIB" ]; then psize=$((PGIB * 1024)); else psize=$((free / 2)); fi
 	[ "$psize" -lt $((free - 1024)) ] || { echo "persistence does not fit"; return 1; }
 	ntfs=7
 	[ "$label" = gpt ] && ntfs=EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
 	printf 'size=%sMiB, type=%s\n' $((free - psize - 8)) "$ntfs" | sfdisk -q --force --append --no-reread "$dev"
+	if [ -n "$ENCRYPT" ]; then
+		# An MBR holds four partitions: the last two go into an extended one.
+		[ "$label" = gpt ] || echo ',,Ex' | sfdisk -q --force --append --no-reread "$dev"
+		echo "size=${OROS_SYS_MIB}MiB, type=L" | sfdisk -q --force --append --no-reread "$dev"
+	fi
 	echo ',,L' | sfdisk -q --force --append --no-reread "$dev"
 	sfdisk -l "$dev"
-	# The two new partitions are the last two (the image may have one or two).
-	local nrs; nrs=($(partx -g -o NR "$dev" | tail -2))
+	# The new partitions are the last ones (the image may have one or two;
+	# an extended partition is listed before the ones inside it).
+	local nrs
+	if [ -n "$ENCRYPT" ]; then
+		nrs=($(partx -g -o NR "$dev" | tail -4))
+		[ "$label" = gpt ] && nrs=("${nrs[1]}" "${nrs[2]}" "${nrs[3]}") || nrs=("${nrs[0]}" "${nrs[2]}" "${nrs[3]}")
+	else
+		nrs=($(partx -g -o NR "$dev" | tail -2))
+	fi
 
 	ntfs="$(part_loop "$dev" "${nrs[0]}")"
 	mkntfs -Q -q -L OROS "$ntfs" >/dev/null
@@ -117,15 +145,21 @@ write_one() { # device
 	cp "$WORK/SHA256SUMS.txt" "$mnt/SHA256SUMS.txt"
 	umount "$mnt"
 
-	pers="$(part_loop "$dev" "${nrs[1]}")"
-	mkfs.ext4 -q -F -L persistence "$pers"
-	mount "$pers" "$mnt"
-	echo "/home union" > "$mnt/persistence.conf"
-	umount "$mnt"
+	if [ -n "$ENCRYPT" ]; then
+		sys="$(part_loop "$dev" "${nrs[1]}")"
+		pers="$(part_loop "$dev" "${nrs[2]}")"
+		oros_make_data "$sys" "$pers"
+	else
+		pers="$(part_loop "$dev" "${nrs[1]}")"
+		mkfs.ext4 -q -F -L persistence "$pers"
+		mount "$pers" "$mnt"
+		echo "/home union" > "$mnt/persistence.conf"
+		umount "$mnt"
+	fi
 	sync
 
 	# Re-read from the stick itself, not the page cache.
-	blockdev --flushbufs "$dev" "$ntfs" "$pers" 2>/dev/null || true
+	blockdev --flushbufs "$dev" "$ntfs" "$pers" $sys 2>/dev/null || true
 	echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
 	# The image, byte for byte, except the MBR partition table we added to.
 	cmp -n 446 "$ISO" "$dev"
@@ -133,10 +167,20 @@ write_one() { # device
 	mount -o ro "$ntfs" "$mnt"
 	(cd "$mnt" && sha256sum --quiet -c SHA256SUMS.txt)
 	umount "$mnt"
-	mount -o ro "$pers" "$mnt"
-	grep -qx "/home union" "$mnt/persistence.conf"
-	umount "$mnt"
-	losetup -d "$ntfs" "$pers"
+	if [ -n "$ENCRYPT" ]; then
+		local name="oros-check-$$-$(basename "$dev")"
+		printf '%s' "$PASSPHRASE" | cryptsetup open --type luks2 --readonly --key-file=- "$pers" "$name"
+		mount -o ro "/dev/mapper/$name" "$mnt"
+		grep -qx "/home union" "$mnt/persistence.conf"
+		umount "$mnt"
+		cryptsetup close "$name"
+		[ "$(blkid -s LABEL -o value "$sys")" = orossys ]
+	else
+		mount -o ro "$pers" "$mnt"
+		grep -qx "/home union" "$mnt/persistence.conf"
+		umount "$mnt"
+	fi
+	losetup -d "$ntfs" "$pers" $sys
 	blockdev --rereadpt "$dev" 2>/dev/null || true
 }
 

@@ -147,7 +147,7 @@ func pickVolumes(lsblkJSON string, system map[string]bool) ([]volume, error) {
 		if !volumeFS[fs] || size < 1<<30 || system[b.Name] || (parent != "" && system[parent]) {
 			continue
 		}
-		if label == "persistence" || label == diskLabel {
+		if label == "persistence" || label == diskLabel || label == sysLabel {
 			continue
 		}
 		if strings.HasPrefix(b.Name, "zram") || strings.HasPrefix(b.Name, "loop") {

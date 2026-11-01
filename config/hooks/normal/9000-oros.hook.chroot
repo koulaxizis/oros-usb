@@ -35,6 +35,13 @@ for f in bullet capslock entry keyboard keymap-render lock; do
 		cp -n "/usr/share/plymouth/themes/spinner/$f.png" /usr/share/plymouth/themes/oros/
 	fi
 done
+# Encrypted data: cryptsetup always goes into the initramfs (there is no
+# /etc/crypttab; oros-unlock finds the partition by its LUKS2 label).
+chmod 0755 /etc/initramfs-tools/hooks/oros-unlock /etc/initramfs-tools/scripts/live-realpremount/oros-unlock
+mkdir -p /etc/cryptsetup-initramfs
+grep -qx 'CRYPTSETUP=y' /etc/cryptsetup-initramfs/conf-hook 2>/dev/null ||
+	echo 'CRYPTSETUP=y' >> /etc/cryptsetup-initramfs/conf-hook
+# -R rebuilds the initramfs with the theme and the above.
 plymouth-set-default-theme -R oros
 
 # orOS runs as a system service on tty1 (oros-session.service), the way a

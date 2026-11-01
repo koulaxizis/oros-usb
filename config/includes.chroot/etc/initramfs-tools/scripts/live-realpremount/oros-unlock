@@ -1,0 +1,84 @@
+#!/bin/sh
+# orOS: opens the encrypted data partition (LUKS2) before live-boot looks
+# for persistence. Sticks and disks made with encryption (add-persistence.sh
+# --encrypt, make-combo-sticks.sh --encrypt, oros-system install --encrypt)
+# keep the data in a LUKS2 container labelled "oros-<persistence label>":
+# "oros-persistence" on a stick, "oros-orosdisk" on an installed disk. Only
+# that container is asked for, never another encrypted disk in the computer.
+# Opened as /dev/mapper/oros-data, the ext4 inside carries the usual label,
+# so live-boot finds it like an unencrypted persistence partition.
+#
+# The passphrase is asked on the orOS boot screen (Plymouth), or on the text
+# console when Plymouth is not running (fail-safe start). A wrong one asks
+# again; Enter alone starts orOS without the data, which stays locked.
+# The CI boot test reads OROS-UNLOCK lines on the serial console.
+PREREQ=""
+prereqs() { echo "$PREREQ"; }
+case "$1" in prereqs) prereqs; exit 0 ;; esac
+
+NAME=oros-data
+[ -e "/dev/mapper/$NAME" ] && exit 0
+CMDLINE="$(cat /proc/cmdline)"
+case " $CMDLINE " in *" nopersistence "*) exit 0 ;; esac
+case " $CMDLINE " in *" persistence "*) ;; *) exit 0 ;; esac
+
+LABEL=persistence
+for a in $CMDLINE; do
+	case "$a" in persistence-label=*) LABEL="${a#persistence-label=}" ;; esac
+done
+LABEL="${LABEL%%,*}"
+
+DEV="$(blkid -c /dev/null -o device -t LABEL="oros-$LABEL" 2>/dev/null | head -n 1)"
+[ -n "$DEV" ] || exit 0
+cryptsetup isLuks "$DEV" 2>/dev/null || exit 0
+modprobe -q dm_crypt 2>/dev/null || true
+mkdir -p /run/cryptsetup
+
+serial() {
+	case " $CMDLINE " in
+		*" console=ttyS0"*) [ -c /dev/ttyS0 ] && echo "OROS-UNLOCK: $1" > /dev/ttyS0 2>/dev/null ;;
+	esac
+	return 0
+}
+
+PLY=""
+if command -v plymouth >/dev/null 2>&1 && plymouth --ping 2>/dev/null; then
+	PLY=1
+fi
+say() {
+	if [ -n "$PLY" ]; then
+		plymouth display-message --text="$1" 2>/dev/null || true
+	elif [ -n "$1" ]; then
+		echo "$1" > /dev/console 2>/dev/null || true
+	fi
+}
+
+PROMPT="Passphrase · Κωδικός"
+while :; do
+	serial asking
+	if [ -n "$PLY" ]; then
+		PASS="$(plymouth ask-for-password --prompt="$PROMPT" 2>/dev/null)" || PASS=""
+	elif [ -x /lib/cryptsetup/askpass ]; then
+		PASS="$(/lib/cryptsetup/askpass "$PROMPT: ")" || PASS=""
+	else
+		printf '%s: ' "$PROMPT" > /dev/console
+		stty -echo < /dev/console 2>/dev/null
+		read -r PASS < /dev/console || PASS=""
+		stty echo < /dev/console 2>/dev/null
+		echo > /dev/console
+	fi
+	if [ -z "$PASS" ]; then
+		say ""
+		serial skipped
+		exit 0
+	fi
+	if printf '%s' "$PASS" | cryptsetup open --type luks2 --key-file=- "$DEV" "$NAME" 2>/dev/null; then
+		PASS=""
+		say ""
+		serial unlocked
+		exit 0
+	fi
+	PASS=""
+	serial wrong
+	say "Wrong passphrase, try again (Enter alone: without your data) · Λάθος κωδικός, ξανά (σκέτο Enter: χωρίς τα δεδομένα)"
+done

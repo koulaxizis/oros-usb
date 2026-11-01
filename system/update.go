@@ -26,7 +26,8 @@ import (
 // image's GRUB menu (UEFI) loads that file first: the new system starts
 // by default, the previous one and the system on the stick stay in the
 // menu. The persistence partition only holds /home, so a new system keeps
-// every file and setting.
+// every file and setting. With encrypted data the slots go on the orossys
+// partition instead (crypt.go), which GRUB can read before the passphrase.
 
 const (
 	updateProgressFile = "/run/oros-update.json"
@@ -208,7 +209,7 @@ func bootConfig(entries []bootEntry) string {
 }
 
 type updateOpts struct {
-	source, target, progress, cmdline string
+	source, target, slots, progress, cmdline string
 }
 
 func updateMain(args []string) int {
@@ -217,6 +218,7 @@ func updateMain(args []string) int {
 	var yes bool
 	fl.StringVar(&o.source, "source", updateURL, "update.json URL, or a folder with update.json and the files")
 	fl.StringVar(&o.target, "target", "", "mounted persistence partition (default: the running one)")
+	fl.StringVar(&o.slots, "slots", "", "mounted partition for the system slots (default: the persistence partition, or orossys when the data is encrypted)")
 	fl.StringVar(&o.progress, "progress", updateProgressFile, "progress file (JSON)")
 	fl.StringVar(&o.cmdline, "cmdline", "", "kernel options to start the new system with (default: the running ones)")
 	fl.BoolVar(&yes, "yes", false, "update without asking")
@@ -276,7 +278,16 @@ func update(o updateOpts, step func(string, int)) error {
 	if !strings.Contains(" "+cmdline+" ", " boot=live ") {
 		return errors.New("not a live orOS system")
 	}
-	uuid, err := partitionUUID(o.target)
+	slots := o.slots
+	if slots == "" {
+		dir, release, err := slotsDir(o.target)
+		if err != nil {
+			return err
+		}
+		defer release()
+		slots = dir
+	}
+	uuid, err := partitionUUID(slots)
 	if err != nil {
 		return err
 	}
@@ -286,7 +297,7 @@ func update(o updateOpts, step func(string, int)) error {
 	if err != nil {
 		return err
 	}
-	base := filepath.Join(o.target, updateDir)
+	base := filepath.Join(slots, updateDir)
 	cur := runningSlot(cmdline)
 	slot := "A"
 	if cur == "A" {
@@ -301,7 +312,7 @@ func update(o updateOpts, step func(string, int)) error {
 	os.RemoveAll(newDir)
 	os.RemoveAll(filepath.Join(base, slot))
 	var st syscall.Statfs_t
-	if err := syscall.Statfs(o.target, &st); err != nil {
+	if err := syscall.Statfs(slots, &st); err != nil {
 		return err
 	}
 	if free := int64(st.Bavail) * int64(st.Bsize); free < m.size()+256<<20 {

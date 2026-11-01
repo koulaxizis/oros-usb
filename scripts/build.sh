@@ -92,6 +92,17 @@ lb config
 # finished system go into it and onto the stick before the image is made.
 (lb bootstrap && lb chroot) 2>&1 | tee build.log
 
+echo "== initramfs: encrypted data (oros-unlock) and the boot screen's text"
+# live-boot runs /scripts/live-realpremount before it looks for
+# persistence; oros-unlock opens an encrypted data partition there.
+grep -rqs 'live-realpremount' chroot/usr/lib/live/boot chroot/lib/live/boot ||
+	{ echo "live-boot no longer runs /scripts/live-realpremount" >&2; exit 1; }
+INITRD="$(ls chroot/boot/initrd.img-* | sort -V | tail -1)"
+lsinitramfs "$INITRD" > "$WORK/initrd.txt"
+for want in 'scripts/live-realpremount/oros-unlock$' '/cryptsetup$' '/blkid$' '/dm-crypt\.ko' 'plymouth/label' 'plymouth/two-step\.so$' 'themes/oros/entry\.png$'; do
+	grep -Eq "$want" "$WORK/initrd.txt" || { echo "initramfs lacks $want" >&2; exit 1; }
+done
+
 echo "== licences and sources"
 # The licence texts of the parts built here (Go compiles the launcher and
 # oros-system), the exact source of every package (SOURCES.txt), the

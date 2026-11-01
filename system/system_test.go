@@ -195,9 +195,10 @@ func writeRelease(t *testing.T, dir, version string, damage bool) {
 }
 
 func TestUpdate(t *testing.T) {
-	old := partitionUUID
+	old, oldSrc := partitionUUID, mountSource
 	partitionUUID = func(string) (string, error) { return "u-1", nil }
-	defer func() { partitionUUID = old }()
+	mountSource = func(string) string { return "/dev/sdb3" }
+	defer func() { partitionUUID, mountSource = old, oldSrc }()
 	src, target := t.TempDir(), t.TempDir()
 	step := func(string, int) {}
 	cmd := "BOOT_IMAGE=/live/vmlinuz boot=live components quiet persistence"
