@@ -19,6 +19,12 @@
   // orOS's Quick settings (qsettings.js) leaves its Network button to our
   // Wi-Fi button in its panel (see "Quick settings" below).
   document.documentElement.setAttribute("data-oros-qs-sys", "1");
+  // Users on one stick or computer (the launcher's sign-in window): orOS
+  // signs out by sending what is unsynced, telling the launcher, then
+  // firing "oros-signout"; closing every window here ends the user's
+  // browser, and the launcher shows the sign-in window again.
+  document.documentElement.setAttribute("data-oros-signout", "1");
+  document.addEventListener("oros-signout", () => { chrome.runtime.sendMessage({ cmd: "session.exit" }, () => void chrome.runtime.lastError); });
 
   // orOS already is the system here: no browser "Install app" prompt (it
   // only opened an empty window in the kiosk).
@@ -415,7 +421,9 @@
       el("h3", {}, t("printers")), printBox,
       el("h3", {}, t("time")), timeBox,
       el("h3", {}, t("disks")), disksBox,
-      el("h3", {}, t("update")), updateBox, install,
+      // With users on the stick only the owner updates or installs the
+      // system (oros-system refuses the others too).
+      ...(state.notOwner ? [] : [el("h3", {}, t("update")), updateBox, install]),
       el("div", { style: "margin-top:10px" }, reportBtn, reportMsg),
       el("div", { class: "power" },
         el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
@@ -613,7 +621,7 @@
     }
     paintWifi(m);
     paintSound(m);
-    m.install.hidden = !state.canInstall;
+    m.install.hidden = !state.canInstall || !!state.notOwner;
   }
 
   function paintWifi(m) {
@@ -1036,6 +1044,27 @@
     const sh = codeBox.shadowRoot;
     sh.querySelector(".t").textContent = t("bridgeCode");
     sh.querySelector(".code").textContent = code.slice(0, 3) + " " + code.slice(3);
+  }
+
+  // The sign-in window (several users on the stick): it is a page of its
+  // own with no top bar, so the System button never mounts there. On
+  // orOS USB, where it is the whole screen, it gets Restart and Shut down.
+  if (location.pathname === "/__oros/login") {
+    call({ cmd: "status" }).then((r) => {
+      if (!r.ok || r.platform === "portable") return;
+      const bar = document.createElement("div");
+      const sh = bar.attachShadow({ mode: "closed" });
+      const style = document.createElement("style");
+      style.textContent = `:host { position: fixed; top: 12px; right: 12px; z-index: 10; }
+        button { font: 14px system-ui, sans-serif; background: #1d1a16; color: #ede8de; border: 1px solid #3f3a32;
+          border-radius: 10px; padding: 8px 12px; min-height: 40px; margin-left: 6px; cursor: pointer; }
+        button:hover, button:focus-visible { border-color: #d4af37; outline: none; }`;
+      sh.append(style,
+        el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
+        el("button", { html: ICON.power + " " + t("shutdown"), onclick: () => call({ cmd: "power.off" }) }));
+      const put = () => document.body ? document.body.append(bar) : setTimeout(put, 50);
+      put();
+    });
   }
 
   // Sign of life for oros-session's watchdog: the first ping waits for a
