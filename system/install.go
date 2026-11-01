@@ -294,7 +294,8 @@ func install(o installOpts, step func(string, int)) error {
 		defer closeEncrypted(name)
 		dataDev = dev
 	}
-	if out, err := run("mkfs.ext4", "-q", "-F", "-L", diskLabel, dataDev); err != nil {
+	// "encrypt": users may encrypt their own files (vault.go).
+	if out, err := run("mkfs.ext4", "-q", "-F", "-O", "encrypt", "-L", diskLabel, dataDev); err != nil {
 		return cmdErr("mkfs.ext4", out, err)
 	}
 

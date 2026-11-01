@@ -151,7 +151,7 @@ write_one() { # device
 		oros_make_data "$sys" "$pers"
 	else
 		pers="$(part_loop "$dev" "${nrs[1]}")"
-		mkfs.ext4 -q -F -L persistence "$pers"
+		mkfs.ext4 -q -F -O encrypt -L persistence "$pers"
 		mount "$pers" "$mnt"
 		echo "/home union" > "$mnt/persistence.conf"
 		umount "$mnt"

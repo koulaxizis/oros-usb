@@ -51,7 +51,7 @@ oros_make_data() {
 	oros_luks_format "$data" oros-persistence
 	mkdir -p /run/cryptsetup
 	printf '%s' "$PASSPHRASE" | cryptsetup open --type luks2 --key-file=- "$data" "$name"
-	mkfs.ext4 -q -F -L persistence "/dev/mapper/$name"
+	mkfs.ext4 -q -F -O encrypt -L persistence "/dev/mapper/$name"
 	mnt="$(mktemp -d)"
 	mount "/dev/mapper/$name" "$mnt"
 	echo "/home union" > "$mnt/persistence.conf"

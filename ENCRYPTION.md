@@ -32,6 +32,17 @@ The orOS logo shows with a passphrase field under it. Type the passphrase and pr
 - Layout of a stick: the image, then `orossys`, then the encrypted data (combo sticks: the image, NTFS `OROS`, then the two inside an extended partition). Installed disk: the FAT boot partition `OROS`, `orossys`, the encrypted data. An encrypted install needs a disk of at least about 16 GB.
 - CI boots an encrypted stick in QEMU with a test passphrase (a wrong one first, then the right one), with a system update on `orossys`, and an encrypted install (`OROS_TEST_PASSPHRASE` in `scripts/test-boot.sh`).
 
+## Each user's own files
+
+Optional, off by default, independent of the passphrase above. On a stick with [several users](README.md#several-users-on-one-stick), each user other than the first may turn on **Settings › Users › Encrypt my files** with their own password. At their next sign-in their orOS data and their home folder are encrypted (this takes a few minutes the first time). From then on their files open only while they are signed in; signed out, and on another computer, nobody can read them, not the owner and not root.
+
+- **Keep the recovery code.** Turning it on shows a recovery code once. The owner cannot reset an encrypted user's password: only the user's password or this code opens the files ("Forgot your password?" on the sign-in window). Without both the files are lost.
+- Removing an encrypted user deletes their files (nobody else could open them). Turning encryption off decrypts them at the next sign-in.
+- The first user (who keeps `/home/oros`) uses the passphrase at start instead; the guest keeps nothing anyway.
+- Needs an ext4 data partition (sticks and installs made with this version or prepared by `add-persistence.sh`; older sticks get it at their first start with this version, see below). A Rufus stick (ext3) cannot.
+- How it works: Linux file-system encryption (fscrypt, policy v2, AES-256-XTS for contents and AES-256-CTS for names) on a folder in `oros-vaults` on the data partition, made by `oros-system vault-base`. The key is 64 random bytes, kept only sealed (AES-256-GCM) with keys made from the password and from the recovery code (PBKDF2-SHA-256, 600 000 rounds). The initramfs script `oros-fscrypt` turns on the ext4 `encrypt` feature of the data partition before it is mounted (only a clean ext4; it changes no data). CI encrypts, locks and opens a folder this way on every boot test (`oros-system selftest-vault`).
+- Honest limit: files that were on the stick before encryption was turned on may stay readable in unused flash blocks until they are overwritten. The passphrase at start (above) has no such gap.
+
 ---
 
 # Κρυπτογραφημένα δεδομένα στο orOS USB
@@ -67,3 +78,15 @@ The orOS logo shows with a passphrase field under it. Type the passphrase and pr
 - Οι ενημερώσεις συστήματος (Σύστημα › Ενημέρωση συστήματος) πάνε στο διαμέρισμα `orossys` (5 GiB, ext4) στις θέσεις A και B, με τις επιλογές του μενού εκκίνησης στο `/oros-system/boot.cfg`· το GRUB τις διαβάζει πριν από τον κωδικό. Η επιστροφή στο προηγούμενο σύστημα από το μενού εκκίνησης δουλεύει όπως σε μη κρυπτογραφημένο stick, το ίδιο και ο φύλακας της συνεδρίας (watchdog).
 - Διάταξη stick: η εικόνα, μετά το `orossys`, μετά τα κρυπτογραφημένα δεδομένα (combo sticks: η εικόνα, το NTFS `OROS` και τα δύο μέσα σε extended διαμέρισμα). Εγκατεστημένος δίσκος: το διαμέρισμα εκκίνησης FAT `OROS`, το `orossys`, τα κρυπτογραφημένα δεδομένα. Η κρυπτογραφημένη εγκατάσταση θέλει δίσκο τουλάχιστον περίπου 16 GB.
 - Το CI ξεκινά ένα κρυπτογραφημένο stick στο QEMU με δοκιμαστικό κωδικό (πρώτα λάθος, μετά σωστό), με ενημέρωση συστήματος στο `orossys`, και μια κρυπτογραφημένη εγκατάσταση (`OROS_TEST_PASSPHRASE` στο `scripts/test-boot.sh`).
+
+
+## Τα αρχεία κάθε χρήστη
+
+Προαιρετικό, κλειστό από προεπιλογή, ανεξάρτητο από τον κωδικό εκκίνησης παραπάνω. Σε stick με [πολλούς χρήστες](README.md#several-users-on-one-stick), κάθε χρήστης εκτός από τον πρώτο μπορεί να ενεργοποιήσει **Ρυθμίσεις › Χρήστες › Κρυπτογράφηση των αρχείων μου** με τον δικό του κωδικό. Στην επόμενη είσοδό του τα δεδομένα του orOS και ο προσωπικός του φάκελος κρυπτογραφούνται (την πρώτη φορά παίρνει μερικά λεπτά). Από εκεί και πέρα τα αρχεία του ανοίγουν μόνο όσο είναι συνδεδεμένος· αποσυνδεδεμένος, και σε άλλον υπολογιστή, δεν τα διαβάζει κανείς, ούτε ο κάτοχος ούτε ο root.
+
+- **Φυλάξτε τον κωδικό ανάκτησης.** Με την ενεργοποίηση εμφανίζεται μία φορά ένας κωδικός ανάκτησης. Ο κάτοχος δεν μπορεί να μηδενίσει τον κωδικό ενός κρυπτογραφημένου χρήστη: τα αρχεία ανοίγουν μόνο με τον κωδικό του χρήστη ή με αυτόν τον κωδικό («Ξεχάσατε τον κωδικό;» στο παράθυρο εισόδου). Χωρίς κανέναν από τους δύο τα αρχεία χάνονται.
+- Η αφαίρεση ενός κρυπτογραφημένου χρήστη σβήνει τα αρχεία του (κανείς άλλος δεν θα μπορούσε να τα ανοίξει). Η απενεργοποίηση τα αποκρυπτογραφεί στην επόμενη είσοδο.
+- Ο πρώτος χρήστης (που κρατά το `/home/oros`) χρησιμοποιεί τον κωδικό εκκίνησης· ο επισκέπτης δεν κρατά τίποτα έτσι κι αλλιώς.
+- Θέλει διαμέρισμα δεδομένων ext4 (sticks και εγκαταστάσεις αυτής της έκδοσης ή του `add-persistence.sh`· τα παλιότερα sticks το αποκτούν στην πρώτη τους εκκίνηση με αυτή την έκδοση). Ένα stick του Rufus (ext3) δεν μπορεί.
+- Πώς δουλεύει: κρυπτογράφηση συστήματος αρχείων του Linux (fscrypt, policy v2, AES-256-XTS για τα περιεχόμενα, AES-256-CTS για τα ονόματα) σε φάκελο μέσα στο `oros-vaults` του διαμερίσματος δεδομένων. Το κλειδί είναι 64 τυχαία bytes και φυλάγεται μόνο σφραγισμένο (AES-256-GCM) με κλειδιά από τον κωδικό και από τον κωδικό ανάκτησης (PBKDF2-SHA-256, 600 000 γύροι). Το script `oros-fscrypt` του initramfs ενεργοποιεί το χαρακτηριστικό `encrypt` του ext4 πριν προσαρτηθεί το διαμέρισμα (μόνο σε καθαρό ext4· δεν αλλάζει δεδομένα). Το CI κρυπτογραφεί, κλειδώνει και ανοίγει έναν φάκελο έτσι σε κάθε δοκιμή εκκίνησης.
+- Τίμιο όριο: αρχεία που ήταν στο stick πριν ενεργοποιηθεί η κρυπτογράφηση μπορεί να μένουν αναγνώσιμα σε αχρησιμοποίητα μπλοκ της μνήμης flash μέχρι να γραφτεί κάτι από πάνω. Ο κωδικός εκκίνησης (παραπάνω) δεν έχει αυτό το κενό.

@@ -7,3 +7,6 @@ oros ALL=(root) NOPASSWD: /opt/oros/oros-system update *
 oros ALL=(root) NOPASSWD: /opt/oros/oros-system mount *
 # ...and set the time zone (only a zone from /usr/share/zoneinfo).
 oros ALL=(root) NOPASSWD: /opt/oros/oros-system time --zone *
+# ...and make the folder for encrypted users on the data partition (owned by
+# oros, closed to others; nothing else is changed).
+oros ALL=(root) NOPASSWD: /opt/oros/oros-system vault-base

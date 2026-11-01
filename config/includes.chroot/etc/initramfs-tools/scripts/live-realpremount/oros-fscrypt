@@ -1,0 +1,58 @@
+#!/bin/sh
+# orOS: turns on the ext4 "encrypt" feature of the data partition, so users
+# may encrypt their own files (fscrypt, oros-portable launcher/vault.go,
+# oros-system vault-base). The feature can only be set while the partition
+# is not mounted, so it is done here, before live-boot mounts it: once, at
+# the first start with this image; new sticks and installs have it from
+# mkfs. It changes no data and works on every kernel orOS ships.
+#
+# Only an ext4 file system that is clean (not left half-written by a
+# power cut) is touched; anything else waits for the next start. Runs after
+# oros-unlock, so an encrypted (LUKS) data partition is open by then.
+# The CI boot test reads OROS-FSCRYPT lines on the serial console.
+PREREQ="oros-unlock"
+prereqs() { echo "$PREREQ"; }
+case "$1" in prereqs) prereqs; exit 0 ;; esac
+
+CMDLINE="$(cat /proc/cmdline)"
+case " $CMDLINE " in *" nopersistence "*) exit 0 ;; esac
+case " $CMDLINE " in *" persistence "*) ;; *) exit 0 ;; esac
+command -v tune2fs >/dev/null 2>&1 || exit 0
+
+serial() {
+	case " $CMDLINE " in
+		*" console=ttyS0"*) [ -c /dev/ttyS0 ] && echo "OROS-FSCRYPT: $1" > /dev/ttyS0 2>/dev/null ;;
+	esac
+	return 0
+}
+
+LABEL=persistence
+for a in $CMDLINE; do
+	case "$a" in persistence-label=*) LABEL="${a#persistence-label=}" ;; esac
+done
+LABEL="${LABEL%%,*}"
+
+if [ -e /dev/mapper/oros-data ]; then
+	DEV=/dev/mapper/oros-data
+else
+	DEV="$(blkid -c /dev/null -o device -t LABEL="$LABEL" 2>/dev/null | head -n 1)"
+fi
+[ -n "$DEV" ] || exit 0
+[ "$(blkid -c /dev/null -o value -s TYPE "$DEV" 2>/dev/null)" = ext4 ] || exit 0
+
+INFO="$(tune2fs -l "$DEV" 2>/dev/null)" || exit 0
+if printf '%s\n' "$INFO" | grep -q '^Filesystem features:.* encrypt'; then
+	serial ready
+	exit 0
+fi
+if ! printf '%s\n' "$INFO" | grep -q '^Filesystem state:[[:space:]]*clean$' ||
+	printf '%s\n' "$INFO" | grep -q '^Filesystem features:.* needs_recovery'; then
+	serial "not clean, later"
+	exit 0
+fi
+if tune2fs -O encrypt "$DEV" >/dev/null 2>&1; then
+	serial "turned on"
+else
+	serial failed
+fi
+exit 0
