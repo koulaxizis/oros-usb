@@ -20,21 +20,16 @@ import (
 // not carry it: the first press downloads it from torproject.org into the
 // home folder (the persistence partition), checks its signature against
 // Tor Browser's signing key that the build pinned by fingerprint
-// (scripts/tor-key.sh), and unpacks it. From then on it starts at once and
+// (scripts/tor-key.sh; the check is in torsig.go), and unpacks it. From then on it starts at once and
 // keeps itself up to date like on any computer.
 
 const torIndex = "https://aus1.torproject.org/torbrowser/update_3/release/downloads.json"
 
 var (
 	torKeyring = "/opt/oros/tor-browser-developers.gpg"
-	// torVerify checks the detached signature sig of file; tests replace it.
-	torVerify = func(keyring, sig, file string) error {
-		out, err := exec.Command("gpgv", "--keyring", keyring, sig, file).CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("signature check failed: %s", strings.TrimSpace(string(out)))
-		}
-		return nil
-	}
+	// torVerify checks the detached signature sig of file (torsig.go);
+	// tests replace it.
+	torVerify = torVerifyGo
 )
 
 const (
@@ -116,6 +111,25 @@ func torStatus() reply {
 	r["installed"] = err == nil
 	r["persistent"] = persistenceTarget() != ""
 	return r
+}
+
+// removeTor is "tor.remove": Tor Browser goes, with its bookmarks and
+// settings (the extension asks first), when it is not being downloaded.
+func removeTor() reply {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fail(err, "")
+	}
+	dir := torDir(home)
+	if torBusy(dir) {
+		return fail(errors.New("Tor Browser is being downloaded"), "")
+	}
+	if err := os.RemoveAll(filepath.Join(dir, "tor-browser")); err != nil {
+		return fail(err, "")
+	}
+	_ = os.RemoveAll(filepath.Join(dir, "tor-browser.old"))
+	_ = os.Remove(torProgressFile(home))
+	return reply{"ok": true}
 }
 
 // startTor runs Tor Browser detached; cage shows it over orOS and closing

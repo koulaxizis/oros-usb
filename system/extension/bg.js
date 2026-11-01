@@ -3,7 +3,9 @@
 // Two requests are the browser's own business (orOS Portable and the
 // desktop apps): "window.mode" switches the sender's window between full
 // screen and a window, then lets the host keep the choice for the next
-// start; "session.exit" closes every window, so the launcher closes too.
+// start; "session.exit" closes every window, so the launcher closes too;
+// "window.away" and "window.back" minimize a full-screen orOS while Tor
+// Browser's window is open and bring it back in full screen.
 const HOST = "online.useoros.system";
 
 const native = (msg) => new Promise((resolve) => {
@@ -18,6 +20,12 @@ async function windowMode(msg, sender) {
   if (!sender.tab) return { ok: false, error: "no window" };
   await chrome.windows.update(sender.tab.windowId, { state: msg.mode === "fullscreen" ? "fullscreen" : "maximized" });
   return native(msg);
+}
+
+async function windowAway(sender, back) {
+  if (!sender.tab) return { ok: false, error: "no window" };
+  await chrome.windows.update(sender.tab.windowId, back ? { state: "fullscreen", focused: true } : { state: "minimized" });
+  return { ok: true };
 }
 
 async function exitAll() {
@@ -44,6 +52,7 @@ chrome.runtime.onMessage.addListener((msg, sender, send) => {
   let job;
   if (msg && msg.cmd === "window.mode") job = windowMode(msg, sender);
   else if (msg && msg.cmd === "session.exit") job = exitAll();
+  else if (msg && (msg.cmd === "window.away" || msg.cmd === "window.back")) job = windowAway(sender, msg.cmd === "window.back");
   else job = native(msg);
   job.then(send, (e) => send({ ok: false, error: String(e && e.message || e) }));
   return true;

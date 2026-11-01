@@ -14,6 +14,13 @@ orOS itself
                       https://github.com/koulaxizis/oros-usb
   Go                  BSD-3-Clause, The Go Authors (compiles the launcher
                       and oros-system)  https://go.dev/
+  Go modules          oros-system and the launcher check Tor Browser's signature
+                      with ProtonMail go-crypto (BSD-3-Clause, The Go Authors and
+                      Proton AG), CIRCL (BSD-3-Clause, Cloudflare) and
+                      golang.org/x/crypto, x/sys (BSD-3-Clause, The Go Authors);
+                      the launcher also uses fyne.io/systray (Apache-2.0),
+                      godbus/dbus (BSD-2-Clause) and ulikunitz/xz (BSD-3-Clause).
+                      Licence texts: Go-modules-*.txt in this folder.
 
 The system underneath: Debian 13 "trixie"  https://www.debian.org/
   Linux kernel        GPL-2.0, Linus Torvalds and the kernel developers
@@ -54,8 +61,7 @@ The system underneath: Debian 13 "trixie"  https://www.debian.org/
   uBlock Origin Lite  GPL-3.0, Raymond Hill and contributors (ad blocker in
                       the Internet window; source: github.com/uBlockOrigin/uBOL-home)
   Xwayland            MIT, X.Org Foundation and contributors (X apps in cage)
-  GnuPG gpgv, xz      GPL-3.0+ (gpgv), 0BSD and public domain (xz), checking
-                      and unpacking the Tor Browser download
+  xz                  0BSD and public domain, unpacking the Tor Browser download
   Noto fonts          SIL Open Font License 1.1, Google and the Noto project
   Firmware            linux-firmware, Debian's firmware-* and bluez-firmware: each
                       file keeps its vendor's licence (redistribution allowed;

@@ -188,6 +188,8 @@ func handle(req request) reply {
 		return openTor()
 	case "tor.status":
 		return torStatus()
+	case "tor.remove":
+		return removeTor()
 	case "report":
 		return report(req.Web)
 	case "disks.list":
