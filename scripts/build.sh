@@ -117,6 +117,14 @@ cp "$WORK/bridge/THIRD_PARTY.md" "$DOC/orOS-Bridge-THIRD_PARTY.md"
 # Go's licence for the Go-built oros-system and launcher; Debian's golang-go
 # has no GOROOT/LICENSE, so the text is kept in the repository.
 cp licenses/Go-BSD.txt "$DOC/Go-BSD.txt"
+# and those of the Go modules they are built with
+for m in github.com/ProtonMail/go-crypto github.com/cloudflare/circl golang.org/x/crypto golang.org/x/sys; do
+  cp "$(cd system && go list -m -f '{{.Dir}}' "$m")/LICENSE" "$DOC/Go-modules-$(basename "$m").txt"
+done
+for m in fyne.io/systray github.com/godbus/dbus/v5 github.com/ulikunitz/xz; do
+  d="$(cd "$WORK/portable/launcher" && go list -m -f '{{.Dir}}' "$m" 2>/dev/null)" || continue
+  if [ -f "$d/LICENSE" ]; then cp "$d/LICENSE" "$DOC/Go-modules-$(basename "${m%/v5}").txt"; fi
+done
 USB_COMMIT="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo "${GITHUB_SHA:-unknown}")"
 scripts/sources-manifest.sh chroot "$DOC" "$VERSION" "$USB_COMMIT" "$OROS_COMMIT" "$PORTABLE_COMMIT" "$BRIDGE_COMMIT"
 grep -Eq '^linux(-signed-amd64)? ' "$DOC/SOURCES.txt"

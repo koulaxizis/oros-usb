@@ -1,6 +1,7 @@
 #!/bin/sh
 # Writes Tor Browser's signing key (Tor Browser Developers) to the keyring
-# file $1, for oros-system's Tor button to check downloads with gpgv. The
+# file $1, for the Tor button of oros-system and orOS Portable to check
+# downloads with (system/torsig.go, oros-portable launcher/tor.go). The
 # key is fetched from torproject.org (Web Key Directory), keys.openpgp.org
 # as a fallback, and must match the fingerprint pinned here, the one
 # torproject.org publishes.

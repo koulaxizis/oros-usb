@@ -66,6 +66,8 @@
       torAsk: "The first time, Tor Browser (about 110 MB) is downloaded from torproject.org and checked. Continue?",
       torAskNoPersist: "This stick has no persistence partition, so Tor Browser is downloaded again after every restart.",
       torGetting: "Getting Tor Browser… {p}%", torError: "Tor Browser could not be set up: {e}",
+      torSection: "Tor Browser", torRemove: "Remove Tor Browser", torRemoveHint: "Frees about 400 MB. The Tor button downloads it again when you need it.",
+      torRemoveAsk: "Remove Tor Browser with its bookmarks and settings?", torRemoved: "Tor Browser was removed.",
       screen: "Screen", brightness: "Brightness", time: "Time", timeZone: "Time zone",
       timeSynced: "The clock is set from the internet.", timeNotSynced: "The clock is set from the internet once you are online.",
       timeZoneInstall: "Time zone of this computer",
@@ -111,6 +113,8 @@
       torAsk: "Την πρώτη φορά το Tor Browser (περίπου 110 MB) κατεβαίνει από το torproject.org και ελέγχεται. Συνέχεια;",
       torAskNoPersist: "Αυτό το stick δεν έχει persistence partition, οπότε το Tor Browser κατεβαίνει ξανά μετά από κάθε επανεκκίνηση.",
       torGetting: "Λήψη του Tor Browser… {p}%", torError: "Το Tor Browser δεν μπόρεσε να εγκατασταθεί: {e}",
+      torSection: "Tor Browser", torRemove: "Αφαίρεση του Tor Browser", torRemoveHint: "Ελευθερώνει περίπου 400 MB. Το κουμπί Tor το κατεβάζει ξανά όταν το χρειαστείς.",
+      torRemoveAsk: "Να αφαιρεθεί το Tor Browser μαζί με τους σελιδοδείκτες και τις ρυθμίσεις του;", torRemoved: "Το Tor Browser αφαιρέθηκε.",
       screen: "Οθόνη", brightness: "Φωτεινότητα", time: "Ώρα", timeZone: "Ζώνη ώρας",
       timeSynced: "Η ώρα ρυθμίζεται από το διαδίκτυο.", timeNotSynced: "Η ώρα θα ρυθμιστεί από το διαδίκτυο μόλις συνδεθείς.",
       timeZoneInstall: "Ζώνη ώρας αυτού του υπολογιστή",
@@ -402,6 +406,7 @@
     const install = el("div", { style: "margin-top:14px" }, el("button", { style: "width:100%", onclick: renderInstall }, t("install")));
     const disksBox = el("div", {});
     const updateBox = el("div", {});
+    const torBox = el("div", {});
     const reportMsg = el("div", {});
     const reportBtn = el("button", { style: "width:100%", onclick: async () => {
       reportBtn.disabled = true;
@@ -411,7 +416,7 @@
       reportMsg.replaceChildren(el("div", { class: r.ok ? "msg" : "msg err" }, r.ok ? t(portable() ? "reportSavedPc" : "reportSaved", { f: r.file }) : t("error", { e: r.error })));
     } }, t("report"));
     if (portable()) {
-      renderPortable({ wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, light, screenBox, updateBox, reportBtn, reportMsg });
+      renderPortable({ wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, light, screenBox, updateBox, torBox, reportBtn, reportMsg });
       return;
     }
     panel.append(el("h2", {}, t("system")),
@@ -424,6 +429,7 @@
       // With users on the stick only the owner updates or installs the
       // system (oros-system refuses the others too).
       ...(state.notOwner ? [] : [el("h3", {}, t("update")), updateBox, install]),
+      torBox,
       el("div", { style: "margin-top:10px" }, reportBtn, reportMsg),
       el("div", { class: "power" },
         el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
@@ -435,6 +441,7 @@
     showPrinters(printBox);
     showUpdate(updateBox);
     showDisks(disksBox);
+    showTorBox(torBox);
   }
 
   // The panel of orOS Portable and the desktop apps: only what the
@@ -450,6 +457,7 @@
     parts.push(p.battery);
     if (has("screen")) parts.push(p.screenBox);
     if (has("update")) parts.push(el("h3", {}, t("appUpdate")), p.updateBox);
+    if (has("tor")) parts.push(p.torBox);
     if (has("report")) parts.push(el("div", { style: "margin-top:10px" }, p.reportBtn, p.reportMsg));
     const win = el("button", { onclick: () => setWindow(state.window === "fullscreen" ? "window" : "fullscreen") });
     const row1 = el("div", { class: "power" });
@@ -468,6 +476,25 @@
       wifiText: p.wifiText, sw: p.sw, nets: p.nets, list: p.list };
     paintMain();
     if (has("update")) showUpdate(p.updateBox);
+    if (has("tor")) showTorBox(p.torBox);
+  }
+
+  // Tor Browser in the panel: once it is there, it can be removed (each
+  // user's own copy, with its bookmarks), which frees its space.
+  async function showTorBox(box) {
+    const st = await call({ cmd: "tor.status" });
+    if (!st.ok || !st.installed || st.running) { box.replaceChildren(); return; }
+    const msg = el("div", {});
+    const b = el("button", { style: "width:100%", onclick: async () => {
+      if (!confirm(t("torRemoveAsk"))) return;
+      b.disabled = true;
+      const r = await call({ cmd: "tor.remove" });
+      b.disabled = false;
+      if (r.ok) box.replaceChildren(el("h3", {}, t("torSection")), el("div", { class: "msg" }, t("torRemoved")));
+      else msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error })));
+    } }, t("torRemove"));
+    box.replaceChildren(el("h3", {}, t("torSection")), el("div", { class: "muted" }, t("torRemoveHint")),
+      el("div", { class: "row" }, b), msg);
   }
 
   // Disks: Downloads, the computer's own disks and USB sticks. Opening one
@@ -971,6 +998,26 @@
     const r = await call({ cmd: "tor.open" });
     if (!r.ok) alert(t("torError", { e: r.error }));
     else if (r.downloading) followTor(true);
+    else if (r.started) torAway();
+  }
+  // orOS Portable in full screen would cover Tor Browser's window: orOS
+  // steps aside (minimized) once that window is open and comes back in
+  // full screen when it closes. orOS USB needs none of it (cage shows the
+  // newest window), nor does a windowed orOS.
+  let awayTimer = null;
+  function torAway() {
+    if (!portable() || state.window !== "fullscreen" || awayTimer) return;
+    let away = false, tries = 0;
+    awayTimer = poll(async () => {
+      const st = await call({ cmd: "tor.status" });
+      if (!away) {
+        if (st.ok && st.open) { away = true; await call({ cmd: "window.away" }); return; }
+        if (++tries < 30) return; // Tor Browser takes a moment to start
+      } else if (st.ok && st.open) return;
+      clearInterval(awayTimer);
+      awayTimer = null;
+      if (away) call({ cmd: "window.back" });
+    }, 1500);
   }
   function followTor(tell) {
     if (torTimer) return;
@@ -982,6 +1029,7 @@
       torTimer = null;
       torLabel(t("tor"));
       if (tell && p.error) alert(t("torError", { e: p.error }));
+      else if (tell && p.done) torAway(); // the download starts it when done
     }, 1500);
   }
 
