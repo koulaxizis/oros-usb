@@ -29,7 +29,7 @@ func TestSignedInUser(t *testing.T) {
 	if d, o := signedInUser(home); d != filepath.Join(data, "users", "u00000002") || o {
 		t.Fatalf("Anna: %s %v", d, o)
 	}
-	if got := webArgs(home, webHome)[1]; got != "--user-data-dir="+filepath.Join(data, "users", "u00000002", "web") {
+	if got := webArgs(home, webHome)[1]; got != "--user-data-dir="+filepath.Join(data, "users", "u00000002", "profile") {
 		t.Fatalf("web profile %s", got)
 	}
 	write("users/current.json", `{"id":"u00000001"}`)

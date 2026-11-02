@@ -30,10 +30,27 @@ mkdir -p "$HOME/Documents" "$HOME/Downloads" "$HOME/Pictures" "$HOME/Music" "$HO
 export OROS_PORTABLE_ROOT="$ROOT"
 export OROS_PORTABLE_BROWSER=/usr/bin/chromium
 # The orOS system extension adds the System button (Wi-Fi, sound, power,
-# install); Chromium keeps a dark window until orOS paints. Background
-# timers stay on time so the watchdog's ping goes on behind the Internet
-# window.
-ARGS="--ozone-platform=wayland --start-fullscreen --disable-features=Translate --load-extension=/opt/oros/system-ext --default-background-color=ff1b1a18 --disable-background-timer-throttling --enable-logging --v=0"
+# install). The orOS add-on (Passwords fill and save, preset to this
+# stick's orOS) and uBlock Origin Lite start with it too: the Internet
+# window opens in this same browser (oros-system webArgs). Chromium keeps
+# a dark window until orOS paints. Background timers stay on time so the
+# watchdog's ping goes on behind the Internet window.
+# uBlock Origin Lite runs from a copy in ~/oros/ubol: Chromium writes
+# the indexed filter rules into an unpacked extension's own folder and
+# refuses to load it from the read-only image ("Internal error while
+# parsing rules", shown as a dialog over orOS). A new image brings a new
+# copy. oros-system webArgs uses the same folders.
+EXT=/opt/oros/system-ext
+[ -f /opt/oros/addon/manifest.json ] && EXT="$EXT,/opt/oros/addon"
+if [ -f /opt/oros/ubol/manifest.json ]; then
+	if ! cmp -s /opt/oros/ubol/manifest.json "$ROOT/ubol/manifest.json"; then
+		rm -rf "$ROOT/ubol.new"
+		cp -R /opt/oros/ubol "$ROOT/ubol.new" && chmod -R u+w "$ROOT/ubol.new" &&
+			rm -rf "$ROOT/ubol" && mv "$ROOT/ubol.new" "$ROOT/ubol"
+	fi
+	[ -f "$ROOT/ubol/manifest.json" ] && EXT="$EXT,$ROOT/ubol"
+fi
+ARGS="--ozone-platform=wayland --start-fullscreen --disable-features=Translate --load-extension=$EXT --default-background-color=ff1b1a18 --disable-background-timer-throttling --enable-logging --v=0"
 export XKB_DEFAULT_LAYOUT="us,gr"
 export XKB_DEFAULT_OPTIONS="grp:alt_shift_toggle"
 # Virtual machines and some old GPUs have no hardware GL.

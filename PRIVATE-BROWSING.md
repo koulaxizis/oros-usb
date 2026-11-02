@@ -2,11 +2,11 @@
 
 **EN** · [ΕΛ](#ιδιωτική-περιήγηση-στο-oros-usb)
 
-Your internet provider can see which sites you visit. A **VPN browser extension** hides that for one browser window only, while orOS itself (sync, Mail and the other apps) keeps using your normal connection. orOS does not include or recommend a VPN provider; pick one yourself.
+Your internet provider can see which sites you visit. A **VPN browser extension** hides that. The Internet window and orOS share one browser, so the extension also carries orOS's own traffic (sync, Mail and the other apps) while it is connected. orOS does not include or recommend a VPN provider; pick one yourself.
 
 ## Where it goes
 
-Put the extension in the **Internet** window (System › Internet). It has its own profile in `~/oros/data/web`, separate from the orOS window, which has no toolbar for extensions.
+Put the extension in the **Internet** window (System › Internet), which has the toolbar for extensions. It opens in orOS's own browser profile (`~/oros/data/profile`), so the extension runs for the orOS window too.
 
 The extension and its sign-in are kept only when the stick has a persistence partition (see "Using it" in the [README](README.md)) or orOS is installed on the computer. Without one they are gone at every shutdown. A System update keeps them, because it does not touch the home folder.
 
@@ -42,11 +42,11 @@ The extension and its sign-in are kept only when the stick has a persistence par
 
 [EN](#private-browsing-on-oros-usb) · **ΕΛ**
 
-Ο πάροχος internet σου βλέπει ποιες σελίδες επισκέπτεσαι. Ένα **VPN extension για τον browser** το κρύβει μόνο για ένα παράθυρο, ενώ το ίδιο το orOS (sync, Mail και οι άλλες εφαρμογές) συνεχίζει με την κανονική σου σύνδεση. Το orOS δεν περιέχει ούτε προτείνει πάροχο VPN· διαλέγεις εσύ.
+Ο πάροχος internet σου βλέπει ποιες σελίδες επισκέπτεσαι. Ένα **VPN extension για τον browser** το κρύβει. Το παράθυρο Internet και το orOS μοιράζονται τον ίδιο browser, οπότε όσο είναι συνδεδεμένο το extension περνά από αυτό και η κίνηση του ίδιου του orOS (sync, Mail και οι άλλες εφαρμογές). Το orOS δεν περιέχει ούτε προτείνει πάροχο VPN· διαλέγεις εσύ.
 
 ## Πού μπαίνει
 
-Βάλε το extension στο παράθυρο **Internet** (System › Internet). Έχει δικό του προφίλ στο `~/oros/data/web`, χωριστά από το παράθυρο του orOS, που δεν έχει γραμμή εργαλείων για extensions.
+Βάλε το extension στο παράθυρο **Internet** (System › Internet), που έχει τη γραμμή εργαλείων για extensions. Ανοίγει στο ίδιο προφίλ browser με το orOS (`~/oros/data/profile`), οπότε το extension τρέχει και για το παράθυρο του orOS.
 
 Το extension και η σύνδεσή σου σε αυτό μένουν μόνο αν το stick έχει persistence partition (δες «Using it» στο [README](README.md)) ή αν το orOS είναι εγκατεστημένο στον υπολογιστή. Χωρίς αυτό χάνονται σε κάθε κλείσιμο. Το System update τα κρατά, γιατί δεν αγγίζει τον φάκελο του χρήστη.
 

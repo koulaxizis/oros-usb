@@ -503,19 +503,36 @@ func ownerOnly() bool {
 const webHome = "https://duckduckgo.com/"
 
 // webBrowser and webArgs open a normal Chromium window for the web, with
-// tabs and an address bar, in its own profile next to orOS's. cage shows
-// it over orOS; closing it brings orOS back.
+// tabs and an address bar. cage shows it over orOS; closing it brings orOS
+// back. It opens in orOS's own browser profile (the launcher's
+// <user folder>/profile), so it joins the browser that shows orOS: the
+// orOS add-on there fills and saves Passwords logins on the web pages and
+// reaches the orOS window to do it. Sites therefore share the browser's
+// storage with the orOS window, as in any browser with orOS in a tab.
 var webBrowser = "/usr/bin/chromium"
 
-// webAdblock is uBlock Origin Lite, unpacked into the image at build time
-// (scripts/ubol.sh); the Internet window loads it when it is there.
-var webAdblock = "/opt/oros/ubol"
+// webExtensions are the extensions the orOS window starts with
+// (oros-session ARGS): the System extension, the orOS add-on with its
+// address preset to this stick (scripts/addon.sh) and uBlock Origin Lite
+// (scripts/ubol.sh), which runs from oros-session's writable copy in
+// ~/oros/ubol (Chromium writes its indexed rules into the folder). The
+// browser loads them when it starts; the Internet window lists them too,
+// for the case it is the first window on the profile. Missing ones (a
+// build without them) are left out.
+var webExtensions = func(home string) []string {
+	return []string{"/opt/oros/system-ext", "/opt/oros/addon", filepath.Join(home, "oros", "ubol")}
+}
+
+// webProfile is the signed-in user's orOS browser profile (users.go and
+// the launcher's browserCandidates).
+func webProfile(home string) string {
+	return filepath.Join(webUserDir(home), "profile")
+}
 
 func webArgs(home, url string) []string {
 	args := []string{
 		"--ozone-platform=wayland",
-		// The signed-in user's own web profile (users.go).
-		"--user-data-dir=" + filepath.Join(webUserDir(home), "web"),
+		"--user-data-dir=" + webProfile(home),
 		"--no-first-run",
 		"--disable-features=Translate",
 		"--enable-logging=stderr",
@@ -526,8 +543,14 @@ func webArgs(home, url string) []string {
 	if os.Getenv("OROS_GPU_OFF") == "1" {
 		args = append(args, "--disable-gpu")
 	}
-	if _, err := os.Stat(filepath.Join(webAdblock, "manifest.json")); err == nil {
-		args = append(args, "--load-extension="+webAdblock)
+	var ext []string
+	for _, d := range webExtensions(home) {
+		if _, err := os.Stat(filepath.Join(d, "manifest.json")); err == nil {
+			ext = append(ext, d)
+		}
+	}
+	if len(ext) > 0 {
+		args = append(args, "--load-extension="+strings.Join(ext, ","))
 	}
 	return append(args, url)
 }
@@ -538,7 +561,7 @@ func openWeb(url string) reply {
 		return fail(err, "")
 	}
 	data := filepath.Join(home, "oros", "data")
-	if err := os.MkdirAll(filepath.Join(webUserDir(home), "web"), 0o700); err != nil {
+	if err := os.MkdirAll(webProfile(home), 0o700); err != nil {
 		return fail(err, "")
 	}
 	cmd := exec.Command(webBrowser, webArgs(home, url)...)
