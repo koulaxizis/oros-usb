@@ -280,6 +280,11 @@
     // logs" while this is set (see "Problem report from orOS" below).
     if (has("report")) document.documentElement.setAttribute("data-oros-report", "1");
     else document.documentElement.removeAttribute("data-oros-report");
+    // orOS's "Check for updates" opens our System update while this is
+    // set: orOS itself comes with the system here, not from the web (see
+    // "Updates from orOS" below).
+    if (portable() ? has("update") : !state.notOwner) document.documentElement.setAttribute("data-oros-sys-update", "1");
+    else document.documentElement.removeAttribute("data-oros-sys-update");
     if (!portable()) return;
     document.documentElement.removeAttribute("data-oros-kiosk");
     if (has("wifi")) document.documentElement.setAttribute("data-oros-qs-sys", "1");
@@ -438,7 +443,7 @@
     const printBox = el("div", {});
     const install = el("div", { style: "margin-top:14px" }, el("button", { style: "width:100%", onclick: renderInstall }, t("install")));
     const disksBox = el("div", {});
-    const updateBox = el("div", {});
+    const updateBox = el("div", { id: "oros-update-section" });
     const torBox = el("div", {});
     const aiBox = el("div", {});
     const reportMsg = el("div", {});
@@ -543,10 +548,11 @@
   // "More choices".
   let aiTimer = null, aiBoxEl = null;
   const gb = (mb) => (mb / 1000).toLocaleString(lang(), { maximumFractionDigits: 1 });
-  const ENGINE_MB = 1500; // Ollama's download, once
+  // Ollama's download, once: the host says how large it is here.
+  const engineMB = () => aiLast.engineMB || 1500;
   async function aiInstallRun(model, fresh, msg, done) {
     const mb = ((aiLast.offer || []).find((m) => m.name === model) || {}).mb || 0;
-    if (!confirm(t(fresh ? "aiAsk" : "aiAskModel", { s: gb(mb + (fresh ? ENGINE_MB : 0)) }))) return false;
+    if (!confirm(t(fresh ? "aiAsk" : "aiAskModel", { s: gb(mb + (fresh ? engineMB() : 0)) }))) return false;
     const r = await call({ cmd: "ai.install", model });
     if (!r.ok) {
       const e = r.error === "no persistence" ? t("aiNoPersist") : r.error === "owner only" ? t("aiOwner") : t("aiError", { e: r.error });
@@ -605,10 +611,10 @@
       const go = el("button", { class: "primary", style: "width:100%", onclick: async () => {
         go.disabled = true;
         if (!(await aiInstallRun(sel.value || st.recommended, true, msg, again))) go.disabled = false;
-      } }, t("aiInstall", { s: gb((rec.mb || 0) + ENGINE_MB) }));
+      } }, t("aiInstall", { s: gb((rec.mb || 0) + engineMB()) }));
       sel.addEventListener("change", () => {
         const m = (st.offer || []).find((o) => o.name === sel.value) || {};
-        go.textContent = t("aiInstall", { s: gb((m.mb || 0) + ENGINE_MB) });
+        go.textContent = t("aiInstall", { s: gb((m.mb || 0) + engineMB()) });
       });
       const more = el("details", { style: "margin-top:8px" }, el("summary", {}, t("aiMore")),
         el("div", { class: "muted", style: "margin:6px 0" }, t("aiModelHint")), sel);
@@ -711,6 +717,20 @@
     }
   }
   const aiRefresh = () => has("ai") ? call({ cmd: "ai.status" }).then((st) => { aiAttr(st); return st; }) : Promise.resolve(null);
+  // Updates from orOS: its "Check for updates" (shortcut, command bar,
+  // Settings) fires "oros-sys-update" while data-oros-sys-update is set;
+  // the panel opens at System update and checks at once.
+  document.addEventListener("oros-sys-update", async () => {
+    if (!host) open();
+    const find = () => root && root.getElementById("oros-update-section");
+    for (let i = 0; i < 40 && !(find() && find().querySelector("button")); i++) await new Promise((r) => setTimeout(r, 100));
+    const box = find();
+    if (!box) return;
+    box.scrollIntoView({ block: "center" });
+    const check = box.querySelector("button");
+    if (check && !check.classList.contains("primary")) check.click();
+  });
+
   document.addEventListener("oros-ai", async (e) => {
     if (e.detail === "open" || e.detail === "install") {
       if (!host) open();

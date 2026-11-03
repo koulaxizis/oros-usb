@@ -54,6 +54,18 @@ func TestPickSysPartition(t *testing.T) {
 	if _, err := pickSysPartition("/dev/sdb1 OROS part\n"); err == nil {
 		t.Fatal("found an orossys partition that is not there")
 	}
+	// lsblk without udev: no labels, blkid gives them
+	old := partLabel
+	defer func() { partLabel = old }()
+	partLabel = func(dev string) string {
+		if dev == "/dev/loop0p3" {
+			return "orossys"
+		}
+		return ""
+	}
+	if p, err := pickSysPartition("/dev/loop0  disk\n/dev/loop0p1  part\n/dev/loop0p3  part\n"); err != nil || p != "/dev/loop0p3" {
+		t.Fatalf("blkid fallback: %q %v", p, err)
+	}
 }
 
 // With encrypted data the slots go on the orossys partition, never into
@@ -96,5 +108,46 @@ func TestUpdateEncrypted(t *testing.T) {
 	cfg, err := os.ReadFile(filepath.Join(sys, "oros-system", "boot.cfg"))
 	if err != nil || !strings.Contains(string(cfg), "persistence-label=orosdisk live-media=/dev/disk/by-uuid/sys-1 live-media-path=/oros-system/A toram=filesystem.squashfs") {
 		t.Fatalf("boot.cfg %v:\n%s", err, cfg)
+	}
+}
+
+// The parents of the encrypted data come from sysfs, as on a real
+// computer: /sys/class/block/<name> links into the device tree.
+func TestDMParents(t *testing.T) {
+	root := t.TempDir()
+	devs := filepath.Join(root, "devices")
+	for _, d := range []string{"pci/nvme0n1/nvme0n1p3", "virtual/dm-0/slaves", "pci/nvme0n1/nvme0n1p2"} {
+		if err := os.MkdirAll(filepath.Join(devs, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	os.WriteFile(filepath.Join(devs, "pci/nvme0n1/nvme0n1p3/partition"), []byte("3\n"), 0o644)
+	class := filepath.Join(root, "class")
+	os.MkdirAll(class, 0o755)
+	for name, to := range map[string]string{"nvme0n1p3": "pci/nvme0n1/nvme0n1p3", "dm-0": "virtual/dm-0", "nvme0n1": "pci/nvme0n1"} {
+		if err := os.Symlink(filepath.Join(devs, to), filepath.Join(class, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	os.Symlink(filepath.Join(class, "nvme0n1p3"), filepath.Join(devs, "virtual/dm-0/slaves/nvme0n1p3"))
+	// /dev/mapper/oros-orosdisk is a link to ../dm-0
+	dev := filepath.Join(root, "dev")
+	os.MkdirAll(filepath.Join(dev, "mapper"), 0o755)
+	os.WriteFile(filepath.Join(dev, "dm-0"), nil, 0o644)
+	os.Symlink("../dm-0", filepath.Join(dev, "mapper", "oros-orosdisk"))
+	part, disk, err := dmParents(class, filepath.Join(dev, "mapper", "oros-orosdisk"))
+	if err != nil || part != "nvme0n1p3" || disk != "nvme0n1" {
+		t.Fatalf("got %q %q %v", part, disk, err)
+	}
+	// without udev /dev/mapper/<name> is a plain node: matched by dm/name
+	os.MkdirAll(filepath.Join(devs, "virtual/dm-0/dm"), 0o755)
+	os.WriteFile(filepath.Join(devs, "virtual/dm-0/dm/name"), []byte("oros-test-disk\n"), 0o644)
+	os.WriteFile(filepath.Join(dev, "mapper", "oros-test-disk"), nil, 0o644)
+	part, disk, err = dmParents(class, filepath.Join(dev, "mapper", "oros-test-disk"))
+	if err != nil || part != "nvme0n1p3" || disk != "nvme0n1" {
+		t.Fatalf("device node: got %q %q %v", part, disk, err)
+	}
+	if _, _, err := dmParents(class, "/dev/mapper/none"); err == nil {
+		t.Error("a device with no slaves passed")
 	}
 }

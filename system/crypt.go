@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"unicode/utf8"
 )
@@ -104,12 +105,17 @@ func closeEncrypted(name string) {
 }
 
 // mountSource is the device mounted at dir.
+// --nofsroot leaves out a bind mount's "[/subdir]" after the device.
 var mountSource = func(dir string) string {
-	out, err := run("findmnt", "-n", "-o", "SOURCE", "--target", dir)
+	out, err := run("findmnt", "-n", "--nofsroot", "-o", "SOURCE", "--target", dir)
 	if err != nil {
 		return ""
 	}
-	return strings.TrimSpace(out)
+	src := strings.TrimSpace(out)
+	if i := strings.IndexByte(src, '['); i > 0 {
+		src = src[:i]
+	}
+	return src
 }
 
 func isMapper(dev string) bool {
@@ -118,22 +124,56 @@ func isMapper(dev string) bool {
 
 // sysPartition finds the orossys partition on the disk that holds the
 // encrypted data device dev (/dev/mapper/oros-data).
+// The parents come from sysfs: lsblk --nodeps leaves PKNAME empty for a
+// device-mapper device on some systems (Chris's installed laptop,
+// 2026-11-03), which stopped every system update there.
 var sysPartition = func(dev string) (string, error) {
-	part, err := run("lsblk", "-dnro", "PKNAME", dev)
-	part = strings.TrimSpace(part)
-	if err != nil || part == "" {
-		return "", errors.New("the encrypted data partition was not found")
-	}
-	disk, err := run("lsblk", "-dnro", "PKNAME", "/dev/"+part)
-	disk = strings.TrimSpace(disk)
-	if err != nil || disk == "" {
-		return "", errors.New("the disk of the encrypted data was not found")
+	_, disk, err := dmParents(sysBlock, dev)
+	if err != nil {
+		return "", err
 	}
 	out, err := run("lsblk", "-nro", "PATH,LABEL,TYPE", "/dev/"+disk)
 	if err != nil {
 		return "", cmdErr("lsblk", out, err)
 	}
 	return pickSysPartition(out)
+}
+
+var sysBlock = "/sys/class/block"
+
+// dmParents finds the partition under a device-mapper device
+// (/dev/mapper/oros-data -> dm-0 -> slaves/sda3) and that partition's
+// disk (sda), in the sysfs tree at root.
+func dmParents(root, dev string) (part, disk string, err error) {
+	name := filepath.Base(dev)
+	if real, e := filepath.EvalSymlinks(dev); e == nil {
+		name = filepath.Base(real)
+	}
+	if _, e := os.Stat(filepath.Join(root, name)); e != nil {
+		// Without udev /dev/mapper/<name> is a plain device node, not
+		// a link to ../dm-N: find the dm-N whose dm/name matches.
+		names, _ := filepath.Glob(filepath.Join(root, "dm-*", "dm", "name"))
+		for _, n := range names {
+			if b, e := os.ReadFile(n); e == nil && strings.TrimSpace(string(b)) == name {
+				name = filepath.Base(filepath.Dir(filepath.Dir(n)))
+				break
+			}
+		}
+	}
+	slaves, _ := os.ReadDir(filepath.Join(root, name, "slaves"))
+	if len(slaves) != 1 {
+		return "", "", errors.New("the encrypted data partition was not found")
+	}
+	part = slaves[0].Name()
+	link, e := filepath.EvalSymlinks(filepath.Join(root, part))
+	if e != nil {
+		return "", "", errors.New("the disk of the encrypted data was not found")
+	}
+	if _, e := os.Stat(filepath.Join(link, "partition")); e != nil {
+		return "", "", errors.New("the encrypted data is not on a partition")
+	}
+	disk = filepath.Base(filepath.Dir(link))
+	return part, disk, nil
 }
 
 func pickSysPartition(lsblk string) (string, error) {
@@ -143,7 +183,23 @@ func pickSysPartition(lsblk string) (string, error) {
 			return f[0], nil
 		}
 	}
+	// Without udev lsblk may leave LABEL empty: ask blkid per partition.
+	for _, line := range strings.Split(lsblk, "\n") {
+		f := strings.Fields(line)
+		if len(f) == 2 && f[1] == "part" && partLabel(f[0]) == sysLabel {
+			return f[0], nil
+		}
+	}
 	return "", errors.New("no " + sysLabel + " partition for system updates next to the encrypted data")
+}
+
+// partLabel is the file system label of the partition dev, from blkid.
+var partLabel = func(dev string) string {
+	out, err := run("blkid", "-s", "LABEL", "-o", "value", dev)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
 }
 
 // mountSys mounts the orossys partition for writing, where it is not

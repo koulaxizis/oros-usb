@@ -45,10 +45,32 @@ echo "kernel options: $ARGS"
 data_mount "$IMG"
 if [ -n "$PASS" ]; then
 	# Encrypted: the slots go on orossys, the partition before the data.
+	# oros-system finds it by itself, as System update does on a stick or
+	# an installed disk (crypt.go slotsDir: the mapper's parent partition
+	# and disk in sysfs), so the stick is opened as a real disk here: a
+	# partitioned loop device, its last partition the encrypted data.
+	data_umount
+	DISK_LOOP="$(losetup -fP --show "$IMG")"
+	udevadm settle 2>/dev/null || sleep 2
+	# CI runs in a container without udev: make the partition nodes.
+	for sys in /sys/class/block/"$(basename "$DISK_LOOP")"p*; do
+		node="/dev/$(basename "$sys")"
+		[ -b "$node" ] || mknod "$node" b "$(cut -d: -f1 "$sys/dev")" "$(cut -d: -f2 "$sys/dev")"
+	done
+	LAST="$(lsblk -nro PATH,TYPE "$DISK_LOOP" | awk '$2 == "part" { p = $1 } END { print p }')"
+	DISK_MAP="oros-test-disk-$$"
+	printf '%s' "$PASS" | cryptsetup open --type luks2 --key-file=- "$LAST" "$DISK_MAP"
+	DISK_MNT="$(mktemp -d)"
+	mount "/dev/mapper/$DISK_MAP" "$DISK_MNT"
+	"$BIN" update --yes --source "$OUT/release" --target "$DISK_MNT" --cmdline "$ARGS" --progress "$OUT/progress.json" ||
+		{ cat "$OUT/progress.json" >&2; exit 1; }
+	[ ! -e "$DISK_MNT/oros-system" ] || { echo "FAIL: slots written into the encrypted data" >&2; exit 1; }
+	umount "$DISK_MNT" && rmdir "$DISK_MNT"
+	cryptsetup close "$DISK_MAP"
+	losetup -d "$DISK_LOOP"
+	data_mount "$IMG"
 	part_mount "$IMG" 2
-	"$BIN" update --yes --source "$OUT/release" --target "$DATA_MNT" --slots "$PART_MNT" --cmdline "$ARGS" --progress "$OUT/progress.json"
 	SLOTS="$PART_MNT"
-	[ ! -e "$DATA_MNT/oros-system" ] || { echo "FAIL: slots written into the encrypted data" >&2; exit 1; }
 else
 	"$BIN" update --yes --source "$OUT/release" --target "$DATA_MNT" --cmdline "$ARGS" --progress "$OUT/progress.json"
 	SLOTS="$DATA_MNT"
