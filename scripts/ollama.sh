@@ -23,7 +23,7 @@ else
 fi
 jq -r --arg n "$NAME" '.tag_name as $t | [.assets[] | select(.name == $n)][0]
 	| if . == null then error("no \($n) in the Ollama release \($t)") else "\($t) \(.browser_download_url) \((.digest // "") | sub("^sha256:"; ""))" end' \
-	"$T/release.json" > "$T/asset"
+	"$T/release.json" | tr -d '\r' > "$T/asset" # jq on Windows ends lines with CRLF
 read -r TAG URL DIGEST < "$T/asset"
 case "$URL" in
 	https://github.com/ollama/ollama/releases/download/*/"$NAME") ;;
