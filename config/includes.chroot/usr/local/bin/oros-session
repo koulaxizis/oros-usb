@@ -137,6 +137,11 @@ stop() {
 	sleep 1
 }
 
+# Local AI for orOS's Assistant (System › Local AI, oros-system ai): once
+# it is installed, Ollama starts with the first session of the boot. It
+# is not inside cage, so a watchdog restart leaves it running.
+/opt/oros/oros-system ai --serve < /dev/null > /dev/null 2>&1 &
+
 starts=0
 while true; do
 	# Only one session runs, so browser lock files left by a crash, a power

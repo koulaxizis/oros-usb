@@ -5,7 +5,8 @@
 // as "oros-system update" to download a new system and "oros-system mount"
 // to open another disk (Windows disks read-only), "oros-system disks"
 // lists them as JSON, "oros-system time" to set the time zone, and
-// "oros-system vault-base" to make the folder for encrypted users (vault.go).
+// "oros-system vault-base" to make the folder for encrypted users (vault.go),
+// and "oros-system ai" sets up and starts the local AI (ai.go).
 package main
 
 import (
@@ -26,6 +27,9 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "tor" {
 		os.Exit(torMain(os.Args[2:]))
+	}
+	if len(os.Args) > 1 && os.Args[1] == "ai" {
+		os.Exit(aiMain(os.Args[2:]))
 	}
 	if len(os.Args) > 1 && os.Args[1] == "selftest-files" {
 		os.Exit(selftestFilesMain())
@@ -50,6 +54,6 @@ func main() {
 		}
 		return
 	}
-	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply  (or run by Chromium)")
+	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | ai --fetch [--model M] | ai --serve  (or run by Chromium)")
 	os.Exit(2)
 }
