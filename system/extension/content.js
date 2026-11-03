@@ -543,10 +543,11 @@
   // "More choices".
   let aiTimer = null, aiBoxEl = null;
   const gb = (mb) => (mb / 1000).toLocaleString(lang(), { maximumFractionDigits: 1 });
-  const ENGINE_MB = 1500; // Ollama's download, once
+  // Ollama's download, once: the host says how large it is here.
+  const engineMB = () => aiLast.engineMB || 1500;
   async function aiInstallRun(model, fresh, msg, done) {
     const mb = ((aiLast.offer || []).find((m) => m.name === model) || {}).mb || 0;
-    if (!confirm(t(fresh ? "aiAsk" : "aiAskModel", { s: gb(mb + (fresh ? ENGINE_MB : 0)) }))) return false;
+    if (!confirm(t(fresh ? "aiAsk" : "aiAskModel", { s: gb(mb + (fresh ? engineMB() : 0)) }))) return false;
     const r = await call({ cmd: "ai.install", model });
     if (!r.ok) {
       const e = r.error === "no persistence" ? t("aiNoPersist") : r.error === "owner only" ? t("aiOwner") : t("aiError", { e: r.error });
@@ -605,10 +606,10 @@
       const go = el("button", { class: "primary", style: "width:100%", onclick: async () => {
         go.disabled = true;
         if (!(await aiInstallRun(sel.value || st.recommended, true, msg, again))) go.disabled = false;
-      } }, t("aiInstall", { s: gb((rec.mb || 0) + ENGINE_MB) }));
+      } }, t("aiInstall", { s: gb((rec.mb || 0) + engineMB()) }));
       sel.addEventListener("change", () => {
         const m = (st.offer || []).find((o) => o.name === sel.value) || {};
-        go.textContent = t("aiInstall", { s: gb((m.mb || 0) + ENGINE_MB) });
+        go.textContent = t("aiInstall", { s: gb((m.mb || 0) + engineMB()) });
       });
       const more = el("details", { style: "margin-top:8px" }, el("summary", {}, t("aiMore")),
         el("div", { class: "muted", style: "margin:6px 0" }, t("aiModelHint")), sel);

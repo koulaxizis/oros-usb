@@ -4,11 +4,16 @@
 # Linux amd64 archive and that archive's SHA-256, checked against both the
 # digest GitHub lists for the file and the release's own sha256sum.txt.
 # Writes the JSON file $1; the image never carries Ollama itself.
-#   scripts/ollama.sh OUT.json
+# orOS Portable pins its Windows download with the asset name as $2.
+#   scripts/ollama.sh OUT.json [ollama-windows-amd64.zip]
 set -eu
 OUT="$1"
 API="https://api.github.com/repos/ollama/ollama/releases/latest"
-NAME="ollama-linux-amd64.tar.zst"
+NAME="${2:-ollama-linux-amd64.tar.zst}"
+case "$NAME" in
+	ollama-linux-amd64.tar.zst | ollama-windows-amd64.zip) ;;
+	*) echo "unexpected Ollama asset $NAME" >&2; exit 1 ;;
+esac
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 if [ -n "${GITHUB_TOKEN:-}" ]; then
