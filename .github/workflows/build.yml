@@ -70,7 +70,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           scripts/ollama.sh /tmp/ollama.json && cat /tmp/ollama.json
-          (cd system && go build -o /tmp/oros-system .)
+          (cd system && go build -buildvcs=false -o /tmp/oros-system .)
           mkdir -p /tmp/aihome/oros/data
           HOME=/tmp/aihome /tmp/oros-system ai --fetch --model qwen3:0.6b --dir /tmp/ai \
             --pin /tmp/ollama.json --progress /tmp/ai.json || { cat /tmp/aihome/oros/data/ai-serve.log; exit 1; }
