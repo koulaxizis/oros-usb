@@ -149,6 +149,17 @@ func dmParents(root, dev string) (part, disk string, err error) {
 	if real, e := filepath.EvalSymlinks(dev); e == nil {
 		name = filepath.Base(real)
 	}
+	if _, e := os.Stat(filepath.Join(root, name)); e != nil {
+		// Without udev /dev/mapper/<name> is a plain device node, not
+		// a link to ../dm-N: find the dm-N whose dm/name matches.
+		names, _ := filepath.Glob(filepath.Join(root, "dm-*", "dm", "name"))
+		for _, n := range names {
+			if b, e := os.ReadFile(n); e == nil && strings.TrimSpace(string(b)) == name {
+				name = filepath.Base(filepath.Dir(filepath.Dir(n)))
+				break
+			}
+		}
+	}
 	slaves, _ := os.ReadDir(filepath.Join(root, name, "slaves"))
 	if len(slaves) != 1 {
 		return "", "", errors.New("the encrypted data partition was not found")

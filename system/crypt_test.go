@@ -127,6 +127,14 @@ func TestDMParents(t *testing.T) {
 	if err != nil || part != "nvme0n1p3" || disk != "nvme0n1" {
 		t.Fatalf("got %q %q %v", part, disk, err)
 	}
+	// without udev /dev/mapper/<name> is a plain node: matched by dm/name
+	os.MkdirAll(filepath.Join(devs, "virtual/dm-0/dm"), 0o755)
+	os.WriteFile(filepath.Join(devs, "virtual/dm-0/dm/name"), []byte("oros-test-disk\n"), 0o644)
+	os.WriteFile(filepath.Join(dev, "mapper", "oros-test-disk"), nil, 0o644)
+	part, disk, err = dmParents(class, filepath.Join(dev, "mapper", "oros-test-disk"))
+	if err != nil || part != "nvme0n1p3" || disk != "nvme0n1" {
+		t.Fatalf("device node: got %q %q %v", part, disk, err)
+	}
 	if _, _, err := dmParents(class, "/dev/mapper/none"); err == nil {
 		t.Error("a device with no slaves passed")
 	}
