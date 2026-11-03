@@ -183,7 +183,23 @@ func pickSysPartition(lsblk string) (string, error) {
 			return f[0], nil
 		}
 	}
+	// Without udev lsblk may leave LABEL empty: ask blkid per partition.
+	for _, line := range strings.Split(lsblk, "\n") {
+		f := strings.Fields(line)
+		if len(f) == 2 && f[1] == "part" && partLabel(f[0]) == sysLabel {
+			return f[0], nil
+		}
+	}
 	return "", errors.New("no " + sysLabel + " partition for system updates next to the encrypted data")
+}
+
+// partLabel is the file system label of the partition dev, from blkid.
+var partLabel = func(dev string) string {
+	out, err := run("blkid", "-s", "LABEL", "-o", "value", dev)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
 }
 
 // mountSys mounts the orossys partition for writing, where it is not

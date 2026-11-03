@@ -54,6 +54,18 @@ func TestPickSysPartition(t *testing.T) {
 	if _, err := pickSysPartition("/dev/sdb1 OROS part\n"); err == nil {
 		t.Fatal("found an orossys partition that is not there")
 	}
+	// lsblk without udev: no labels, blkid gives them
+	old := partLabel
+	defer func() { partLabel = old }()
+	partLabel = func(dev string) string {
+		if dev == "/dev/loop0p3" {
+			return "orossys"
+		}
+		return ""
+	}
+	if p, err := pickSysPartition("/dev/loop0  disk\n/dev/loop0p1  part\n/dev/loop0p3  part\n"); err != nil || p != "/dev/loop0p3" {
+		t.Fatalf("blkid fallback: %q %v", p, err)
+	}
 }
 
 // With encrypted data the slots go on the orossys partition, never into
