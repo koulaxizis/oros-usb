@@ -17,10 +17,22 @@ orOS itself
   Go modules          oros-system and the launcher check Tor Browser's signature
                       with ProtonMail go-crypto (BSD-3-Clause, The Go Authors and
                       Proton AG), CIRCL (BSD-3-Clause, Cloudflare) and
-                      golang.org/x/crypto, x/sys (BSD-3-Clause, The Go Authors);
+                      golang.org/x/crypto, x/sys (BSD-3-Clause, The Go Authors),
+                      and unpack the local AI download with klauspost/compress
+                      (BSD-3-Clause, Klaus Post and the Go Authors);
                       the launcher also uses fyne.io/systray (Apache-2.0),
                       godbus/dbus (BSD-2-Clause) and ulikunitz/xz (BSD-3-Clause).
                       Licence texts: Go-modules-*.txt in this folder.
+
+Downloaded only when asked (System > Local AI), never part of the image
+  Ollama              MIT, Ollama and contributors, with llama.cpp and ggml
+                      (MIT, Georgi Gerganov and contributors); its own
+                      licence files stay next to it in
+                      ~/.local/share/oros-ai/ollama/lib/ollama
+                      https://github.com/ollama/ollama
+  Qwen3 models        Apache-2.0, the Qwen team (Alibaba Cloud), through
+                      Ollama's library  https://ollama.com/library/qwen3
+  Tor Browser         see the Tor button (torproject.org)
 
 The system underneath: Debian 13 "trixie"  https://www.debian.org/
   Linux kernel        GPL-2.0, Linus Torvalds and the kernel developers

@@ -33,6 +33,8 @@ type request struct {
 	// Web is orOS's own part of a problem report (Settings › System ›
 	// Report a problem, already shown to the person).
 	Web string `json:"web,omitempty"`
+	// Model is a local AI model (ai.install, ai.forget; ai.go).
+	Model string `json:"model,omitempty"`
 }
 
 type reply map[string]any
@@ -190,6 +192,25 @@ func handle(req request) reply {
 		return torStatus()
 	case "tor.remove":
 		return removeTor()
+	case "ai.status":
+		return aiStatus()
+	case "ai.start":
+		return aiStart()
+	case "ai.install", "ai.forget", "ai.remove", "ai.gpu":
+		// The models are shared by everyone on the stick and take gigabytes:
+		// only the owner adds or removes them.
+		if !ownerOnly() {
+			return reply{"ok": false, "error": "owner only"}
+		}
+		switch req.Cmd {
+		case "ai.install":
+			return aiInstall(req.Model)
+		case "ai.forget":
+			return aiForget(req.Model)
+		case "ai.gpu":
+			return aiSetGPU(req.On)
+		}
+		return aiRemove()
 	case "report":
 		return report(req.Web)
 	case "disks.list":

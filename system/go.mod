@@ -2,7 +2,10 @@ module github.com/koulaxizis/oros-usb/system
 
 go 1.22.0
 
-require github.com/ProtonMail/go-crypto v1.3.0
+require (
+	github.com/ProtonMail/go-crypto v1.3.0
+	github.com/klauspost/compress v1.18.0
+)
 
 require (
 	github.com/cloudflare/circl v1.6.0 // indirect

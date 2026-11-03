@@ -80,6 +80,22 @@
       printHint: "Print from any app with Ctrl+P.",
       qsReboot: "Restart the computer", qsMore: "Printers, disks, update…", volume: "Volume",
       bridgeCode: "orOS Bridge pairing code: type it in orOS Studio",
+      ai: "Local AI", aiHint: "Free AI for orOS's Assistant that runs on this computer: it works without internet, and what you write never leaves the computer.",
+      aiInstall: "Install local AI (about {s} GB)", aiGetting: "Setting up local AI… {p}%",
+      aiKeepUsing: "You can keep using orOS. The Assistant starts using it by itself when it is ready.",
+      aiAsk: "About {s} GB is downloaded once from the official sources and checked. On a slow connection this takes a while; you can keep using orOS. Continue?",
+      aiAskModel: "About {s} GB is downloaded and checked. Continue?",
+      aiReady: "Ready. The Assistant uses it by itself. It is slower than online AI, especially on older computers.",
+      aiMore: "More choices", aiModel: "Model", aiRec: "recommended", aiSizes: "Small,Medium,Large",
+      aiModelHint: "Bigger models answer better but more slowly and need more memory.",
+      aiAdd: "Download this model", aiNoModel: "No model yet.", aiModels: "On this computer: {m}",
+      aiGPU: "Use the graphics card", aiGPUHint: "Faster with a supported card. Turn it off if answers fail or the screen misbehaves.",
+      aiNoPersist: "Local AI needs a stick with a persistence partition (or orOS installed on the computer): without one it would fill the memory and be gone at shutdown.",
+      aiOwner: "Only the owner can install or remove the local AI.",
+      aiError: "Local AI could not be set up: {e}", aiFree: "{f} GB free on this disk.",
+      aiStopped: "Local AI is not running.", aiStartBtn: "Start",
+      aiForget: "Remove {m}", aiForgetAsk: "Remove the model {m}?", aiRemove: "Remove local AI",
+      aiRemoveAsk: "Remove the local AI with all its models?", aiRemoved: "Local AI was removed.",
     },
     el: {
       system: "Σύστημα", wifi: "Wi-Fi", wired: "Ενσύρματο δίκτυο", connectedTo: "Συνδεδεμένο στο {n}",
@@ -126,6 +142,22 @@
       printNone: "Δεν υπάρχουν ακόμη εκτυπωτές. Όσοι υποστηρίζουν AirPrint ή IPP Everywhere εμφανίζονται μόνοι τους όταν είναι στο ίδιο δίκτυο ή συνδεθούν με USB.",
       printHint: "Εκτύπωση από κάθε εφαρμογή με Ctrl+P.",
       qsReboot: "Επανεκκίνηση του υπολογιστή", qsMore: "Εκτυπωτές, δίσκοι, ενημέρωση…", volume: "Ένταση",
+      ai: "Τοπικό AI", aiHint: "Δωρεάν AI για τον Βοηθό του orOS που τρέχει σε αυτόν τον υπολογιστή: δουλεύει χωρίς internet και ό,τι γράφεις δεν φεύγει ποτέ από τον υπολογιστή.",
+      aiInstall: "Εγκατάσταση τοπικού AI (περίπου {s} GB)", aiGetting: "Ετοιμάζεται το τοπικό AI… {p}%",
+      aiKeepUsing: "Μπορείς να συνεχίσεις να χρησιμοποιείς το orOS. Ο Βοηθός θα το χρησιμοποιήσει μόνος του μόλις είναι έτοιμο.",
+      aiAsk: "Θα κατέβουν μία φορά περίπου {s} GB από τις επίσημες πηγές και θα ελεγχθούν. Σε αργή σύνδεση θα πάρει λίγη ώρα· μπορείς να συνεχίσεις να χρησιμοποιείς το orOS. Συνέχεια;",
+      aiAskModel: "Θα κατέβουν περίπου {s} GB και θα ελεγχθούν. Συνέχεια;",
+      aiReady: "Έτοιμο. Ο Βοηθός το χρησιμοποιεί μόνος του. Είναι πιο αργό από το online AI, ειδικά σε παλιότερους υπολογιστές.",
+      aiMore: "Περισσότερες επιλογές", aiModel: "Μοντέλο", aiRec: "προτείνεται", aiSizes: "Μικρό,Μεσαίο,Μεγάλο",
+      aiModelHint: "Τα μεγαλύτερα μοντέλα απαντούν καλύτερα, αλλά πιο αργά, και θέλουν περισσότερη μνήμη.",
+      aiAdd: "Λήψη αυτού του μοντέλου", aiNoModel: "Δεν υπάρχει ακόμη μοντέλο.", aiModels: "Σε αυτόν τον υπολογιστή: {m}",
+      aiGPU: "Χρήση της κάρτας γραφικών", aiGPUHint: "Πιο γρήγορο με κάρτα που υποστηρίζεται. Κλείσ' το αν οι απαντήσεις αποτυγχάνουν ή η οθόνη κάνει περίεργα.",
+      aiNoPersist: "Το τοπικό AI χρειάζεται stick με persistence partition (ή orOS εγκατεστημένο στον υπολογιστή): χωρίς αυτό θα γέμιζε τη μνήμη και θα χανόταν στο κλείσιμο.",
+      aiOwner: "Μόνο ο κάτοχος μπορεί να εγκαταστήσει ή να αφαιρέσει το τοπικό AI.",
+      aiError: "Το τοπικό AI δεν μπόρεσε να εγκατασταθεί: {e}", aiFree: "{f} GB ελεύθερα σε αυτόν τον δίσκο.",
+      aiStopped: "Το τοπικό AI δεν τρέχει.", aiStartBtn: "Εκκίνηση",
+      aiForget: "Αφαίρεση του {m}", aiForgetAsk: "Να αφαιρεθεί το μοντέλο {m};", aiRemove: "Αφαίρεση του τοπικού AI",
+      aiRemoveAsk: "Να αφαιρεθεί το τοπικό AI με όλα τα μοντέλα του;", aiRemoved: "Το τοπικό AI αφαιρέθηκε.",
     },
   };
   Object.assign(TEXT.en, {
@@ -230,6 +262,7 @@
     label.chk { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
     .msg { margin: 6px 0; font-size: 13px; }
     .msg.err { color: #f0a0a0; }
+    summary { cursor: pointer; font-size: 13px; color: #c9c1b3; padding: 4px 0; }
     .power { display: flex; gap: 8px; margin-top: 14px; }
     [hidden] { display: none !important; }
     .power button { flex: 1; }
@@ -332,7 +365,7 @@
 
   async function refresh() {
     const r = await call({ cmd: "status" });
-    if (r.ok) { state = r; applyPlatform(); }
+    if (r.ok) { state = r; applyPlatform(); aiRefresh(); }
     paintButton();
     if (panel && view === "main" && main) paintMain();
   }
@@ -407,6 +440,7 @@
     const disksBox = el("div", {});
     const updateBox = el("div", {});
     const torBox = el("div", {});
+    const aiBox = el("div", {});
     const reportMsg = el("div", {});
     const reportBtn = el("button", { style: "width:100%", onclick: async () => {
       reportBtn.disabled = true;
@@ -416,7 +450,7 @@
       reportMsg.replaceChildren(el("div", { class: r.ok ? "msg" : "msg err" }, r.ok ? t(portable() ? "reportSavedPc" : "reportSaved", { f: r.file }) : t("error", { e: r.error })));
     } }, t("report"));
     if (portable()) {
-      renderPortable({ wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, light, screenBox, updateBox, torBox, reportBtn, reportMsg });
+      renderPortable({ wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, light, screenBox, updateBox, torBox, aiBox, reportBtn, reportMsg });
       return;
     }
     panel.append(el("h2", {}, t("system")),
@@ -430,6 +464,7 @@
       // system (oros-system refuses the others too).
       ...(state.notOwner ? [] : [el("h3", {}, t("update")), updateBox, install]),
       torBox,
+      aiBox,
       el("div", { style: "margin-top:10px" }, reportBtn, reportMsg),
       el("div", { class: "power" },
         el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
@@ -442,6 +477,7 @@
     showUpdate(updateBox);
     showDisks(disksBox);
     showTorBox(torBox);
+    showAIBox(aiBox);
   }
 
   // The panel of orOS Portable and the desktop apps: only what the
@@ -458,6 +494,7 @@
     if (has("screen")) parts.push(p.screenBox);
     if (has("update")) parts.push(el("h3", {}, t("appUpdate")), p.updateBox);
     if (has("tor")) parts.push(p.torBox);
+    if (has("ai")) parts.push(p.aiBox);
     if (has("report")) parts.push(el("div", { style: "margin-top:10px" }, p.reportBtn, p.reportMsg));
     const win = el("button", { onclick: () => setWindow(state.window === "fullscreen" ? "window" : "fullscreen") });
     const row1 = el("div", { class: "power" });
@@ -477,6 +514,7 @@
     paintMain();
     if (has("update")) showUpdate(p.updateBox);
     if (has("tor")) showTorBox(p.torBox);
+    if (has("ai")) showAIBox(p.aiBox);
   }
 
   // Tor Browser in the panel: once it is there, it can be removed (each
@@ -496,6 +534,203 @@
     box.replaceChildren(el("h3", {}, t("torSection")), el("div", { class: "muted" }, t("torRemoveHint")),
       el("div", { class: "row" }, b), msg);
   }
+
+  // Local AI for orOS's Assistant (oros-system ai): an open model that
+  // runs on this computer, downloaded on request into the home folder.
+  // Made for people who know nothing about AI models: one button installs
+  // the model this computer's memory suits, the Assistant then uses it by
+  // itself; other models, the graphics card and removing it wait under
+  // "More choices".
+  let aiTimer = null, aiBoxEl = null;
+  const gb = (mb) => (mb / 1000).toLocaleString(lang(), { maximumFractionDigits: 1 });
+  const ENGINE_MB = 1500; // Ollama's download, once
+  async function aiInstallRun(model, fresh, msg, done) {
+    const mb = ((aiLast.offer || []).find((m) => m.name === model) || {}).mb || 0;
+    if (!confirm(t(fresh ? "aiAsk" : "aiAskModel", { s: gb(mb + (fresh ? ENGINE_MB : 0)) }))) return false;
+    const r = await call({ cmd: "ai.install", model });
+    if (!r.ok) {
+      const e = r.error === "no persistence" ? t("aiNoPersist") : r.error === "owner only" ? t("aiOwner") : t("aiError", { e: r.error });
+      msg.replaceChildren(el("div", { class: "msg err" }, e));
+      return false;
+    }
+    done();
+    return true;
+  }
+  let aiLast = {};
+  // Models by size for people who do not know their names: "Large (qwen3:8b)".
+  const aiLabel = (st, name) => {
+    const i = (st.offer || []).findIndex((m) => m.name === name);
+    const word = t("aiSizes").split(",")[i];
+    return word ? word + " (" + name + ")" : name;
+  };
+  async function showAIBox(box) {
+    aiBoxEl = box;
+    const st = await call({ cmd: "ai.status" });
+    if (box !== aiBoxEl) return;
+    if (!st.ok || (!st.available && !st.installed)) { box.replaceChildren(); return; }
+    aiLast = st;
+    aiAttr(st);
+    const parts = [el("h3", { id: "oros-ai-section" }, t("ai")), el("div", { class: "muted" }, t("aiHint"))];
+    const msg = el("div", {});
+    const p = st.progress || {};
+    if (st.running) {
+      box.replaceChildren(...parts, el("div", { class: "msg" }, t("aiGetting", { p: p.percent || 0 })),
+        el("div", { class: "muted" }, t("aiKeepUsing")));
+      if (!aiTimer) aiTimer = poll(async () => {
+        const s = await call({ cmd: "ai.status" });
+        if (s.ok && s.running && aiBoxEl && aiBoxEl.isConnected) return showAIBox(aiBoxEl);
+        clearInterval(aiTimer);
+        aiTimer = null;
+        if (aiBoxEl && aiBoxEl.isConnected) showAIBox(aiBoxEl);
+        else aiAttr(s);
+      }, 1500);
+      return;
+    }
+    if (p.error) msg.replaceChildren(el("div", { class: "msg err" }, t("aiError", { e: p.error })));
+    const have = st.models || [];
+    const owner = !state.notOwner;
+    const again = () => showAIBox(box);
+    // The models not here yet, the recommended one selected.
+    const sel = el("select", { "aria-label": t("aiModel") });
+    for (const m of st.offer || []) {
+      if (have.includes(m.name)) continue;
+      const rec = m.name === st.recommended;
+      sel.append(el("option", { value: m.name, selected: rec }, aiLabel(st, m.name) + " · " + gb(m.mb) + " GB" + (rec ? " · " + t("aiRec") : "")));
+    }
+
+    if (!st.installed) {
+      if (!owner) { box.replaceChildren(...parts, el("div", { class: "muted" }, t("aiOwner"))); return; }
+      if (!st.persistent) { box.replaceChildren(...parts, el("div", { class: "msg err" }, t("aiNoPersist"))); return; }
+      const rec = (st.offer || []).find((m) => m.name === st.recommended) || {};
+      const go = el("button", { class: "primary", style: "width:100%", onclick: async () => {
+        go.disabled = true;
+        if (!(await aiInstallRun(sel.value || st.recommended, true, msg, again))) go.disabled = false;
+      } }, t("aiInstall", { s: gb((rec.mb || 0) + ENGINE_MB) }));
+      sel.addEventListener("change", () => {
+        const m = (st.offer || []).find((o) => o.name === sel.value) || {};
+        go.textContent = t("aiInstall", { s: gb((m.mb || 0) + ENGINE_MB) });
+      });
+      const more = el("details", { style: "margin-top:8px" }, el("summary", {}, t("aiMore")),
+        el("div", { class: "muted", style: "margin:6px 0" }, t("aiModelHint")), sel);
+      if (st.freeMB >= 0) more.append(el("div", { class: "muted" }, t("aiFree", { f: gb(st.freeMB) })));
+      box.replaceChildren(...parts, el("div", { class: "row", style: "margin-top:8px" }, go), more, msg);
+      return;
+    }
+
+    if (st.serving && have.length) parts.push(el("div", { class: "msg" }, t("aiReady")));
+    else if (!st.serving) {
+      const b = el("button", { onclick: async () => {
+        b.disabled = true;
+        const r = await call({ cmd: "ai.start" });
+        if (!r.ok) msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error })));
+        else again();
+      } }, t("aiStartBtn"));
+      parts.push(el("div", { class: "row" }, el("span", { class: "grow muted" }, t("aiStopped")), b));
+    } else if (owner && sel.options.length) {
+      // Installed, but the model was removed: one button brings one back.
+      const b = el("button", { class: "primary", style: "width:100%", onclick: async () => {
+        b.disabled = true;
+        if (!(await aiInstallRun(sel.value, false, msg, again))) b.disabled = false;
+      } }, t("aiAdd"));
+      parts.push(el("div", { class: "muted" }, t("aiNoModel")), sel, el("div", { class: "row", style: "margin-top:6px" }, b));
+    }
+    if (!owner) { box.replaceChildren(...parts, msg); return; }
+
+    const more = el("details", { style: "margin-top:8px" }, el("summary", {}, t("aiMore")));
+    if (have.length) more.append(el("div", { class: "muted", style: "margin-top:6px" }, t("aiModels", { m: have.map((m) => aiLabel(st, m)).join(", ") })));
+    if (st.serving && have.length && sel.options.length) {
+      const add = el("button", { onclick: async () => {
+        add.disabled = true;
+        if (!(await aiInstallRun(sel.value, false, msg, again))) add.disabled = false;
+      } }, t("aiAdd"));
+      more.append(el("div", { class: "muted", style: "margin:6px 0" }, t("aiModelHint")), sel, el("div", { class: "row", style: "margin-top:6px" }, add));
+    }
+    const gpu = el("input", { type: "checkbox", checked: st.gpu !== false, onchange: async () => {
+      gpu.disabled = true;
+      const r = await call({ cmd: "ai.gpu", on: gpu.checked });
+      gpu.disabled = false;
+      if (!r.ok) msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error })));
+    } });
+    more.append(el("label", { class: "row", style: "margin-top:8px" }, gpu, el("span", { class: "grow" }, t("aiGPU"))),
+      el("div", { class: "muted" }, t("aiGPUHint")));
+    for (const m of have) {
+      if (!(st.offer || []).some((o) => o.name === m)) continue;
+      const b = el("button", { onclick: async () => {
+        if (!confirm(t("aiForgetAsk", { m: aiLabel(st, m) }))) return;
+        b.disabled = true;
+        const r = await call({ cmd: "ai.forget", model: m });
+        if (!r.ok) msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error })));
+        again();
+      } }, t("aiForget", { m: aiLabel(st, m) }));
+      more.append(el("div", { class: "row", style: "margin-top:6px" }, b));
+    }
+    const rm = el("button", { onclick: async () => {
+      if (!confirm(t("aiRemoveAsk"))) return;
+      rm.disabled = true;
+      const r = await call({ cmd: "ai.remove" });
+      if (r.ok) { await showAIBox(box); box.append(el("div", { class: "msg" }, t("aiRemoved"))); return; }
+      rm.disabled = false;
+      msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error })));
+    } }, t("aiRemove"));
+    more.append(el("div", { class: "row", style: "margin-top:6px" }, rm));
+    if (st.freeMB >= 0) more.append(el("div", { class: "muted" }, t("aiFree", { f: gb(st.freeMB) })));
+    box.replaceChildren(...parts, more, msg);
+  }
+
+  // orOS's Assistant reads the local AI's state from the page:
+  // data-oros-sys-ai is "ready" (Ollama answers and has a model), "off"
+  // (installed, not answering), "none" (can be installed); with "ready",
+  // data-oros-sys-ai-url is Ollama's address and data-oros-sys-ai-models
+  // its models, separated by spaces. An installed Ollama that is not
+  // running is started once. The page asks with the DOM event "oros-ai":
+  // "open" opens this panel at the Local AI section, "install" also asks
+  // to install it there, "status" answers with
+  // "oros-ai-status" (detail: the same state as a JSON string).
+  let aiStarted = false;
+  function aiAttr(st) {
+    const d = document.documentElement;
+    if (!has("ai") || !st || !st.ok || (!st.available && !st.installed)) {
+      d.removeAttribute("data-oros-sys-ai");
+      d.removeAttribute("data-oros-sys-ai-url");
+      d.removeAttribute("data-oros-sys-ai-models");
+      return;
+    }
+    const models = (st.models || []).filter((m) => /^[\w.:/-]+$/.test(m));
+    const v = st.serving && models.length ? "ready" : st.installed ? "off" : "none";
+    d.setAttribute("data-oros-sys-ai", v);
+    if (v === "ready") {
+      d.setAttribute("data-oros-sys-ai-url", String(st.address || ""));
+      d.setAttribute("data-oros-sys-ai-models", models.join(" "));
+    } else {
+      d.removeAttribute("data-oros-sys-ai-url");
+      d.removeAttribute("data-oros-sys-ai-models");
+    }
+    if (v === "off" && !st.running && !aiStarted) {
+      aiStarted = true;
+      call({ cmd: "ai.start" }).then(aiRefresh);
+    }
+  }
+  const aiRefresh = () => has("ai") ? call({ cmd: "ai.status" }).then((st) => { aiAttr(st); return st; }) : Promise.resolve(null);
+  document.addEventListener("oros-ai", async (e) => {
+    if (e.detail === "open" || e.detail === "install") {
+      if (!host) open();
+      const find = () => root && root.getElementById("oros-ai-section");
+      for (let i = 0; i < 40 && !find(); i++) await new Promise((r) => setTimeout(r, 100));
+      if (find()) find().scrollIntoView({ block: "start" });
+      // "install": the Assistant's "Install local AI" button goes straight
+      // to the question that starts it (the recommended model).
+      const go = e.detail === "install" && find() && find().parentElement.querySelector("button.primary");
+      if (go) go.click();
+      return;
+    }
+    if (e.detail === "status") {
+      const st = await aiRefresh();
+      const out = st && st.ok ? { ok: true, state: document.documentElement.getAttribute("data-oros-sys-ai") || "",
+        url: String(st.address || ""), models: (st.models || []).map(String), recommended: String(st.recommended || ""),
+        running: !!st.running } : { ok: false };
+      document.dispatchEvent(new CustomEvent("oros-ai-status", { detail: JSON.stringify(out) }));
+    }
+  });
 
   // Disks: Downloads, the computer's own disks and USB sticks. Opening one
   // mounts it read-only and shows it in the Internet window. The list
