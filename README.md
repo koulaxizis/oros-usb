@@ -7,7 +7,7 @@ A bootable USB image that starts straight into [orOS](https://useoros.online). M
 ## What is inside
 
 - Debian 13 (trixie) live system, built with live-build, with the usual non-free firmware for Wi-Fi, graphics and sound.
-- [cage](https://github.com/cage-kiosk/cage), a kiosk Wayland compositor, showing only Debian's Chromium (no Google sign-in, sync, Safe Browsing or metrics; see `config/includes.chroot/etc/chromium/policies/managed/oros.json`).
+- [cage](https://github.com/cage-kiosk/cage), a kiosk Wayland compositor, showing only Debian's Chromium (no Google sign-in, sync, Safe Browsing or metrics, and it never offers to save passwords, addresses or cards: orOS Passwords and the orOS add-on keep those; see `config/includes.chroot/etc/chromium/policies/managed/oros.json`).
 - The [orOS Portable](https://github.com/koulaxizis/oros-portable) launcher serving orOS from `http://localhost:47800/`, the same address as orOS Portable, so its Dropbox sign-in works here too.
 - UEFI with Secure Boot (Debian's signed shim and GRUB) and legacy BIOS boot, with a graphical start: no text from the menu to orOS (see **Boot screen** below).
 - A **System** button in orOS's top bar (the `system/extension` Chromium extension) for Wi-Fi, sound, battery, restart, shut down and installing orOS on the computer's disk. It talks to `oros-system` (`system/`), a small native messaging host that uses NetworkManager, PipeWire and systemd.
