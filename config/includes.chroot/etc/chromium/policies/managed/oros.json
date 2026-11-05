@@ -13,6 +13,8 @@
   "BackgroundModeEnabled": false,
   "IntensiveWakeUpThrottlingEnabled": false,
   "PromotionalTabsEnabled": false,
+  "PasswordManagerEnabled": false,
+  "PasswordLeakDetectionEnabled": false,
   "AutofillAddressEnabled": false,
   "AutofillCreditCardEnabled": false,
   "DefaultSearchProviderEnabled": true,

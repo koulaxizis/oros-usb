@@ -40,6 +40,12 @@ export OROS_PORTABLE_BROWSER=/usr/bin/chromium
 # refuses to load it from the read-only image ("Internal error while
 # parsing rules", shown as a dialog over orOS). A new image brings a new
 # copy. oros-system webArgs uses the same folders.
+# The orOS window starts maximized, not in Chromium's full screen: cage
+# already gives it the whole screen without a title bar, and in full screen
+# Chromium shows its "exit full screen" button whenever the pointer reaches
+# the top edge, over orOS's top bar. (--kiosk would hide it, but it is a
+# flag for the whole browser and would take the Internet window's tabs and
+# address bar away.)
 EXT=/opt/oros/system-ext
 [ -f /opt/oros/addon/manifest.json ] && EXT="$EXT,/opt/oros/addon"
 if [ -f /opt/oros/ubol/manifest.json ]; then
@@ -50,7 +56,7 @@ if [ -f /opt/oros/ubol/manifest.json ]; then
 	fi
 	[ -f "$ROOT/ubol/manifest.json" ] && EXT="$EXT,$ROOT/ubol"
 fi
-ARGS="--ozone-platform=wayland --start-fullscreen --disable-features=Translate --load-extension=$EXT --default-background-color=ff1b1a18 --disable-background-timer-throttling --enable-logging --v=0"
+ARGS="--ozone-platform=wayland --start-maximized --disable-features=Translate --load-extension=$EXT --default-background-color=ff1b1a18 --disable-background-timer-throttling --enable-logging --v=0"
 export XKB_DEFAULT_LAYOUT="us,gr"
 export XKB_DEFAULT_OPTIONS="grp:alt_shift_toggle"
 # Virtual machines and some old GPUs have no hardware GL.
