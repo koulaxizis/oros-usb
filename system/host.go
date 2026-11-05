@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -185,7 +186,7 @@ func handle(req request) reply {
 	case "printers.test":
 		return printTest(req.Printer)
 	case "web.open":
-		return openWeb(webHome)
+		return openWeb(webHome())
 	case "tor.open":
 		return openTor()
 	case "tor.status":
@@ -520,8 +521,26 @@ func ownerOnly() bool {
 	return owner
 }
 
-// webHome is the Internet button's first page.
-const webHome = "https://duckduckgo.com/"
+// The Internet button's first page: orOS's Start page (startpage/,
+// orOS 5.33 and later: favourites from Bookmarks, search, the Tor button)
+// when the orOS this stick serves has it, otherwise DuckDuckGo.
+var (
+	webStart    = "http://localhost:47800/startpage/"
+	webFallback = "https://duckduckgo.com/"
+)
+
+func webHome() string {
+	c := http.Client{Timeout: 800 * time.Millisecond}
+	r, err := c.Get(webStart)
+	if err != nil {
+		return webFallback
+	}
+	r.Body.Close()
+	if r.StatusCode != http.StatusOK {
+		return webFallback
+	}
+	return webStart
+}
 
 // webBrowser and webArgs open a normal Chromium window for the web, with
 // tabs and an address bar. cage shows it over orOS; closing it brings orOS

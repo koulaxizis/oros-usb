@@ -205,6 +205,38 @@
     }
   });
 
+  // orOS's Start page (startpage/, the Internet window's first page): only
+  // its Tor button. The page shows "New Tor window" while
+  // data-oros-sys-tor is "1" and fires "oros-sys-tor" on a press, which
+  // runs the same Tor steps as the top-bar button (ask before the first
+  // download, oros-system checks the signature). Nothing else of this
+  // script runs there: no top-bar buttons and no watchdog ping, which
+  // belongs to orOS's own window.
+  if (location.pathname.startsWith("/startpage/")) {
+    call({ cmd: "status" }).then((st) => {
+      if (st.ok && (!st.caps || st.caps.tor)) document.documentElement.setAttribute("data-oros-sys-tor", "1");
+    });
+    let torBusy = false;
+    document.addEventListener("oros-sys-tor", async () => {
+      if (torBusy) return;
+      torBusy = true;
+      try {
+        const st = await call({ cmd: "tor.status" });
+        if (st.ok && st.running) return;             // already downloading
+        if (st.ok && !st.installed) {
+          let q = t("torAsk");
+          if (st.persistent === false) q = t("torAskNoPersist") + "\n\n" + q;
+          if (!confirm(q)) return;
+        }
+        const r = await call({ cmd: "tor.open" });
+        if (!r.ok) alert(t("torError", { e: r.error }));
+      } finally {
+        torBusy = false;
+      }
+    });
+    return;
+  }
+
   const ICON = {
     wifi: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.5a15 15 0 0 1 20 0"/><path d="M5 12a10.5 10.5 0 0 1 14 0"/><path d="M8.5 15.5a5.5 5.5 0 0 1 7 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>',
     wifiOff: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.5a15 15 0 0 1 20 0" opacity=".35"/><path d="M5 12a10.5 10.5 0 0 1 14 0" opacity=".35"/><path d="M8.5 15.5a5.5 5.5 0 0 1 7 0" opacity=".35"/><path d="M3 3l18 18"/></svg>',
