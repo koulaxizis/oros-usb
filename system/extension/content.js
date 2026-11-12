@@ -380,6 +380,10 @@
     // orOS's Quick settings shows the battery from this.
     if (state.battery) document.documentElement.setAttribute("data-oros-sys-battery", state.battery.percent + ":" + (state.battery.charging ? 1 : 0));
     else document.documentElement.removeAttribute("data-oros-sys-battery");
+    // orOS's screen lock offers Windows Hello or a fingerprint from this
+    // ("oros-bio" below); the host says what the computer really has.
+    if (has("bio")) document.documentElement.setAttribute("data-oros-sys-bio", "1");
+    else document.documentElement.removeAttribute("data-oros-sys-bio");
     qsStep();
   }
 
@@ -761,6 +765,32 @@
     box.scrollIntoView({ block: "center" });
     const check = box.querySelector("button");
     if (check && !check.classList.contains("primary")) check.click();
+  });
+
+  // Screen lock with Windows Hello or a fingerprint (orOS lock.js, LK-BIO):
+  // the page asks with "oros-bio" {n, op, kid, text} and gets "oros-bio-done"
+  // {n, ok, …} back. Only the four bio commands pass; the host does the
+  // check and keeps the secret (oros-portable lockbio.go, oros-system
+  // lockbio.go). Strings both ways, as for the problem report.
+  let bioBusy = false;
+  document.addEventListener("oros-bio", async (ev) => {
+    let q = null;
+    try { q = JSON.parse(String(ev.detail)); } catch (e) { q = null; }
+    const n = q && typeof q.n === "string" && /^[0-9a-f]{32}$/.test(q.n) ? q.n : "";
+    const answer = (r) => document.dispatchEvent(new CustomEvent("oros-bio-done", { detail: JSON.stringify(Object.assign({ n }, r)) }));
+    if (!n || !/^(state|seal|open|clear)$/.test(String(q.op))) { answer({ ok: false, error: "bad" }); return; }
+    if (!has("bio")) { answer({ ok: false, error: "no-hw" }); return; }
+    const slow = q.op === "seal" || q.op === "open";
+    if (slow && bioBusy) { answer({ ok: false, error: "busy" }); return; }
+    const msg = { cmd: "bio." + q.op };
+    if (q.op !== "state") msg.kid = String(q.kid || "").slice(0, 24);
+    if (slow) msg.text = String(q.text || "").slice(0, 80);
+    if (slow) bioBusy = true;
+    const r = await call(msg);
+    if (slow) bioBusy = false;
+    if (!r || !r.ok) { answer({ ok: false, error: String((r && r.error) || "failed").slice(0, 20) }); return; }
+    answer({ ok: true, can: String(r.can || ""), kind: String(r.kind || ""),
+      kids: Array.isArray(r.kids) ? r.kids.map(String).slice(0, 16) : [], d: typeof r.d === "string" ? r.d : "" });
   });
 
   document.addEventListener("oros-ai", async (e) => {
