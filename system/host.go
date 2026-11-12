@@ -36,6 +36,10 @@ type request struct {
 	Web string `json:"web,omitempty"`
 	// Model is a local AI model (ai.install, ai.forget; ai.go).
 	Model string `json:"model,omitempty"`
+	// Kid is the page's id for its screen lock record (lockbio.go); Text
+	// the line a prompt shows (unused here: fprintd has no window).
+	Kid  string `json:"kid,omitempty"`
+	Text string `json:"text,omitempty"`
 }
 
 type reply map[string]any
@@ -212,6 +216,8 @@ func handle(req request) reply {
 			return aiSetGPU(req.On)
 		}
 		return aiRemove()
+	case "bio.state", "bio.seal", "bio.open", "bio.clear":
+		return bioHost(req)
 	case "report":
 		return report(req.Web)
 	case "disks.list":

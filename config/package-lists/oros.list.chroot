@@ -32,6 +32,9 @@ wpasupplicant
 iw
 polkitd
 
+# Screen lock with a fingerprint (oros-system bio.*): fprintd and its tools
+fprintd
+
 # System button and installer (oros-system)
 efibootmgr
 dosfstools
