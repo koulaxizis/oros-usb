@@ -24,5 +24,20 @@
   "DefaultSearchProviderIconURL": "https://duckduckgo.com/favicon.ico",
   "NewTabPageLocation": "https://duckduckgo.com/",
   "HomepageLocation": "https://duckduckgo.com/",
-  "ShowHomeButton": true
+  "ShowHomeButton": true,
+  "ExtensionSettings": {
+    "*": {
+      "runtime_blocked_hosts": [
+        "*://localhost",
+        "*://127.0.0.1",
+        "*://*.useoros.online"
+      ]
+    },
+    "hibkbfiidcfohidigfegiadgedhmdecc": {
+      "runtime_blocked_hosts": []
+    },
+    "cbabbleeefcdjmjjdpfiojpmiekpmcci": {
+      "runtime_blocked_hosts": []
+    }
+  }
 }
