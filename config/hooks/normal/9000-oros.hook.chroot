@@ -17,6 +17,10 @@ cat > /etc/systemd/logind.conf.d/oros.conf <<'EOF'
 HandlePowerKey=poweroff
 HandleLidSwitch=suspend
 EOF
+# Locales for the Orca screen reader alone (oros-system reader): it speaks
+# in orOS's language. The session itself stays C.UTF-8.
+printf '%s\n' 'en_US.UTF-8 UTF-8' 'el_GR.UTF-8 UTF-8' 'de_DE.UTF-8 UTF-8' > /etc/locale.gen
+locale-gen
 # The launcher and the system bridge must be executable even if they were
 # copied without the bit; sudo ignores rule files with loose permissions.
 chmod 0755 /opt/oros/oros-portable /opt/oros/oros-system /opt/oros/oros-bridge /usr/local/bin/oros-kiosk

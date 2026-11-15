@@ -169,6 +169,22 @@
     appUpdateNone: "This is the newest orOS ({v}).",
     reportSavedPc: "Saved in this computer's Downloads folder: {f}.", qsMorePc: "Update, problem report…",
     btSettings: "Bluetooth settings of this computer", btSettingsSub: "Opens the computer's settings",
+    power: "Power", screenOff: "Turn the screen off after", sleepAfter: "Sleep after", never: "Never",
+    minutes: "{n} min", hours: "{n} h", powerHint: "Closing the lid also puts the computer to sleep. A playing video keeps the screen on.",
+    keyboard: "Keyboard", kbHint: "Choose up to 4 layouts; the first is used at the start.",
+    kbSwitch: "Switch layout with", kbSw_alt_shift: "Alt+Shift", kbSw_win_space: "Super+Space", kbSw_ctrl_shift: "Ctrl+Shift", kbSw_caps: "Caps Lock",
+    kbApply: "Apply (orOS starts again)", kbApplyAsk: "orOS starts again to use the new keyboard. Your work is kept. Continue?",
+    kbPending: "Saved. It is used the next time orOS starts.", kbMax: "At most 4 layouts.",
+    a11y: "Accessibility", reader: "Screen reader (Orca)",
+    readerHint: "Reads the screen aloud with voices on this computer. Turn it on or off with Ctrl+Alt+Shift+J.",
+    readerAsk: "orOS starts again once so the screen reader can read it. Continue?",
+    readerOn: "Screen reader on. orOS starts again…", readerOff: "Screen reader off.",
+    readerNone: "This system has no screen reader yet: use System update.",
+    screens: "Screens", dispMode: "With two screens", disp_extend: "Extend", disp_duplicate: "Duplicate",
+    disp_external: "Only the other screen", disp_internal: "Only this screen", dispBuiltIn: "Built-in screen",
+    dispRes: "Resolution", dispScale: "Size", dispHint: "Ctrl+Alt+Shift+D switches between these.", dispNow: "Screens: {m}",
+    dispOne: "One screen. Plug in another to duplicate or extend.",
+    shotSaved: "Screenshot saved in Pictures › Screenshots", shotOpen: "Open", shotFail: "No screenshot: {e}",
   });
   Object.assign(TEXT.el, {
     bridgeCode: "Κωδικός σύζευξης του orOS Bridge: πληκτρολόγησέ τον στο orOS Studio",
@@ -180,6 +196,22 @@
     appUpdateNone: "Έχεις το νεότερο orOS ({v}).",
     reportSavedPc: "Αποθηκεύτηκε στις Λήψεις αυτού του υπολογιστή: {f}.", qsMorePc: "Ενημέρωση, αναφορά προβλήματος…",
     btSettings: "Ρυθμίσεις Bluetooth του υπολογιστή", btSettingsSub: "Ανοίγει τις ρυθμίσεις του υπολογιστή",
+    power: "Ενέργεια", screenOff: "Σβήσιμο οθόνης μετά από", sleepAfter: "Αναστολή μετά από", never: "Ποτέ",
+    minutes: "{n} λεπτά", hours: "{n} ώρες", powerHint: "Και το κλείσιμο του καπακιού βάζει τον υπολογιστή σε αναστολή. Όσο παίζει βίντεο η οθόνη μένει αναμμένη.",
+    keyboard: "Πληκτρολόγιο", kbHint: "Διάλεξε έως 4 διατάξεις· η πρώτη ισχύει στην εκκίνηση.",
+    kbSwitch: "Αλλαγή διάταξης με", kbSw_alt_shift: "Alt+Shift", kbSw_win_space: "Super+Space", kbSw_ctrl_shift: "Ctrl+Shift", kbSw_caps: "Caps Lock",
+    kbApply: "Εφαρμογή (το orOS ξαναξεκινά)", kbApplyAsk: "Το orOS θα ξαναξεκινήσει για να χρησιμοποιήσει το νέο πληκτρολόγιο. Η δουλειά σου μένει. Συνέχεια;",
+    kbPending: "Αποθηκεύτηκε. Ισχύει την επόμενη φορά που θα ξεκινήσει το orOS.", kbMax: "Το πολύ 4 διατάξεις.",
+    a11y: "Προσβασιμότητα", reader: "Αναγνώστης οθόνης (Orca)",
+    readerHint: "Διαβάζει την οθόνη φωναχτά με φωνές αυτού του υπολογιστή. Άνοιγμα ή κλείσιμο με Ctrl+Alt+Shift+J.",
+    readerAsk: "Το orOS θα ξαναξεκινήσει μία φορά για να μπορεί να το διαβάσει ο αναγνώστης οθόνης. Συνέχεια;",
+    readerOn: "Ο αναγνώστης οθόνης άνοιξε. Το orOS ξαναξεκινά…", readerOff: "Ο αναγνώστης οθόνης έκλεισε.",
+    readerNone: "Αυτό το σύστημα δεν έχει ακόμη αναγνώστη οθόνης: κάνε Ενημέρωση συστήματος.",
+    screens: "Οθόνες", dispMode: "Με δύο οθόνες", disp_extend: "Επέκταση", disp_duplicate: "Διπλασιασμός",
+    disp_external: "Μόνο η άλλη οθόνη", disp_internal: "Μόνο αυτή η οθόνη", dispBuiltIn: "Ενσωματωμένη οθόνη",
+    dispRes: "Ανάλυση", dispScale: "Μέγεθος", dispHint: "Με Ctrl+Alt+Shift+D αλλάζεις ανάμεσά τους.", dispNow: "Οθόνες: {m}",
+    dispOne: "Μία οθόνη. Σύνδεσε άλλη για διπλασιασμό ή επέκταση.",
+    shotSaved: "Το στιγμιότυπο αποθηκεύτηκε στις Εικόνες › Στιγμιότυπα", shotOpen: "Άνοιγμα", shotFail: "Δεν έγινε στιγμιότυπο: {e}",
   });
   const lang = () => ((localStorage.getItem("oros-lang") || navigator.language || "en").slice(0, 2) === "el" ? "el" : "en");
   const t = (k, v) => {
@@ -482,6 +514,7 @@
     const updateBox = el("div", { id: "oros-update-section" });
     const torBox = el("div", {});
     const aiBox = el("div", {});
+    const deskBox = el("div", {});
     const reportMsg = el("div", {});
     const reportBtn = el("button", { style: "width:100%", onclick: async () => {
       reportBtn.disabled = true;
@@ -500,6 +533,7 @@
       btBox,
       el("h3", {}, t("printers")), printBox,
       el("h3", {}, t("time")), timeBox,
+      deskBox,
       el("h3", {}, t("disks")), disksBox,
       // With users on the stick only the owner updates or installs the
       // system (oros-system refuses the others too).
@@ -508,6 +542,7 @@
       aiBox,
       el("div", { style: "margin-top:10px" }, reportBtn, reportMsg),
       el("div", { class: "power" },
+        el("button", { onclick: () => call({ cmd: "power.sleep" }) }, t("sleep")),
         el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
         el("button", { class: "primary", html: ICON.power + " " + t("shutdown"), onclick: () => call({ cmd: "power.off" }) })));
     main = { wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, install, light, screenBox };
@@ -519,7 +554,185 @@
     showDisks(disksBox);
     showTorBox(torBox);
     showAIBox(aiBox);
+    showDesk(deskBox);
   }
+
+  // Power, keyboard and the screen reader (orOS USB, oros-system desk.go).
+  // Screen and sleep times apply at once; a new keyboard and turning the
+  // reader on need orOS to start again, which asks first.
+  async function showDesk(box) {
+    const r = await call({ cmd: "desk.get" });
+    if (!r.ok || !box.isConnected) return;
+    const d = r.desk;
+    const msg = el("div", {});
+    const save = async (part) => {
+      const s = await call({ cmd: "desk.set", desk: part });
+      if (!s.ok) msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: s.error })));
+      return s;
+    };
+    const span = (m) => m === 0 ? t("never") : m % 60 === 0 ? t("hours", { n: m / 60 }) : t("minutes", { n: m });
+    const pick = (label, list, value, key) => {
+      const sel = el("select", { "aria-label": label, onchange: () => save({ [key]: Number(sel.value) }) });
+      for (const m of list) sel.append(el("option", { value: String(m), selected: m === value }, span(m)));
+      return el("div", { style: "margin:6px 0" }, el("div", { class: "muted" }, label), sel);
+    };
+    // Keyboard: the chosen layouts in order, then the others.
+    const names = (() => { try { return new Intl.DisplayNames([lang()], { type: "region" }); } catch (e) { return null; } })();
+    const REGION = { us: "US", gb: "GB", gr: "GR", de: "DE", fr: "FR", es: "ES", it: "IT", pt: "PT", nl: "NL", be: "BE", ch: "CH", at: "AT",
+      se: "SE", no: "NO", dk: "DK", fi: "FI", pl: "PL", cz: "CZ", sk: "SK", hu: "HU", ro: "RO", bg: "BG", rs: "RS", hr: "HR", si: "SI",
+      al: "AL", tr: "TR", ru: "RU", ua: "UA", il: "IL" };
+    const layName = (l) => l === "ara" ? "العربية (ara)" : ((names && REGION[l] && names.of(REGION[l])) || l) + " (" + l + ")";
+    let chosen = d.layouts.slice();
+    const kbList = el("div", { style: "max-height:150px;overflow:auto;margin:6px 0" });
+    const paintKb = () => {
+      const order = chosen.concat(r.layoutChoices.filter((l) => !chosen.includes(l)));
+      kbList.replaceChildren(...order.map((l) => {
+        const i = chosen.indexOf(l);
+        const cb = el("input", { type: "checkbox", checked: i >= 0, onchange: () => {
+          if (cb.checked && chosen.length >= 4) { cb.checked = false; msg.replaceChildren(el("div", { class: "msg err" }, t("kbMax"))); return; }
+          chosen = cb.checked ? chosen.concat(l) : chosen.filter((x) => x !== l);
+          if (!chosen.length) chosen = [l];
+          paintKb();
+        } });
+        return el("label", { class: "row" }, cb, el("span", { class: "grow" }, (i >= 0 ? (i + 1) + ". " : "") + layName(l)));
+      }));
+    };
+    paintKb();
+    const sw = el("select", { "aria-label": t("kbSwitch") });
+    for (const k of r.switchChoices) sw.append(el("option", { value: k, selected: k === d.switch }, t("kbSw_" + k)));
+    const apply = el("button", { style: "width:100%", onclick: async () => {
+      const s = await save({ layouts: chosen, switch: sw.value });
+      if (!s.ok) return;
+      if (confirm(t("kbApplyAsk"))) call({ cmd: "session.restart" });
+      else msg.replaceChildren(el("div", { class: "msg" }, t("kbPending")));
+    } }, t("kbApply"));
+    // Screen reader
+    const rd = el("button", { class: "switch" + (d.reader ? " on" : ""), "aria-label": t("reader"), "aria-pressed": d.reader ? "true" : "false",
+      disabled: !r.readerAvailable, onclick: () => toggleReader() });
+    const dispBox = el("div", {});
+    box.replaceChildren(
+      el("h3", {}, t("screens")), dispBox,
+      el("h3", {}, t("power")), pick(t("screenOff"), r.screenOffChoices, d.screenOff, "screenOff"),
+      pick(t("sleepAfter"), r.sleepChoices, d.sleep, "sleep"), el("div", { class: "muted" }, t("powerHint")),
+      el("h3", {}, t("keyboard")), el("div", { class: "muted" }, t("kbHint")), kbList,
+      el("div", { class: "muted" }, t("kbSwitch")), sw, el("div", { class: "row", style: "margin-top:6px" }, apply),
+      el("h3", {}, t("a11y")), el("div", { class: "row" }, el("span", { class: "grow" }, t("reader")), rd),
+      el("div", { class: "muted" }, r.readerAvailable ? t("readerHint") : t("readerNone")), msg);
+    showDisplays(dispBox, msg);
+  }
+
+  // Screens (oros-system display.go): duplicate / extend / only one, and
+  // each screen's resolution and size. Applied at once.
+  async function showDisplays(box, msg) {
+    const r = await call({ cmd: "display.list" });
+    if (!r.ok || !box.isConnected) { box.replaceChildren(); return; }
+    const d = r.display || { mode: "extend" };
+    const outs = r.outputs || [];
+    const set = async (part) => {
+      const s = await call({ cmd: "display.set", desk: Object.assign({}, d, part) });
+      if (!s.ok) msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: s.error })));
+      showDisplays(box, msg);
+    };
+    const parts = [];
+    if (outs.length >= 2) {
+      const sel = el("select", { "aria-label": t("dispMode"), onchange: () => set({ mode: sel.value }) });
+      for (const m of r.modes) sel.append(el("option", { value: m, selected: m === d.mode }, t("disp_" + m)));
+      parts.push(el("div", { class: "muted" }, t("dispMode")), sel, el("div", { class: "muted" }, t("dispHint")));
+    } else parts.push(el("div", { class: "muted" }, t("dispOne")));
+    for (const o of outs) {
+      const pref = (d.outputs || {})[o.name] || {};
+      const res = el("select", { "aria-label": t("dispRes"), onchange: () => set({ outputs: Object.assign({}, d.outputs, { [o.name]: Object.assign({}, pref, { res: res.value }) }) }) });
+      for (const x of o.resolutions) res.append(el("option", { value: x, selected: x === (pref.res || o.res) }, x.replace("x", " × ")));
+      const sc = el("select", { "aria-label": t("dispScale"), onchange: () => set({ outputs: Object.assign({}, d.outputs, { [o.name]: Object.assign({}, pref, { scale: Number(sc.value) }) }) }) });
+      for (const x of r.scales) sc.append(el("option", { value: String(x), selected: x === (pref.scale || 1) }, Math.round(x * 100) + "%"));
+      parts.push(el("div", { style: "margin-top:8px" }, el("b", {}, o.internal ? t("dispBuiltIn") : (o.label || o.name)),
+        el("div", { class: "row" }, el("div", { class: "grow" }, res), el("div", { style: "width:90px" }, sc))));
+    }
+    box.replaceChildren(...parts);
+  }
+
+  // The screen reader on or off (panel switch, Ctrl+Alt+Shift+J). Turning
+  // it on saves the choice and starts orOS again: Chromium gives Orca the
+  // page only when it starts with accessibility on; oros-kiosk then starts
+  // Orca in orOS's language.
+  async function toggleReader() {
+    const r = await call({ cmd: "desk.get" });
+    if (!r.ok || !r.readerAvailable) { toast(t("readerNone")); return; }
+    const on = !r.desk.reader;
+    const pageLang = String(localStorage.getItem("oros-lang") || navigator.language || "en").slice(0, 2);
+    if (on && !r.readerReady && !confirm(t("readerAsk"))) return;
+    const s = await call({ cmd: "desk.set", desk: { reader: on, readerLang: ["en", "el", "de"].includes(pageLang) ? pageLang : "en" } });
+    if (!s.ok) { toast(t("error", { e: s.error })); return; }
+    toast(t(on ? "readerOn" : "readerOff"));
+    if (on) setTimeout(() => call({ cmd: "session.restart" }), 1200);
+    if (host && view === "main") renderMain();
+  }
+
+  // A short message at the bottom of the screen, with an optional button.
+  let toastBox = null, toastTimer = null;
+  function toast(text, action) {
+    if (!toastBox) {
+      toastBox = document.createElement("div");
+      const sh = toastBox.attachShadow({ mode: "open" });
+      sh.append(el("style", {}, `.t { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 2147483001;
+        max-width: calc(100vw - 32px); box-sizing: border-box; display: flex; gap: 10px; align-items: center;
+        background: #1f1d1a; color: #e8e4dc; border: 1px solid #3a352d; border-radius: 12px; padding: 10px 14px;
+        font: 14px/1.4 system-ui, "Noto Sans", sans-serif; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+        button { font: inherit; background: #d4af37; color: #1b1a18; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 600; cursor: pointer; }`),
+        el("div", { class: "t", role: "status" }));
+    }
+    const box = toastBox.shadowRoot.querySelector(".t");
+    box.replaceChildren(el("span", {}, text));
+    if (action) box.append(el("button", { onclick: () => { toastBox.remove(); action.fn(); } }, action.label));
+    document.documentElement.append(toastBox);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastBox.remove(), 6000);
+  }
+
+  // PrtSc (or Ctrl+Alt+Shift+G): the whole screen into the signed-in
+  // user's Pictures/Screenshots (grim through cage), shown in Files ›
+  // This computer. Only orOS USB; one at a time.
+  let shotBusy = false;
+  async function takeShot() {
+    if (shotBusy) return;
+    shotBusy = true;
+    try {
+      const r = await call({ cmd: "screenshot" });
+      if (!r.ok) { toast(t("shotFail", { e: r.error })); return; }
+      toast(t("shotSaved"), { label: t("shotOpen"),
+        fn: () => document.dispatchEvent(new CustomEvent("oros-files-open", { detail: String(r.folder || "/home/Pictures") })) });
+    } finally {
+      shotBusy = false;
+    }
+  }
+  // Ctrl+Alt+Shift+D: the next way of using two screens, like Win+P.
+  async function cycleDisplays() {
+    const l = await call({ cmd: "display.list" });
+    if (!l.ok || (l.outputs || []).length < 2) { toast(t("dispOne")); return; }
+    const r = await call({ cmd: "display.cycle" });
+    if (!r.ok) { toast(t("error", { e: r.error })); return; }
+    toast(t("dispNow", { m: t("disp_" + r.display.mode) }));
+  }
+  // orOS's shortcuts are all Ctrl+Alt+Shift+<key>; these three are orOS
+  // USB's own (shell SC_DEFS "usb-shot", default G, "usb-reader", default
+  // J, and "usb-display", default D), listed and rebindable in orOS's Settings but run here.
+  // This script cannot see the page's objects, so the shell keeps the
+  // current key in <html data-oros-sc-usb-shot="KeyG"> and
+  // data-oros-sc-usb-reader, data-oros-sc-usb-display (an empty value: turned off); an older orOS
+  // without them gets the defaults. PrtSc arrives as a key here: cage has
+  // no shortcuts of its own.
+  const scKey = (id, def) => {
+    const v = document.documentElement.getAttribute("data-oros-sc-" + id);
+    return v === null ? def : v;
+  };
+  document.addEventListener("keydown", (e) => {
+    if (portable() || !state.ok) return;
+    const combo = e.ctrlKey && e.altKey && e.shiftKey && !e.metaKey;
+    const shot = scKey("usb-shot", "KeyG"), reader = scKey("usb-reader", "KeyJ"), disp = scKey("usb-display", "KeyD");
+    if (e.key === "PrintScreen" || (combo && shot && e.code === shot)) { e.preventDefault(); e.stopPropagation(); takeShot(); }
+    else if (combo && reader && e.code === reader) { e.preventDefault(); e.stopPropagation(); toggleReader(); }
+    else if (combo && disp && e.code === disp) { e.preventDefault(); e.stopPropagation(); cycleDisplays(); }
+  }, true);
 
   // The panel of orOS Portable and the desktop apps: only what the
   // launcher offers on this computer. Bluetooth opens the computer's own
@@ -1273,7 +1486,7 @@
     if (pow) {
       const item = (label, cmd) => el("button", { type: "button", class: "qs-menu-item",
         onclick: (e) => { e.stopPropagation(); call({ cmd }); } }, label);
-      if (!portable()) pow.replaceChildren(item(t("qsReboot"), "power.reboot"), item(t("shutdown"), "power.off"));
+      if (!portable()) pow.replaceChildren(item(t("pcSleep"), "power.sleep"), item(t("qsReboot"), "power.reboot"), item(t("shutdown"), "power.off"));
       else {
         // Leaving orOS and the window first; the computer's own power
         // commands ask again.
