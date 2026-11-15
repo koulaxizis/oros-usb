@@ -384,8 +384,32 @@
     // ("oros-bio" below); the host says what the computer really has.
     if (has("bio")) document.documentElement.setAttribute("data-oros-sys-bio", "1");
     else document.documentElement.removeAttribute("data-oros-sys-bio");
+    // orOS's Night Light leaves its CSS filter to the screen's real gamma
+    // while this is set ("oros-night" below).
+    if (state.night && (!portable() || has("night"))) document.documentElement.setAttribute("data-oros-sys-night", "1");
+    else document.documentElement.removeAttribute("data-oros-sys-night");
     qsStep();
   }
+
+  // Night Light from orOS (nightlight.js): while data-oros-sys-night is
+  // set the page sends the colour temperature in kelvin as a string ("0" =
+  // normal colours) whenever it changes; oros-system sets the screen's
+  // gamma with wlsunset (system/night.go). Only the latest value counts.
+  let nightWant = null, nightBusy = false;
+  document.addEventListener("oros-night", async (ev) => {
+    const k = Math.round(Number(String(ev.detail)));
+    if (!isFinite(k) || k < 0 || k > 10000) return;
+    nightWant = k;
+    if (nightBusy) return;
+    nightBusy = true;
+    try {
+      while (nightWant !== null) {
+        const v = nightWant;
+        nightWant = null;
+        await call({ cmd: "night.set", value: v });
+      }
+    } finally { nightBusy = false; }
+  });
 
   // Problem report from orOS: Settings sends its own part (already shown
   // to the person) as a JSON string; the host adds this computer's logs

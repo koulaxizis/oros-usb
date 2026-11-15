@@ -50,6 +50,8 @@ fdisk
 systemd-timesyncd
 tzdata
 brightnessctl
+# Night Light: real gamma through cage's wlr-gamma-control (night.go)
+wlsunset
 
 # Printing without vendor drivers: CUPS finds IPP Everywhere and AirPrint
 # printers on the network (cups-browsed, Avahi) and on USB (ipp-usb).

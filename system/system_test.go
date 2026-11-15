@@ -789,3 +789,16 @@ func TestReportWithOrosPart(t *testing.T) {
 		t.Fatalf("orOS part missing or out of order: %d %d %d", i, j, k)
 	}
 }
+
+func TestNightArgs(t *testing.T) {
+	if nightArgs(0) != nil || nightArgs(6500) != nil || nightArgs(9000) != nil || nightArgs(-5) != nil {
+		t.Fatal("normal colours need no wlsunset")
+	}
+	got := strings.Join(nightArgs(4100), " ")
+	if got != "-t 4100 -T 4101 -S 06:00 -s 18:00 -d 60" {
+		t.Fatalf("args %q", got)
+	}
+	if nightArgs(300)[1] != "1000" {
+		t.Fatal("clamped to 1000 K")
+	}
+}
