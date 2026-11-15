@@ -216,6 +216,14 @@ func handle(req request) reply {
 			return aiSetGPU(req.On)
 		}
 		return aiRemove()
+	case "claude.status":
+		return claudeStatus()
+	case "claude.install":
+		return claudeInstall()
+	case "claude.open":
+		return claudeOpen()
+	case "claude.remove":
+		return claudeRemove()
 	case "bio.state", "bio.seal", "bio.open", "bio.clear":
 		return bioHost(req)
 	case "report":

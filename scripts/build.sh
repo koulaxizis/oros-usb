@@ -28,6 +28,9 @@ PORTABLE_COMMIT="$(git -C "$WORK/portable" rev-parse HEAD)"
 echo "== Tor Browser signing key (the Tor button checks downloads with it)"
 scripts/tor-key.sh "$OPT/tor-browser-developers.gpg"
 
+echo "== Claude desktop repository key (the Claude desktop button checks downloads with it)"
+scripts/claude-key.sh "$OPT/claude-desktop.gpg"
+
 echo "== Ollama release for the local AI button (downloaded on first use)"
 scripts/ollama.sh "$OPT/ollama.json"
 

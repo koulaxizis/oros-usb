@@ -33,6 +33,10 @@ Downloaded only when asked (System > Local AI), never part of the image
   Qwen3 models        Apache-2.0, the Qwen team (Alibaba Cloud), through
                       Ollama's library  https://ollama.com/library/qwen3
   Tor Browser         see the Tor button (torproject.org)
+  Claude desktop      proprietary, Anthropic PBC; downloaded from Anthropic
+                      (downloads.claude.ai) only when asked (System >
+                      Claude desktop), under Anthropic's terms
+                      https://claude.com/download
 
 The system underneath: Debian 13 "trixie"  https://www.debian.org/
   Linux kernel        GPL-2.0, Linus Torvalds and the kernel developers

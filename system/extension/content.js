@@ -68,6 +68,13 @@
       torGetting: "Getting Tor Browser… {p}%", torError: "Tor Browser could not be set up: {e}",
       torSection: "Tor Browser", torRemove: "Remove Tor Browser", torRemoveHint: "Frees about 400 MB. The Tor button downloads it again when you need it.",
       torRemoveAsk: "Remove Tor Browser with its bookmarks and settings?", torRemoved: "Tor Browser was removed.",
+      claudeSection: "Claude desktop", claudeHint: "Anthropic's Claude app, opened over orOS. It is downloaded from Anthropic only when you ask; sign in there with your own Claude account.",
+      claudeAsk: "Claude desktop is downloaded from Anthropic (downloads.claude.ai) and checked against Anthropic's signature. It is Anthropic's app, under Anthropic's terms, and you sign in with your own Claude account. Continue?",
+      claudeInstall: "Install Claude desktop", claudeOpen: "Open Claude desktop", claudeRemove: "Remove Claude desktop", claudeNewer: "Check for a newer version",
+      claudeRemoveAsk: "Remove Claude desktop? Your sign-in on this computer stays.", claudeRemoved: "Claude desktop was removed.",
+      claudeGetting: "Getting Claude desktop… {p}%", claudeVersion: "Installed: version {v}.", claudeError: "Claude desktop could not be set up: {e}",
+      claudeNoPersist: "This stick has no persistence partition, so Claude desktop cannot be kept. Open claude.ai in the Internet window instead.",
+      claudeNoOS: "Claude desktop does not run on this computer.",
       screen: "Screen", brightness: "Brightness", time: "Time", timeZone: "Time zone",
       timeSynced: "The clock is set from the internet.", timeNotSynced: "The clock is set from the internet once you are online.",
       timeZoneInstall: "Time zone of this computer",
@@ -131,6 +138,13 @@
       torGetting: "Λήψη του Tor Browser… {p}%", torError: "Το Tor Browser δεν μπόρεσε να εγκατασταθεί: {e}",
       torSection: "Tor Browser", torRemove: "Αφαίρεση του Tor Browser", torRemoveHint: "Ελευθερώνει περίπου 400 MB. Το κουμπί Tor το κατεβάζει ξανά όταν το χρειαστείς.",
       torRemoveAsk: "Να αφαιρεθεί το Tor Browser μαζί με τους σελιδοδείκτες και τις ρυθμίσεις του;", torRemoved: "Το Tor Browser αφαιρέθηκε.",
+      claudeSection: "Claude desktop", claudeHint: "Η εφαρμογή Claude της Anthropic, που ανοίγει πάνω από το orOS. Κατεβαίνει από την Anthropic μόνο όταν το ζητήσεις· εκεί συνδέεσαι με τον δικό σου λογαριασμό Claude.",
+      claudeAsk: "Το Claude desktop κατεβαίνει από την Anthropic (downloads.claude.ai) και ελέγχεται με την υπογραφή της Anthropic. Είναι εφαρμογή της Anthropic, με τους όρους της Anthropic, και συνδέεσαι με τον δικό σου λογαριασμό Claude. Συνέχεια;",
+      claudeInstall: "Εγκατάσταση του Claude desktop", claudeOpen: "Άνοιγμα του Claude desktop", claudeRemove: "Αφαίρεση του Claude desktop", claudeNewer: "Έλεγχος για νεότερη έκδοση",
+      claudeRemoveAsk: "Να αφαιρεθεί το Claude desktop; Η σύνδεσή σου σε αυτόν τον υπολογιστή μένει.", claudeRemoved: "Το Claude desktop αφαιρέθηκε.",
+      claudeGetting: "Λήψη του Claude desktop… {p}%", claudeVersion: "Εγκατεστημένη έκδοση {v}.", claudeError: "Το Claude desktop δεν μπόρεσε να εγκατασταθεί: {e}",
+      claudeNoPersist: "Αυτό το stick δεν έχει persistence, οπότε το Claude desktop δεν μπορεί να μείνει. Άνοιξε το claude.ai στο παράθυρο Internet.",
+      claudeNoOS: "Το Claude desktop δεν τρέχει σε αυτόν τον υπολογιστή.",
       screen: "Οθόνη", brightness: "Φωτεινότητα", time: "Ώρα", timeZone: "Ζώνη ώρας",
       timeSynced: "Η ώρα ρυθμίζεται από το διαδίκτυο.", timeNotSynced: "Η ώρα θα ρυθμιστεί από το διαδίκτυο μόλις συνδεθείς.",
       timeZoneInstall: "Ζώνη ώρας αυτού του υπολογιστή",
@@ -406,7 +420,7 @@
 
   async function refresh() {
     const r = await call({ cmd: "status" });
-    if (r.ok) { state = r; applyPlatform(); aiRefresh(); }
+    if (r.ok) { state = r; applyPlatform(); aiRefresh(); claudeRefresh(); }
     paintButton();
     if (panel && view === "main" && main) paintMain();
   }
@@ -482,6 +496,7 @@
     const updateBox = el("div", { id: "oros-update-section" });
     const torBox = el("div", {});
     const aiBox = el("div", {});
+    const claudeBox = el("div", {});
     const reportMsg = el("div", {});
     const reportBtn = el("button", { style: "width:100%", onclick: async () => {
       reportBtn.disabled = true;
@@ -491,7 +506,7 @@
       reportMsg.replaceChildren(el("div", { class: r.ok ? "msg" : "msg err" }, r.ok ? t(portable() ? "reportSavedPc" : "reportSaved", { f: r.file }) : t("error", { e: r.error })));
     } }, t("report"));
     if (portable()) {
-      renderPortable({ wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, light, screenBox, updateBox, torBox, aiBox, reportBtn, reportMsg });
+      renderPortable({ wifiText, sw, nets, list, range, mute, soundRow, noSound, battery, light, screenBox, updateBox, torBox, aiBox, claudeBox, reportBtn, reportMsg });
       return;
     }
     panel.append(el("h2", {}, t("system")),
@@ -506,6 +521,7 @@
       ...(state.notOwner ? [] : [el("h3", {}, t("update")), updateBox, install]),
       torBox,
       aiBox,
+      claudeBox,
       el("div", { style: "margin-top:10px" }, reportBtn, reportMsg),
       el("div", { class: "power" },
         el("button", { onclick: () => call({ cmd: "power.reboot" }) }, t("restart")),
@@ -519,6 +535,7 @@
     showDisks(disksBox);
     showTorBox(torBox);
     showAIBox(aiBox);
+    showClaudeBox(claudeBox);
   }
 
   // The panel of orOS Portable and the desktop apps: only what the
@@ -536,6 +553,7 @@
     if (has("update")) parts.push(el("h3", {}, t("appUpdate")), p.updateBox);
     if (has("tor")) parts.push(p.torBox);
     if (has("ai")) parts.push(p.aiBox);
+    if (has("claude")) parts.push(p.claudeBox);
     if (has("report")) parts.push(el("div", { style: "margin-top:10px" }, p.reportBtn, p.reportMsg));
     const win = el("button", { onclick: () => setWindow(state.window === "fullscreen" ? "window" : "fullscreen") });
     const row1 = el("div", { class: "power" });
@@ -556,6 +574,7 @@
     if (has("update")) showUpdate(p.updateBox);
     if (has("tor")) showTorBox(p.torBox);
     if (has("ai")) showAIBox(p.aiBox);
+    if (has("claude")) showClaudeBox(p.claudeBox);
   }
 
   // Tor Browser in the panel: once it is there, it can be removed (each
@@ -812,6 +831,104 @@
         running: !!st.running } : { ok: false };
       document.dispatchEvent(new CustomEvent("oros-ai-status", { detail: JSON.stringify(out) }));
     }
+  });
+
+  // Claude desktop (CLAUDE-1; oros-system claude.go, oros-portable): Anthropic's
+  // app, downloaded from Anthropic only when the person asks and checked
+  // against Anthropic's signature. orOS's Settings › Connected services ›
+  // Claude reads its state from the page: data-oros-sys-claude is "ready"
+  // (installed), "busy" (downloading), "none" (can be installed) or
+  // "cannot", with data-oros-sys-claude-why "persist" (no persistence
+  // partition), "os" (not for this computer), "net" or "fail" (the last
+  // try failed). The page asks with the DOM event "oros-claude":
+  // "install" (asks first), "open", "remove", "status".
+  let claudeSt = null, claudeErr = "", claudeTimer = null, claudeBoxEl = null, claudeAsking = false;
+  function claudeAttr(st) {
+    const d = document.documentElement;
+    if (!has("claude") || !st || !st.ok) {
+      d.removeAttribute("data-oros-sys-claude");
+      d.removeAttribute("data-oros-sys-claude-why");
+      return;
+    }
+    const err = (st.progress && st.progress.error) || claudeErr;
+    let v, why = "";
+    if (st.running) v = "busy";
+    else if (st.installed) v = "ready";
+    else if (st.supported === false) { v = "cannot"; why = "os"; }
+    else if (st.persistent === false) { v = "cannot"; why = "persist"; }
+    else {
+      v = "none";
+      if (err) why = /^net:/.test(err) ? "net" : /^os:/.test(err) ? "os" : "fail";
+    }
+    d.setAttribute("data-oros-sys-claude", v);
+    if (why) d.setAttribute("data-oros-sys-claude-why", why);
+    else d.removeAttribute("data-oros-sys-claude-why");
+  }
+  async function claudeRefresh() {
+    if (!has("claude")) { claudeAttr(null); return null; }
+    const st = await call({ cmd: "claude.status" });
+    claudeSt = st;
+    claudeAttr(st);
+    if (claudeBoxEl && claudeBoxEl.isConnected) paintClaudeBox(claudeBoxEl);
+    clearTimeout(claudeTimer);
+    if (st && st.ok && st.running) claudeTimer = setTimeout(claudeRefresh, 1500);
+    return st;
+  }
+  async function claudeInstall() {
+    if (claudeAsking) return;
+    const st = await claudeRefresh();
+    if (!st || !st.ok || st.running || st.supported === false || st.persistent === false) return;
+    claudeAsking = true;
+    const yes = confirm(t("claudeAsk"));
+    claudeAsking = false;
+    if (!yes) return;
+    claudeErr = "";
+    const r = await call({ cmd: "claude.install" });
+    if (!r.ok) claudeErr = String(r.error || "error");
+    claudeRefresh();
+  }
+  async function claudeRemove() {
+    if (!confirm(t("claudeRemoveAsk"))) return;
+    const r = await call({ cmd: "claude.remove" });
+    claudeErr = r.ok ? "" : String(r.error || "error");
+    await claudeRefresh();
+  }
+  function showClaudeBox(box) {
+    claudeBoxEl = box;
+    paintClaudeBox(box);
+    claudeRefresh();
+  }
+  function paintClaudeBox(box) {
+    const st = claudeSt;
+    if (!st || !st.ok) { box.replaceChildren(); return; }
+    const parts = [el("h3", {}, t("claudeSection"))];
+    const err = (st.progress && st.progress.error) || claudeErr;
+    if (st.running) {
+      const pct = (st.progress && st.progress.percent) || 0;
+      const bar = el("div", { class: "bar" }, el("div", { style: "width:" + Math.max(0, Math.min(100, pct)) + "%" }));
+      parts.push(el("div", { class: "muted" }, t("claudeGetting", { p: pct })), bar);
+    } else if (st.installed) {
+      parts.push(el("div", { class: "muted" }, t("claudeVersion", { v: String(st.version || "") })),
+        el("div", { class: "row" }, el("button", { class: "primary", onclick: () => call({ cmd: "claude.open" }) }, t("claudeOpen")),
+          el("button", { onclick: claudeInstall }, t("claudeNewer"))),
+        el("div", { class: "row", style: "margin-top:6px" }, el("button", { onclick: claudeRemove }, t("claudeRemove"))));
+    } else if (st.supported === false) {
+      parts.push(el("div", { class: "muted" }, t("claudeNoOS")));
+    } else if (st.persistent === false) {
+      parts.push(el("div", { class: "muted" }, t("claudeNoPersist")));
+    } else {
+      parts.push(el("div", { class: "muted" }, t("claudeHint")),
+        el("div", { class: "row" }, el("button", { style: "width:100%", onclick: claudeInstall }, t("claudeInstall"))));
+    }
+    if (err && !st.running) parts.push(el("div", { class: "msg err" }, t("claudeError", { e: String(err).replace(/^(net|os): /, "") })));
+    box.replaceChildren(...parts);
+  }
+  document.addEventListener("oros-claude", (e) => {
+    if (!has("claude")) return;
+    if (e.detail === "install") claudeInstall();
+    else if (e.detail === "open") call({ cmd: "claude.open" }).then((r) => { if (!r.ok) { claudeErr = String(r.error || "error"); claudeRefresh(); } });
+    else if (e.detail === "remove") call({ cmd: "claude.remove" }).then((r) => { claudeErr = r.ok ? "" : String(r.error || "error"); claudeRefresh(); });
+    else if (e.detail === "status") claudeRefresh();
   });
 
   // Disks: Downloads, the computer's own disks and USB sticks. Opening one
