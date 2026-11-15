@@ -1645,11 +1645,31 @@
     });
   }
 
+  // The screen "off" where cage cannot turn it off (oros-system desk.go):
+  // orOS goes black until the next key, move or touch; swayidle's resume
+  // then takes the flag away.
+  let blankBox = null;
+  const unblank = () => {
+    if (!blankBox) return;
+    blankBox.remove();
+    blankBox = null;
+    for (const ev of ["keydown", "pointerdown", "pointermove", "touchstart", "wheel"]) document.removeEventListener(ev, unblank, true);
+  };
+  function blank(on) {
+    if (!on) { unblank(); return; }
+    if (blankBox) return;
+    blankBox = document.createElement("div");
+    blankBox.setAttribute("aria-hidden", "true");
+    blankBox.style.cssText = "position:fixed;inset:0;background:#000;z-index:2147483647;cursor:none";
+    document.documentElement.append(blankBox);
+    for (const ev of ["keydown", "pointerdown", "pointermove", "touchstart", "wheel"]) document.addEventListener(ev, unblank, true);
+  }
+
   // Sign of life for oros-session's watchdog: the first ping waits for a
   // painted frame (a window that never paints sends none), then one every
   // 10 s while the page runs. A timer, not frames, keeps it going while the
   // Internet window covers orOS.
-  const ping = () => call({ cmd: "ping" }).then((r) => { if (r.ok) bridgeCode(r.bridgeCode); });
+  const ping = () => call({ cmd: "ping" }).then((r) => { if (r.ok) { bridgeCode(r.bridgeCode); blank(!!r.blank); } });
   requestAnimationFrame(() => requestAnimationFrame(() => {
     ping();
     setInterval(ping, 10000);

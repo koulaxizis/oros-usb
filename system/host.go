@@ -270,6 +270,10 @@ func ping() reply {
 	if c := bridgeCode(); c != "" {
 		res["bridgeCode"] = c
 	}
+	// The screen went off where cage cannot turn it off (desk.go).
+	if _, err := os.Stat(blankFile()); err == nil {
+		res["blank"] = true
+	}
 	p := os.Getenv("OROS_ALIVE")
 	if p == "" {
 		return res

@@ -359,8 +359,12 @@ func idleMain() int {
 }
 
 // screenMain is "oros-system screen --off|--on" (swayidle). wlopm turns
-// the outputs off through cage (wlr-output-power-management); when cage
-// cannot, a laptop's backlight goes to 0 and comes back to where it was.
+// the outputs off where the compositor has wlr-output-power-management.
+// Debian 13's cage does not (the CI boot test records it), so a laptop's
+// backlight goes to 0 and comes back to where it was, and the System
+// extension covers orOS with black (blankFile, read through its ping)
+// until the next key or move, which spares a desktop monitor's picture
+// even though its own light stays on.
 func screenMain(args []string) int {
 	if len(args) != 1 || (args[0] != "--off" && args[0] != "--on") {
 		fmt.Fprintln(os.Stderr, "usage: oros-system screen --off | --on")
@@ -371,6 +375,7 @@ func screenMain(args []string) int {
 		if _, err := run("wlopm", "--off", "*"); err == nil {
 			return 0
 		}
+		_ = os.WriteFile(blankFile(), []byte("1\n"), 0o600)
 		if out, err := run("brightnessctl", "-m", "-c", "backlight", "get"); err == nil {
 			if _, err := strconv.Atoi(strings.TrimSpace(out)); err == nil {
 				_ = os.WriteFile(saved, []byte(strings.TrimSpace(out)+"\n"), 0o600)
@@ -380,6 +385,7 @@ func screenMain(args []string) int {
 		return 0
 	}
 	_, _ = run("wlopm", "--on", "*")
+	_ = os.Remove(blankFile())
 	if b, err := os.ReadFile(saved); err == nil {
 		if v, err := strconv.Atoi(strings.TrimSpace(string(b))); err == nil && v > 0 {
 			_, _ = run("brightnessctl", "-q", "-c", "backlight", "set", strconv.Itoa(v))
@@ -388,6 +394,8 @@ func screenMain(args []string) int {
 	}
 	return 0
 }
+
+func blankFile() string { return runtimeFile("oros-blank") }
 
 func runtimeFile(name string) string {
 	dir := os.Getenv("XDG_RUNTIME_DIR")
