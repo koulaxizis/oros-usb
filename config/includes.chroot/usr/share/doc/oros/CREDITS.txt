@@ -78,6 +78,14 @@ The system underneath: Debian 13 "trixie"  https://www.debian.org/
                       the Internet window; source: github.com/uBlockOrigin/uBOL-home)
   Xwayland            MIT, X.Org Foundation and contributors (X apps in cage)
   xz                  0BSD and public domain, unpacking the Tor Browser download
+  swayidle            MIT, swayidle contributors (screen off and sleep when idle)
+  wlr-randr           MIT, Simon Ser and contributors (second screens)
+  wlopm               GPL-3.0, Leon Henrik Plickat (turns screens off)
+  grim                MIT, Simon Ser and contributors (PrtSc screenshots)
+  Orca                LGPL-2.1+, the GNOME project and Orca contributors
+                      (screen reader), with AT-SPI (at-spi2-core, LGPL-2.1+)
+  speech-dispatcher   GPL-2.0+ and LGPL-2.1+, Brailcom and contributors
+  eSpeak NG           GPL-3.0+, eSpeak NG contributors (local voices)
   Noto fonts          SIL Open Font License 1.1, Google and the Noto project
   Firmware            linux-firmware, Debian's firmware-* and bluez-firmware: each
                       file keeps its vendor's licence (redistribution allowed;

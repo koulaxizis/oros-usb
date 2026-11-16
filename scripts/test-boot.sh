@@ -250,6 +250,17 @@ elif [ "$(mtype -i "$FSTICK" ::hello.txt 2>/dev/null)" != "orOS computer files" 
 	echo "FAIL: hello.txt written through Files is not on the USB stick" >&2
 	OK=0
 fi
+# The session's desktop parts (oros-system selftest-desk, inside cage):
+# a PrtSc screenshot through grim, the screens through wlr-randr, swayidle,
+# the keyboard cage runs with, espeak-ng voices and Orca.
+DESKF="$(find "$MNT" -maxdepth 5 -name .oros-selftest-desk | head -1)"
+[ -z "$DESKF" ] || { echo "== desktop self-test"; cat "$DESKF"; }
+if [ -n "${WATCHDOG_TEST:-}" ]; then
+	:
+elif [ -z "$DESKF" ] || ! grep -qx "PASS" "$DESKF"; then
+	echo "FAIL: the desktop self-test (screenshot, screens, idle, keyboard, voices) did not pass" >&2
+	OK=0
+fi
 # Encrypted users: the data partition has the ext4 encrypt feature (set by
 # mkfs, or by the initramfs at the first start), and oros-system's
 # self-test encrypted, locked and opened a folder in the vault folder.
