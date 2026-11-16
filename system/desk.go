@@ -11,10 +11,10 @@ package main
 // the defaults field by field and never reaches a command line unchecked.
 //
 //   - oros-session reads the keyboard with "oros-system keyboard --layouts"
-//     and "--options" before it starts cage (cage takes the layout from
+//     and "--options" before it starts labwc (labwc takes the layout from
 //     XKB_DEFAULT_* only when it starts, so a new layout needs a restart
 //     of the orOS session, which the panel offers).
-//   - oros-kiosk (inside cage) runs "oros-system idle": swayidle with the
+//   - oros-kiosk (inside labwc) runs "oros-system idle": swayidle with the
 //     chosen timeouts, started again whenever desk.json changes.
 //   - oros-kiosk runs "oros-system reader --session", which starts Orca
 //     when the screen reader is on. Chromium starts with
@@ -150,7 +150,7 @@ func writeDesk(home string, d deskSettings) error {
 	return os.Rename(tmp, p)
 }
 
-// xkbLayouts and xkbOptions are what oros-session hands cage.
+// xkbLayouts and xkbOptions are what oros-session hands labwc.
 func (d deskSettings) xkbLayouts() string { return strings.Join(d.Layouts, ",") }
 
 func (d deskSettings) xkbOptions() string {
@@ -172,7 +172,7 @@ func deskGet() reply {
 	return reply{"ok": true, "desk": d,
 		"screenOffChoices": screenOffChoices, "sleepChoices": sleepChoices,
 		"layoutChoices": layoutChoices, "switchChoices": []string{"alt_shift", "win_space", "ctrl_shift", "caps"},
-		// The layouts cage runs with now (oros-session's environment,
+		// The layouts labwc runs with now (oros-session's environment,
 		// passed on by Chromium); different from the saved ones until the
 		// session starts again.
 		"activeLayouts":   os.Getenv("XKB_DEFAULT_LAYOUT"),
@@ -222,11 +222,11 @@ func deskSet(raw json.RawMessage) reply {
 	return reply{"ok": true, "desk": d}
 }
 
-// sessionRestart ends cage; oros-session starts orOS again at once (the
+// sessionRestart ends labwc; oros-session starts orOS again at once (the
 // way it does when the orOS window closes). orOS keeps its data in the
 // browser as it goes, so nothing is lost.
 func sessionRestart() reply {
-	out, err := run("pkill", "-TERM", "-u", strconv.Itoa(os.Getuid()), "-x", "cage")
+	out, err := run("pkill", "-TERM", "-u", strconv.Itoa(os.Getuid()), "-x", "labwc")
 	if err != nil {
 		return fail(err, out)
 	}
@@ -260,13 +260,13 @@ func keyboardMain(args []string) int {
 	return 2
 }
 
-// ---------- the screen going off and sleep (oros-kiosk, inside cage) ----------
+// ---------- the screen going off and sleep (oros-kiosk, inside labwc) ----------
 
 var swayidleBin = "swayidle"
 
 // idleArgs are swayidle's arguments for the settings; nil when nothing
 // is to happen. The screen comes back on with any key or move, and after
-// a sleep. Chromium asks cage not to go idle while a video plays
+// a sleep. Chromium asks labwc not to go idle while a video plays
 // (idle-inhibit), which swayidle respects.
 func idleArgs(self string, d deskSettings) []string {
 	var a []string
@@ -360,7 +360,8 @@ func idleMain() int {
 
 // screenMain is "oros-system screen --off|--on" (swayidle). wlopm turns
 // the outputs off where the compositor has wlr-output-power-management.
-// Debian 13's cage does not (the CI boot test records it), so a laptop's
+// Where it does not (Debian 13's cage did not; the CI boot test records
+// what labwc does), a laptop's
 // backlight goes to 0 and comes back to where it was, and the System
 // extension covers orOS with black (blankFile, read through its ping)
 // until the next key or move, which spares a desktop monitor's picture
@@ -418,7 +419,7 @@ func readerStop() {
 
 // readerMain: "--enabled" exits 0 when the reader is on (oros-session adds
 // --force-renderer-accessibility then); "--session" runs Orca for this
-// session when it is on (oros-kiosk, inside cage), in orOS's language
+// session when it is on (oros-kiosk, inside labwc), in orOS's language
 // so espeak-ng speaks it.
 func readerMain(args []string) int {
 	home, _ := os.UserHomeDir()
@@ -495,7 +496,7 @@ func filesHome(home string) string {
 	return filepath.Join(home, "oros", "homes", filepath.Base(dir))
 }
 
-// screenshot saves the whole screen (grim, through cage's screencopy) as
+// screenshot saves the whole screen (grim, through labwc's screencopy) as
 // Pictures/Screenshots/Screenshot <date> <time>.png and answers with the
 // path Files opens ("/home/Pictures/Screenshots").
 func screenshot() reply {
@@ -528,7 +529,7 @@ func screenshot() reply {
 }
 
 // selftestDeskMain is "oros-system selftest-desk", run by oros-kiosk in
-// boot tests only (/home/.oros-selftest): inside cage it takes a
+// boot tests only (/home/.oros-selftest): inside labwc it takes a
 // screenshot, turns the screen off and on, and checks the keyboard
 // layouts, swayidle, the espeak-ng voices and Orca. What happened goes
 // to ~/.oros-selftest-desk for test-boot.sh; the lines marked "info"
@@ -550,7 +551,7 @@ func selftestDeskMain() int {
 
 	d := readDesk(home)
 	if got := os.Getenv("XKB_DEFAULT_LAYOUT"); got != d.xkbLayouts() {
-		check("keyboard", fmt.Errorf("cage runs with %q, saved %q", got, d.xkbLayouts()))
+		check("keyboard", fmt.Errorf("labwc runs with %q, saved %q", got, d.xkbLayouts()))
 	} else {
 		check("keyboard "+got+" "+os.Getenv("XKB_DEFAULT_OPTIONS"), nil)
 	}
@@ -571,13 +572,13 @@ func selftestDeskMain() int {
 	out, err := run("wlopm")
 	info("wlopm", fmt.Sprintf("%v %s", err, out))
 	_, offErr := run("wlopm", "--off", "*")
-	info("screen off through cage", fmt.Sprint(offErr == nil))
+	info("screen off through labwc", fmt.Sprint(offErr == nil))
 	_, _ = run("wlopm", "--on", "*")
 
 	// Night Light's real gamma (night.go): info only, orOS falls back to
-	// its own filter where cage has no wlr-gamma-control.
+	// its own filter where labwc has no wlr-gamma-control.
 	nr := nightSet(4000)
-	info("night light gamma (wlsunset on cage)", fmt.Sprint(nr["ok"] == true, " ", nr["error"]))
+	info("night light gamma (wlsunset on labwc)", fmt.Sprint(nr["ok"] == true, " ", nr["error"]))
 	nightSet(0)
 
 	if l, err := listOutputs(); err != nil || len(l) == 0 {

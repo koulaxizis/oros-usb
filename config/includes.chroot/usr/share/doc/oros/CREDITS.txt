@@ -45,8 +45,10 @@ The system underneath: Debian 13 "trixie"  https://www.debian.org/
   SYSLINUX            GPL-2.0+ (legacy BIOS boot)
   live-boot,          GPL-3.0+, the Debian Live project (live-build made
   live-config         this image)
-  cage                MIT, Jente Hidskes Ankarberg and contributors
-                      https://github.com/cage-kiosk/cage
+  labwc               GPL-2.0, Johan Malm and contributors
+                      https://github.com/labwc/labwc
+  wlrctl              MIT, Brocellous and contributors
+                      https://git.sr.ht/~brocellous/wlrctl
   Chromium            BSD-3-Clause and many component licences, The Chromium
                       Authors; Debian's package (open chrome://credits)
   systemd             LGPL-2.1+ and GPL-2.0+, systemd contributors
@@ -77,7 +79,7 @@ The system underneath: Debian 13 "trixie"  https://www.debian.org/
   exfatprogs          GPL-2.0+, exfatprogs contributors
   uBlock Origin Lite  GPL-3.0, Raymond Hill and contributors (ad blocker in
                       the Internet window; source: github.com/uBlockOrigin/uBOL-home)
-  Xwayland            MIT, X.Org Foundation and contributors (X apps in cage)
+  Xwayland            MIT, X.Org Foundation and contributors (X apps in labwc)
   xz                  0BSD and public domain, unpacking the Tor Browser download
   swayidle            MIT, swayidle contributors (screen off and sleep when idle)
   wlr-randr           MIT, Simon Ser and contributors (second screens)

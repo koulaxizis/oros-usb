@@ -3,7 +3,7 @@ package main
 // Screens on orOS USB (desk.go's settings, "display"): a second screen
 // shows the same picture (duplicate), continues the first (extend), or
 // only one screen is used; each screen keeps its own resolution and size
-// (scale). cage shows orOS over all its outputs; wlr-randr (cage's
+// (scale). labwc shows orOS over all its outputs; wlr-randr (labwc's
 // wlr-output-management) places them:
 //   - extend: side by side from left to right, the built-in screen first,
 //     so orOS spans both (multitasking's side by side puts one app on each);

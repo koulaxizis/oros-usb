@@ -455,7 +455,7 @@
         const v = nightWant;
         nightWant = null;
         const r = await call({ cmd: "night.set", value: v });
-        // No gamma control in this cage: orOS takes its own filter back.
+        // No gamma control in this compositor: orOS takes its own filter back.
         if (r && r.night === false) { state.night = false; paintButton(); nightWant = null; }
       }
     } finally { nightBusy = false; }
@@ -735,7 +735,7 @@
   }
 
   // PrtSc (or Ctrl+Alt+Shift+G): the whole screen into the signed-in
-  // user's Pictures/Screenshots (grim through cage), shown in Files ›
+  // user's Pictures/Screenshots (grim through labwc), shown in Files ›
   // This computer. Only orOS USB; one at a time.
   let shotBusy = false;
   async function takeShot() {
@@ -764,7 +764,7 @@
   // This script cannot see the page's objects, so the shell keeps the
   // current key in <html data-oros-sc-usb-shot="KeyG"> and
   // data-oros-sc-usb-reader, data-oros-sc-usb-display (an empty value: turned off); an older orOS
-  // without them gets the defaults. PrtSc arrives as a key here: cage has
+  // without them gets the defaults. PrtSc arrives as a key here: labwc has
   // no shortcuts of its own.
   const scKey = (id, def) => {
     const v = document.documentElement.getAttribute("data-oros-sc-" + id);
@@ -1677,8 +1677,8 @@
   }
   // orOS Portable in full screen would cover Tor Browser's window: orOS
   // steps aside (minimized) once that window is open and comes back in
-  // full screen when it closes. orOS USB needs none of it (cage shows the
-  // newest window), nor does a windowed orOS.
+  // full screen when it closes. orOS USB needs none of it (labwc shows the
+  // newest window maximized), nor does a windowed orOS.
   let awayTimer = null;
   function torAway() {
     if (!portable() || state.window !== "fullscreen" || awayTimer) return;
@@ -1790,7 +1790,7 @@
     });
   }
 
-  // The screen "off" where cage cannot turn it off (oros-system desk.go):
+  // The screen "off" where labwc cannot turn it off (oros-system desk.go):
   // orOS goes black until the next key, move or touch; swayidle's resume
   // then takes the flag away.
   let blankBox = null;

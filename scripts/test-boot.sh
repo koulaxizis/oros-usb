@@ -250,9 +250,9 @@ elif [ "$(mtype -i "$FSTICK" ::hello.txt 2>/dev/null)" != "orOS computer files" 
 	echo "FAIL: hello.txt written through Files is not on the USB stick" >&2
 	OK=0
 fi
-# The session's desktop parts (oros-system selftest-desk, inside cage):
+# The session's desktop parts (oros-system selftest-desk, inside labwc):
 # a PrtSc screenshot through grim, the screens through wlr-randr, swayidle,
-# the keyboard cage runs with, espeak-ng voices and Orca.
+# the keyboard labwc runs with, espeak-ng voices and Orca.
 DESKF="$(find "$MNT" -maxdepth 5 -name .oros-selftest-desk | head -1)"
 [ -z "$DESKF" ] || { echo "== desktop self-test"; cat "$DESKF"; }
 if [ -n "${WATCHDOG_TEST:-}" ]; then
@@ -329,6 +329,6 @@ if [ "$OK" = 1 ]; then
 	echo "PASS: orOS started, the System button works and its data is on the persistence partition"
 else
 	echo "FAIL: no orOS profile with a service worker on the persistence partition" >&2
-	grep -aiE "pam|login|live-config|user-setup|oros|cage|chromium|error|fail" "$OUT/serial.log" | tail -120 >&2 || true
+	grep -aiE "pam|login|live-config|user-setup|oros|labwc|chromium|error|fail" "$OUT/serial.log" | tail -120 >&2 || true
 	exit 1
 fi

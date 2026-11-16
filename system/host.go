@@ -280,7 +280,7 @@ func ping() reply {
 	if c := bridgeCode(); c != "" {
 		res["bridgeCode"] = c
 	}
-	// The screen went off where cage cannot turn it off (desk.go).
+	// The screen went off where labwc cannot turn it off (desk.go).
 	if _, err := os.Stat(blankFile()); err == nil {
 		res["blank"] = true
 	}
@@ -581,7 +581,7 @@ func webHome() string {
 }
 
 // webBrowser and webArgs open a normal Chromium window for the web, with
-// tabs and an address bar. cage shows it over orOS; closing it brings orOS
+// tabs and an address bar. labwc shows it over orOS; closing it brings orOS
 // back. It opens in orOS's own browser profile (the launcher's
 // <user folder>/profile), so it joins the browser that shows orOS: the
 // orOS add-on there fills and saves Passwords logins on the web pages and

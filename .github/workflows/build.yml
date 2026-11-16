@@ -94,7 +94,7 @@ jobs:
           echo; test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://example.com' http://127.0.0.1:11434/api/tags)" = 403
           /tmp/oros-system ai --stop --dir /tmp/ai
           rm -rf /tmp/ai /tmp/aihome
-      - name: Session watchdog test (fake cage, no VM)
+      - name: Session watchdog test (fake labwc, no VM)
         run: scripts/test-session-watchdog.sh
       - name: Build image
         env:
@@ -117,7 +117,7 @@ jobs:
           done
           grep -Eq '^linux(-signed-amd64)? ' /tmp/notices/SOURCES.txt
           grep -q '^chromium ' /tmp/notices/SOURCES.txt
-          grep -q '^cage ' /tmp/notices/SOURCES.txt
+          grep -q '^labwc ' /tmp/notices/SOURCES.txt
           grep -q '^cups ' /tmp/notices/SOURCES.txt
           grep -q '^bluez ' /tmp/notices/SOURCES.txt
           cmp /tmp/notices/SOURCES.txt "out/orOS-USB-$V-sources.txt"

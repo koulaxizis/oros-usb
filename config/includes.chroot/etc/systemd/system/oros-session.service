@@ -1,7 +1,7 @@
-# orOS full screen on tty1 (cage + Chromium, /usr/local/bin/oros-session),
+# orOS full screen on tty1 (labwc + Chromium, /usr/local/bin/oros-session),
 # started the way a display manager is: the boot screen stays until it
 # takes over, so no login text shows in between. Plymouth leaves its last
-# picture on the screen (--retain-splash) and cage takes the display from
+# picture on the screen (--retain-splash) and labwc takes the display from
 # there. tty2 keeps its autologin to the network screen.
 [Unit]
 Description=orOS session

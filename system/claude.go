@@ -178,15 +178,18 @@ func claudeRemove() reply {
 	return reply{"ok": true}
 }
 
-// startClaude runs Claude desktop detached, on cage's Wayland like the
-// orOS window; cage shows it over orOS and closing it brings orOS back.
+// startClaude runs Claude desktop detached on labwc's Wayland. labwc puts
+// it on the right half of the screen and the orOS window on the left
+// (/etc/xdg/oros-labwc/rc.xml, Chris 2026-11-16 «Claude δίπλα στο orOS»);
+// when Claude closes, the small shell around it gives orOS the whole
+// screen back (wlrctl, through labwc's foreign-toplevel protocol).
 func startClaude(dir string) error {
 	a, ok := claudeInstalled(dir)
 	if !ok {
 		return errors.New("Claude desktop is not installed")
 	}
 	bin := filepath.Join(dir, "root", a.Exec)
-	cmd := exec.Command(bin, "--ozone-platform=wayland")
+	cmd := exec.Command("/bin/sh", "-c", claudeShell, "oros-claude", bin)
 	cmd.Dir = filepath.Dir(bin)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if f := logFile("claude-run.log"); f != nil {
@@ -199,6 +202,10 @@ func startClaude(dir string) error {
 	go func() { _ = cmd.Wait() }()
 	return nil
 }
+
+// claudeShell: $1 is Claude's program. orOS takes the whole screen again
+// when it ends (nothing happens where wlrctl is missing).
+const claudeShell = `"$1" --ozone-platform=wayland; command -v wlrctl >/dev/null && wlrctl toplevel maximize title:orOS; exit 0`
 
 // ---------- oros-system claude --fetch ----------
 
