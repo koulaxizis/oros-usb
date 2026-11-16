@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<!-- No desktop menus in orOS USB's kiosk (rc.xml). -->
+<openbox_menu>
+  <menu id="root-menu" label=""></menu>
+  <menu id="client-menu" label=""></menu>
+</openbox_menu>

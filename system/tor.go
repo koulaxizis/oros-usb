@@ -132,7 +132,7 @@ func removeTor() reply {
 	return reply{"ok": true}
 }
 
-// startTor runs Tor Browser detached; cage shows it over orOS and closing
+// startTor runs Tor Browser detached; labwc shows it over orOS and closing
 // it brings orOS back.
 func startTor(dir string) error {
 	cmd := exec.Command(torStartScript(dir), "--detach")

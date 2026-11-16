@@ -1,6 +1,8 @@
 #!/bin/sh
-# Runs orOS full screen on tty1: cage (a kiosk Wayland compositor) shows only
-# the browser that the orOS Portable launcher opens. If the window is
+# Runs orOS full screen on tty1: labwc (a Wayland compositor, set up as a
+# kiosk in /etc/xdg/oros-labwc) shows the browser that the orOS Portable
+# launcher opens, maximized without a title bar, and puts Claude desktop
+# beside it when the person opens Claude (2026-11-16; cage before). If the window is
 # closed, or stays blank (see the watchdog below), orOS starts again; the
 # power button shuts the machine down.
 set -u
@@ -40,7 +42,7 @@ export OROS_PORTABLE_BROWSER=/usr/bin/chromium
 # refuses to load it from the read-only image ("Internal error while
 # parsing rules", shown as a dialog over orOS). A new image brings a new
 # copy. oros-system webArgs uses the same folders.
-# The orOS window starts maximized, not in Chromium's full screen: cage
+# The orOS window starts maximized, not in Chromium's full screen: labwc
 # already gives it the whole screen without a title bar, and in full screen
 # Chromium shows its "exit full screen" button whenever the pointer reaches
 # the top edge, over orOS's top bar. (--kiosk would hide it, but it is a
@@ -60,7 +62,7 @@ fi
 # espeak-ng voices (speech-dispatcher; orOS uses local voices only).
 ARGS="--ozone-platform=wayland --start-maximized --disable-features=Translate --load-extension=$EXT --default-background-color=ff1b1a18 --disable-background-timer-throttling --enable-speech-dispatcher --enable-logging --v=0"
 # The keyboard layouts chosen in the System panel (oros-system desk.go,
-# ~/oros/data/desk.json; us,gr with Alt+Shift until then). cage reads
+# ~/oros/data/desk.json; us,gr with Alt+Shift until then). labwc reads
 # them only when it starts, so each start of the loop below asks again.
 kb() {
 	XKB_DEFAULT_LAYOUT="$(/opt/oros/oros-system keyboard --layouts 2>/dev/null)"
@@ -102,7 +104,7 @@ running() {
 	[ -n "$state" ] && [ "$state" != Z ]
 }
 
-# watch PID: returns 0 when cage ends by itself, 1 when the watchdog
+# watch PID: returns 0 when labwc ends by itself, 1 when the watchdog
 # stopped it. Ticks are counted, not clock times, so a suspend or a clock
 # change never looks like silence.
 watch() {
@@ -138,7 +140,7 @@ watch() {
 	return 0
 }
 
-# stop PID: ends cage, then whatever of the orOS window outlived it, so
+# stop PID: ends labwc, then whatever of the orOS window outlived it, so
 # the next start finds the profile and port 47800 free.
 stop() {
 	kill -TERM "$1" 2>/dev/null
@@ -156,7 +158,7 @@ stop() {
 
 # Local AI for orOS's Assistant (System › Local AI, oros-system ai): once
 # it is installed, Ollama starts with the first session of the boot. It
-# is not inside cage, so a watchdog restart leaves it running.
+# is not inside labwc, so a watchdog restart leaves it running.
 /opt/oros/oros-system ai --serve < /dev/null > /dev/null 2>&1 &
 
 starts=0
@@ -193,9 +195,10 @@ while true; do
 		note "start"
 	fi
 	export OROS_PORTABLE_BROWSER_ARGS="$A"
-	# -s lets Ctrl+Alt+F2 switch to the network screen.
-	# A background job reads /dev/null unless told otherwise; cage keeps the tty.
-	cage -s -- /usr/local/bin/oros-kiosk <&0 >> "$LOG" 2>&1 &
+	# -S: labwc ends when oros-kiosk does (as cage did); Ctrl+Alt+F2 still
+	# switches to the network screen.
+	# A background job reads /dev/null unless told otherwise; labwc keeps the tty.
+	labwc -C /etc/xdg/oros-labwc -S /usr/local/bin/oros-kiosk <&0 >> "$LOG" 2>&1 &
 	pid=$!
 	watch "$pid"
 	wait "$pid"

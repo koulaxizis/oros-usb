@@ -8,8 +8,10 @@ dbus-user-session
 sudo
 ca-certificates
 
-# Kiosk session: cage (Wayland) + Chromium in app mode
-cage
+# Kiosk session: labwc (Wayland, set up as a kiosk in /etc/xdg/oros-labwc)
+# + Chromium; wlrctl gives orOS the whole screen back when Claude closes
+labwc
+wlrctl
 chromium
 chromium-sandbox
 # pkill for the session watchdog
@@ -20,16 +22,16 @@ mesa-vulkan-drivers
 fonts-noto-core
 fonts-noto-color-emoji
 
-# Tor button: X apps (Tor Browser) inside cage, and what checks and
+# Tor button: X apps (Tor Browser) inside labwc, and what checks and
 # unpacks the Tor Browser download (oros-system tor)
 xwayland
 gpgv
 xz-utils
 
 # Desktop parts of the session (oros-system desk.go): the screen going off
-# and sleep when idle (swayidle; wlopm turns cage's outputs off), second
+# and sleep when idle (swayidle; wlopm turns labwc's outputs off), second
 # screens (wlr-randr: duplicate, extend, one screen; display.go), PrtSc
-# screenshots (grim, through cage's screencopy), the Orca screen reader
+# screenshots (grim, through labwc's screencopy), the Orca screen reader
 # with local espeak-ng voices through speech-dispatcher (also orOS's
 # read-aloud), and the locales Orca speaks in (en, el, de).
 swayidle
@@ -68,7 +70,7 @@ fdisk
 systemd-timesyncd
 tzdata
 brightnessctl
-# Night Light: real gamma through cage's wlr-gamma-control (night.go)
+# Night Light: real gamma through labwc's wlr-gamma-control (night.go)
 wlsunset
 
 # Printing without vendor drivers: CUPS finds IPP Everywhere and AirPrint

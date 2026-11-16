@@ -2,7 +2,7 @@ package main
 
 // Night Light: orOS (nightlight.js) decides when and how warm the screen
 // is; on this stick the screen's own colours change instead of orOS's CSS
-// filter, so the Internet window and Tor Browser turn warm too. cage
+// filter, so the Internet window and Tor Browser turn warm too. labwc
 // offers wlr-gamma-control, and wlsunset (Debian) sets the ramps. The
 // gamma only holds while its client runs, so one wlsunset runs in the
 // background (Setsid, it outlives this host) with both its day and night
@@ -10,7 +10,7 @@ package main
 // which makes it a steady colour; orOS sends a new value for its fades.
 // The page asks with "night.set" {value: kelvin}, 0 = back to normal.
 //
-// A cage without wlr-gamma-control makes wlsunset quit at once. Then this
+// A compositor without wlr-gamma-control makes wlsunset quit at once. Then this
 // boot is marked (nightNoGammaFile), status stops reporting "night", the
 // extension removes data-oros-sys-night and orOS draws its own filter
 // again. The boot test logs whether gamma works (selftestDeskMain).

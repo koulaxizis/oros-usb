@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<!--
+  labwc as orOS USB's kiosk (oros-session: labwc -C /etc/xdg/oros-labwc
+  -S oros-kiosk). It replaced cage (2026-11-16) so that Claude desktop can
+  sit beside orOS. Every normal window opens maximized without a title bar,
+  as under cage; Claude desktop takes the right half and the orOS window
+  the left (oros-system claude.go puts orOS back to the whole screen when
+  Claude closes). No desktop menu, no labwc key bindings: orOS has its own
+  (Ctrl+Alt+Shift+...), and Ctrl+Alt+F1..F12 still switch consoles.
+-->
+<labwc_config>
+  <core>
+    <decoration>server</decoration>
+    <gap>0</gap>
+  </core>
+  <theme>
+    <titlebar><layout></layout><showTitle>no</showTitle></titlebar>
+    <cornerRadius>0</cornerRadius>
+  </theme>
+  <focus><followMouse>no</followMouse></focus>
+  <placement><policy>center</policy></placement>
+  <snapping><range>0</range><topMaximize>no</topMaximize></snapping>
+  <keyboard>
+    <!-- one binding that does nothing, so labwc adds none of its own -->
+    <keybind key="W-F24"><action name="None"/></keybind>
+  </keyboard>
+  <mouse>
+    <context name="Root">
+      <mousebind button="Left" action="Press"><action name="None"/></mousebind>
+      <mousebind button="Right" action="Press"><action name="None"/></mousebind>
+      <mousebind button="Middle" action="Press"><action name="None"/></mousebind>
+    </context>
+  </mouse>
+  <windowRules>
+    <windowRule identifier="*" serverDecoration="no"/>
+    <windowRule identifier="*" type="normal">
+      <action name="Maximize"/>
+    </windowRule>
+    <windowRule identifier="claude*">
+      <action name="SnapToEdge" direction="right"/>
+      <action name="ForEach">
+        <query identifier="chrom*" title="orOS*"/>
+        <then><action name="SnapToEdge" direction="left"/></then>
+      </action>
+    </windowRule>
+  </windowRules>
+</labwc_config>
