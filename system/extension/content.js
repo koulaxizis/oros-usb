@@ -252,7 +252,7 @@
   });
 
   // orOS's Start page (startpage/, the Internet window's first page): only
-  // its Tor button. The page shows "New Tor window" while
+  // its Tor button, and data-oros-sys-platform for its VPN guide link. The page shows "New Tor window" while
   // data-oros-sys-tor is "1" and fires "oros-sys-tor" on a press, which
   // runs the same Tor steps as the top-bar button (ask before the first
   // download, oros-system checks the signature). Nothing else of this
@@ -261,6 +261,8 @@
   if (location.pathname.startsWith("/startpage/")) {
     call({ cmd: "status" }).then((st) => {
       if (st.ok && (!st.caps || st.caps.tor)) document.documentElement.setAttribute("data-oros-sys-tor", "1");
+      // Which guide its "VPN extension" link opens (oros-usb or oros-portable PRIVATE-BROWSING.md).
+      if (st.ok) document.documentElement.setAttribute("data-oros-sys-platform", st.platform === "portable" ? "portable" : "usb");
     });
     let torBusy = false;
     document.addEventListener("oros-sys-tor", async () => {
