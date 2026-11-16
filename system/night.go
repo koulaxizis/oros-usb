@@ -9,6 +9,11 @@ package main
 // temperatures at the asked value (-t k -T k+1: wlsunset needs high > low),
 // which makes it a steady colour; orOS sends a new value for its fades.
 // The page asks with "night.set" {value: kelvin}, 0 = back to normal.
+//
+// A cage without wlr-gamma-control makes wlsunset quit at once. Then this
+// boot is marked (nightNoGammaFile), status stops reporting "night", the
+// extension removes data-oros-sys-night and orOS draws its own filter
+// again. The boot test logs whether gamma works (selftestDeskMain).
 
 import (
 	"os"
@@ -17,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const (
@@ -24,9 +30,13 @@ const (
 	nightNeutral = 6500
 )
 
-// nightAvailable: wlsunset is installed and we run inside a Wayland session.
+// nightAvailable: wlsunset is installed, we run inside a Wayland session,
+// and this boot has not found the compositor without gamma control.
 func nightAvailable() bool {
 	if os.Getenv("WAYLAND_DISPLAY") == "" {
+		return false
+	}
+	if _, err := os.Stat(nightNoGammaFile()); err == nil {
 		return false
 	}
 	_, err := exec.LookPath("wlsunset")
@@ -39,6 +49,12 @@ func nightPidFile() string {
 		dir = os.TempDir()
 	}
 	return filepath.Join(dir, "oros-night-"+strconv.Itoa(os.Getuid())+".pid")
+}
+
+// nightNoGammaFile lives in RAM ($XDG_RUNTIME_DIR), so a new boot (or a
+// newer image) tries again.
+func nightNoGammaFile() string {
+	return strings.TrimSuffix(nightPidFile(), ".pid") + ".nogamma"
 }
 
 // nightArgs is the wlsunset command line for a temperature, or nil for
@@ -90,7 +106,16 @@ func nightSet(k int) reply {
 	if err := cmd.Start(); err != nil {
 		return fail(err, "")
 	}
+	done := make(chan struct{})
+	go func() { _ = cmd.Wait(); close(done) }()
+	select {
+	case <-done:
+		// It quit at once: no gamma control in this compositor.
+		_ = os.WriteFile(nightNoGammaFile(), []byte("1"), 0o600)
+		logf("night: wlsunset quit at once, no gamma control; orOS keeps its own filter")
+		return reply{"ok": false, "error": "no gamma control", "night": false}
+	case <-time.After(1500 * time.Millisecond):
+	}
 	_ = os.WriteFile(nightPidFile(), []byte(strconv.Itoa(cmd.Process.Pid)), 0o600)
-	go func() { _ = cmd.Wait() }()
 	return reply{"ok": true, "kelvin": k}
 }

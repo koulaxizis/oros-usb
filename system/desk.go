@@ -574,6 +574,12 @@ func selftestDeskMain() int {
 	info("screen off through cage", fmt.Sprint(offErr == nil))
 	_, _ = run("wlopm", "--on", "*")
 
+	// Night Light's real gamma (night.go): info only, orOS falls back to
+	// its own filter where cage has no wlr-gamma-control.
+	nr := nightSet(4000)
+	info("night light gamma (wlsunset on cage)", fmt.Sprint(nr["ok"] == true, " ", nr["error"]))
+	nightSet(0)
+
 	if l, err := listOutputs(); err != nil || len(l) == 0 {
 		check("screens (wlr-randr)", fmt.Errorf("%v, %d screens", err, len(l)))
 	} else {

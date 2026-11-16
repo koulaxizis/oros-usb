@@ -452,7 +452,9 @@
       while (nightWant !== null) {
         const v = nightWant;
         nightWant = null;
-        await call({ cmd: "night.set", value: v });
+        const r = await call({ cmd: "night.set", value: v });
+        // No gamma control in this cage: orOS takes its own filter back.
+        if (r && r.night === false) { state.night = false; paintButton(); nightWant = null; }
       }
     } finally { nightBusy = false; }
   });
