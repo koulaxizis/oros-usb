@@ -189,6 +189,8 @@ func handle(req request) reply {
 		return timeZone(req.Zone)
 	case "brightness.set":
 		return setBrightness(req.Value)
+	case "night.set":
+		return nightSet(req.Value)
 	case "bt.list":
 		return btList()
 	case "bt.scan":
@@ -357,6 +359,8 @@ func status() reply {
 	if v, ok := brightness(); ok {
 		res["brightness"] = v
 	}
+	// orOS's Night Light changes the screen's own colours here (night.go).
+	res["night"] = nightAvailable()
 	res["zone"] = currentZone()
 	res["canInstall"] = liveMedium() != "" && !installedSystem()
 	// Another user than the owner is signed in: the extension hides the
