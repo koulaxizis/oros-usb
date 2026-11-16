@@ -65,6 +65,17 @@ jobs:
           cat /tmp/tor.json; echo
           test -x /tmp/tor/tor-browser/Browser/start-tor-browser
           rm -rf /tmp/tor
+      - name: Claude desktop download (Anthropic's real package, signature and hashes checked)
+        run: |
+          scripts/claude-key.sh /tmp/claude-key.gpg
+          (cd system && go run . claude --fetch --no-start --no-lib-check --dir /tmp/claude --keyring /tmp/claude-key.gpg --progress /tmp/claude.json)
+          cat /tmp/claude.json; echo
+          cat /tmp/claude/app.json; echo
+          exe="/tmp/claude/root/$(jq -r .exec /tmp/claude/app.json)"
+          test -x "$exe"
+          head -c 4 "$exe" | od -c | head -1
+          du -sh /tmp/claude/root
+          rm -rf /tmp/claude
       - name: Local AI download (the real Ollama and its smallest model, one answer)
         env:
           GITHUB_TOKEN: ${{ github.token }}

@@ -6,10 +6,11 @@
 // to open another disk (Windows disks read-only), "oros-system disks"
 // lists them as JSON, "oros-system time" to set the time zone, and
 // "oros-system vault-base" to make the folder for encrypted users (vault.go),
-// and "oros-system ai" sets up and starts the local AI (ai.go).
-// "keyboard", "idle", "screen" and "reader" are the session's desktop
-// parts (desk.go): keyboard layouts, the screen going off and sleep when
-// idle, and the Orca screen reader.
+// "oros-system ai" sets up and starts the local AI (ai.go), and
+// "oros-system claude" downloads Anthropic's Claude desktop (claude.go).
+// "keyboard", "idle", "screen", "display" and "reader" are the session's
+// desktop parts (desk.go, display.go): keyboard layouts, the screen going
+// off and sleep when idle, second screens, and the Orca screen reader.
 package main
 
 import (
@@ -30,6 +31,9 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "tor" {
 		os.Exit(torMain(os.Args[2:]))
+	}
+	if len(os.Args) > 1 && os.Args[1] == "claude" {
+		os.Exit(claudeMain(os.Args[2:]))
 	}
 	if len(os.Args) > 1 && os.Args[1] == "ai" {
 		os.Exit(aiMain(os.Args[2:]))
@@ -75,6 +79,6 @@ func main() {
 		}
 		return
 	}
-	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | ai --fetch [--model M] | ai --serve | keyboard --layouts|--options | idle | screen --off|--on | reader --enabled|--session  (or run by Chromium)")
+	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | ai --fetch [--model M] | ai --serve | claude --fetch | keyboard --layouts|--options | idle | screen --off|--on | display --apply | reader --enabled|--session  (or run by Chromium)")
 	os.Exit(2)
 }
