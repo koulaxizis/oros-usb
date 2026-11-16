@@ -26,6 +26,24 @@ xwayland
 gpgv
 xz-utils
 
+# Desktop parts of the session (oros-system desk.go): the screen going off
+# and sleep when idle (swayidle; wlopm turns cage's outputs off), second
+# screens (wlr-randr: duplicate, extend, one screen; display.go), PrtSc
+# screenshots (grim, through cage's screencopy), the Orca screen reader
+# with local espeak-ng voices through speech-dispatcher (also orOS's
+# read-aloud), and the locales Orca speaks in (en, el, de).
+swayidle
+wlr-randr
+wlopm
+grim
+orca
+at-spi2-core
+python3-speechd
+speech-dispatcher
+speech-dispatcher-espeak-ng
+espeak-ng
+locales
+
 # Network (Wi-Fi from orOS's System button, or nmtui on tty2)
 network-manager
 wpasupplicant

@@ -56,9 +56,18 @@ if [ -f /opt/oros/ubol/manifest.json ]; then
 	fi
 	[ -f "$ROOT/ubol/manifest.json" ] && EXT="$EXT,$ROOT/ubol"
 fi
-ARGS="--ozone-platform=wayland --start-maximized --disable-features=Translate --load-extension=$EXT --default-background-color=ff1b1a18 --disable-background-timer-throttling --enable-logging --v=0"
-export XKB_DEFAULT_LAYOUT="us,gr"
-export XKB_DEFAULT_OPTIONS="grp:alt_shift_toggle"
+# --enable-speech-dispatcher gives orOS's read-aloud the computer's own
+# espeak-ng voices (speech-dispatcher; orOS uses local voices only).
+ARGS="--ozone-platform=wayland --start-maximized --disable-features=Translate --load-extension=$EXT --default-background-color=ff1b1a18 --disable-background-timer-throttling --enable-speech-dispatcher --enable-logging --v=0"
+# The keyboard layouts chosen in the System panel (oros-system desk.go,
+# ~/oros/data/desk.json; us,gr with Alt+Shift until then). cage reads
+# them only when it starts, so each start of the loop below asks again.
+kb() {
+	XKB_DEFAULT_LAYOUT="$(/opt/oros/oros-system keyboard --layouts 2>/dev/null)"
+	XKB_DEFAULT_OPTIONS="$(/opt/oros/oros-system keyboard --options 2>/dev/null)"
+	[ -n "$XKB_DEFAULT_LAYOUT" ] || { XKB_DEFAULT_LAYOUT="us,gr"; XKB_DEFAULT_OPTIONS="grp:alt_shift_toggle"; }
+	export XKB_DEFAULT_LAYOUT XKB_DEFAULT_OPTIONS
+}
 # Virtual machines and some old GPUs have no hardware GL.
 export WLR_RENDERER_ALLOW_SOFTWARE=1
 export WLR_NO_HARDWARE_CURSORS=1
@@ -140,6 +149,8 @@ stop() {
 	pkill -KILL -u "$(id -u)" -f -- "--user-data-dir=$ROOT/data/" 2>/dev/null
 	pkill -KILL -u "$(id -u)" -x oros-portable 2>/dev/null
 	pkill -KILL -u "$(id -u)" -x oros-bridge 2>/dev/null
+	pkill -KILL -u "$(id -u)" -x swayidle 2>/dev/null
+	pkill -KILL -u "$(id -u)" -x orca 2>/dev/null
 	sleep 1
 }
 
@@ -161,11 +172,18 @@ while true; do
 	rm -rf "$ROOT/data/users/guest" "$ROOT/homes/guest"
 	# a bridge left from the last start would hold its port, with an XWayland that is gone
 	pkill -KILL -u "$(id -u)" -x oros-bridge 2>/dev/null
+	pkill -KILL -u "$(id -u)" -x swayidle 2>/dev/null
+	pkill -KILL -u "$(id -u)" -x orca 2>/dev/null
 	BLOG="$ROOT/data/bridge.log"
 	[ "$(stat -c %s "$BLOG" 2>/dev/null || echo 0)" -lt 262144 ] || rm -f "$BLOG"
 	starts=$((starts + 1))
 	A="$ARGS"
 	[ "$OROS_GPU_OFF" = 1 ] && A="$A --disable-gpu"
+	kb
+	# The screen reader (Orca, started by oros-kiosk) reads the page only
+	# when the browser starts with accessibility on; it costs some speed,
+	# so only while the reader is on.
+	/opt/oros/oros-system reader --enabled 2>/dev/null && A="$A --force-renderer-accessibility"
 	if [ "$starts" -le "$SABOTAGE" ]; then
 		A="$(echo "$A" | sed 's| --load-extension=[^ ]*||')"
 		note "start (test: without the System extension)"
