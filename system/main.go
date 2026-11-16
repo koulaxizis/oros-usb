@@ -6,7 +6,11 @@
 // to open another disk (Windows disks read-only), "oros-system disks"
 // lists them as JSON, "oros-system time" to set the time zone, and
 // "oros-system vault-base" to make the folder for encrypted users (vault.go),
-// and "oros-system ai" sets up and starts the local AI (ai.go).
+// "oros-system ai" sets up and starts the local AI (ai.go), and
+// "oros-system claude" downloads Anthropic's Claude desktop (claude.go).
+// "keyboard", "idle", "screen", "display" and "reader" are the session's
+// desktop parts (desk.go, display.go): keyboard layouts, the screen going
+// off and sleep when idle, second screens, and the Orca screen reader.
 package main
 
 import (
@@ -28,6 +32,9 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "tor" {
 		os.Exit(torMain(os.Args[2:]))
 	}
+	if len(os.Args) > 1 && os.Args[1] == "claude" {
+		os.Exit(claudeMain(os.Args[2:]))
+	}
 	if len(os.Args) > 1 && os.Args[1] == "ai" {
 		os.Exit(aiMain(os.Args[2:]))
 	}
@@ -43,6 +50,24 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "disks" {
 		os.Exit(disksMain())
 	}
+	if len(os.Args) > 1 && os.Args[1] == "keyboard" {
+		os.Exit(keyboardMain(os.Args[2:]))
+	}
+	if len(os.Args) > 1 && os.Args[1] == "idle" {
+		os.Exit(idleMain())
+	}
+	if len(os.Args) > 1 && os.Args[1] == "screen" {
+		os.Exit(screenMain(os.Args[2:]))
+	}
+	if len(os.Args) > 1 && os.Args[1] == "display" {
+		os.Exit(displayMain(os.Args[2:]))
+	}
+	if len(os.Args) > 1 && os.Args[1] == "reader" {
+		os.Exit(readerMain(os.Args[2:]))
+	}
+	if len(os.Args) > 1 && os.Args[1] == "selftest-desk" {
+		os.Exit(selftestDeskMain())
+	}
 	if len(os.Args) > 1 && os.Args[1] == "mount" {
 		os.Exit(mountMain(os.Args[2:]))
 	}
@@ -54,6 +79,6 @@ func main() {
 		}
 		return
 	}
-	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | ai --fetch [--model M] | ai --serve  (or run by Chromium)")
+	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | ai --fetch [--model M] | ai --serve | claude --fetch | keyboard --layouts|--options | idle | screen --off|--on | display --apply | reader --enabled|--session  (or run by Chromium)")
 	os.Exit(2)
 }

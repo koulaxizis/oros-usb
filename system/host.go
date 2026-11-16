@@ -40,6 +40,8 @@ type request struct {
 	// the line a prompt shows (unused here: fprintd has no window).
 	Kid  string `json:"kid,omitempty"`
 	Text string `json:"text,omitempty"`
+	// Desk is the System panel's desktop choices (desk.set; desk.go).
+	Desk json.RawMessage `json:"desk,omitempty"`
 }
 
 type reply map[string]any
@@ -158,6 +160,20 @@ func handle(req request) reply {
 			return fail(err, out)
 		}
 		return reply{"ok": true}
+	case "power.sleep":
+		return suspend()
+	case "desk.get":
+		return deskGet()
+	case "desk.set":
+		return deskSet(req.Desk)
+	case "display.list":
+		return displayList()
+	case "display.set", "display.cycle":
+		return displaySet(req.Desk, req.Cmd == "display.cycle")
+	case "session.restart":
+		return sessionRestart()
+	case "screenshot":
+		return screenshot()
 	case "update.check":
 		return checkUpdate()
 	case "update.start":
@@ -218,6 +234,14 @@ func handle(req request) reply {
 			return aiSetGPU(req.On)
 		}
 		return aiRemove()
+	case "claude.status":
+		return claudeStatus()
+	case "claude.install":
+		return claudeInstall()
+	case "claude.open":
+		return claudeOpen()
+	case "claude.remove":
+		return claudeRemove()
 	case "bio.state", "bio.seal", "bio.open", "bio.clear":
 		return bioHost(req)
 	case "report":
@@ -255,6 +279,10 @@ func ping() reply {
 	res := reply{"ok": true}
 	if c := bridgeCode(); c != "" {
 		res["bridgeCode"] = c
+	}
+	// The screen went off where cage cannot turn it off (desk.go).
+	if _, err := os.Stat(blankFile()); err == nil {
+		res["blank"] = true
 	}
 	p := os.Getenv("OROS_ALIVE")
 	if p == "" {

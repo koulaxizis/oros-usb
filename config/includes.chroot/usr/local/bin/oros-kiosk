@@ -14,4 +14,13 @@ if [ -x /opt/oros/oros-bridge ]; then
 		--code-file "${OROS_BRIDGE_CODE:-${XDG_RUNTIME_DIR:-/tmp}/oros-bridge-code}" \
 		< /dev/null >> "$HOME/oros/data/bridge.log" 2>&1 &
 fi
+# Inside cage too (they need its Wayland): the screen going off and sleep
+# when nobody uses the computer (swayidle with the System panel's times),
+# and the Orca screen reader when it is on (oros-system desk.go). Both end
+# with the session. Boot tests also check these parts from in here.
+/opt/oros/oros-system idle < /dev/null > /dev/null 2>&1 &
+/opt/oros/oros-system reader --session < /dev/null > /dev/null 2>&1 &
+if [ -f /home/.oros-selftest ] && [ ! -f "$HOME/.oros-selftest-desk" ]; then
+	/opt/oros/oros-system selftest-desk < /dev/null > /dev/null 2>&1 &
+fi
 exec /opt/oros/oros-portable
