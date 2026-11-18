@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDeskDefaultsAndJunk(t *testing.T) {
@@ -130,5 +131,26 @@ func TestScreenshotNamesAndUsers(t *testing.T) {
 	os.WriteFile(bin, []byte("#!/bin/sh\necho 'compositor does not support screencopy' >&2\nexit 1\n"), 0o755)
 	if r := screenshot(); r["ok"] != false || !strings.Contains(r["error"].(string), "screencopy") {
 		t.Fatalf("%v", r)
+	}
+}
+
+func TestAwakeHold(t *testing.T) {
+	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
+	now := time.Now()
+	if awakeHeld(now) {
+		t.Fatal("held without a ping")
+	}
+	if r := handle(request{Cmd: "ping", Awake: true}); r["ok"] != true {
+		t.Fatalf("ping: %v", r)
+	}
+	if !awakeHeld(time.Now()) {
+		t.Fatal("a ping with awake should hold")
+	}
+	if awakeHeld(time.Now().Add(awakeFresh + time.Second)) {
+		t.Fatal("a hold not renewed must end")
+	}
+	handle(request{Cmd: "ping"})
+	if awakeHeld(time.Now()) {
+		t.Fatal("a ping without awake ends the hold")
 	}
 }

@@ -1814,10 +1814,18 @@
   // painted frame (a window that never paints sends none), then one every
   // 10 s while the page runs. A timer, not frames, keeps it going while the
   // Internet window covers orOS.
-  const ping = () => call({ cmd: "ping" }).then((r) => { if (r.ok) { bridgeCode(r.bridgeCode); blank(!!r.blank); } });
+  // The ping also carries orOS's Keep awake (Quick settings sets
+  // <html data-oros-awake="1">): oros-system holds swayidle while pings
+  // say so (desk.go awakeHeld), and lets go 45 s after they stop. A
+  // change is sent at once.
+  const awake = () => document.documentElement.getAttribute("data-oros-awake") === "1";
+  const ping = () => call({ cmd: "ping", awake: awake() }).then((r) => { if (r.ok) { bridgeCode(r.bridgeCode); blank(!!r.blank); } });
   requestAnimationFrame(() => requestAnimationFrame(() => {
     ping();
     setInterval(ping, 10000);
+    let was = awake();
+    new MutationObserver(() => { if (awake() !== was) { was = awake(); ping(); } })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ["data-oros-awake"] });
   }));
 
   const start = () => {
