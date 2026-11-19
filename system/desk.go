@@ -321,6 +321,16 @@ func idleMain() int {
 		if os.Getppid() != parent || os.Getenv("WAYLAND_DISPLAY") == "" {
 			return 0
 		}
+		// orOS's Keep awake: no swayidle while it holds; it starts again
+		// with the saved times once the hold ends.
+		if awakeHeld(time.Now()) {
+			if child != nil {
+				stop()
+				logf("idle: orOS keeps the screen awake")
+			}
+			time.Sleep(5 * time.Second)
+			continue
+		}
 		var mt time.Time
 		if st, err := os.Stat(deskFile(home)); err == nil {
 			mt = st.ModTime()
@@ -397,6 +407,33 @@ func screenMain(args []string) int {
 }
 
 func blankFile() string { return runtimeFile("oros-blank") }
+
+// ---------- Keep awake (orOS Quick settings) ----------
+
+// awakeFile is touched by every ping while orOS's Keep awake is on and
+// removed by the first ping without it. It lives in RAM, so a new boot
+// never starts held.
+func awakeFile() string { return runtimeFile("oros-awake-" + strconv.Itoa(os.Getuid())) }
+
+// awakeFresh: pings come every 10 s; a hold not renewed for 45 s (orOS
+// closed or stuck) lets the screen go off and the computer sleep again.
+const awakeFresh = 45 * time.Second
+
+func awakeMark(on bool) {
+	if !on {
+		_ = os.Remove(awakeFile())
+		return
+	}
+	_ = os.WriteFile(awakeFile(), []byte("1\n"), 0o600)
+	now := time.Now()
+	_ = os.Chtimes(awakeFile(), now, now)
+}
+
+// awakeHeld: orOS asked to keep the screen on, recently enough.
+func awakeHeld(now time.Time) bool {
+	st, err := os.Stat(awakeFile())
+	return err == nil && now.Sub(st.ModTime()) < awakeFresh
+}
 
 func runtimeFile(name string) string {
 	dir := os.Getenv("XDG_RUNTIME_DIR")

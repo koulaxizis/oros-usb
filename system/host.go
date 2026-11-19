@@ -42,6 +42,9 @@ type request struct {
 	Text string `json:"text,omitempty"`
 	// Desk is the System panel's desktop choices (desk.set; desk.go).
 	Desk json.RawMessage `json:"desk,omitempty"`
+	// Awake comes with the watchdog's ping: orOS's Keep awake is on
+	// (<html data-oros-awake="1">, Quick settings), so swayidle waits.
+	Awake bool `json:"awake,omitempty"`
 }
 
 type reply map[string]any
@@ -92,7 +95,7 @@ func handle(req request) reply {
 	}
 	switch req.Cmd {
 	case "ping":
-		return ping()
+		return ping(req.Awake)
 	case "bridge.code":
 		return reply{"ok": true, "code": bridgeCode()}
 	case "status":
@@ -275,7 +278,8 @@ func handle(req request) reply {
 // its page still runs. OROS_ALIVE (set by oros-session, passed on by
 // Chromium) names a file in RAM, so the stick is not written every few
 // seconds.
-func ping() reply {
+func ping(awake bool) reply {
+	awakeMark(awake)
 	res := reply{"ok": true}
 	if c := bridgeCode(); c != "" {
 		res["bridgeCode"] = c
