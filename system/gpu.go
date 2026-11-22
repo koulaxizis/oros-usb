@@ -254,21 +254,104 @@ func gpuApply() error {
 	if readGPUSettings(home).NoOffload {
 		env = nil
 	}
-	args := []string{"override", "--user"}
-	for _, k := range primeKeys {
-		if v, ok := env[k]; ok {
-			args = append(args, "--env="+k+"="+v)
-		} else {
-			args = append(args, "--unset-env="+k)
-		}
-	}
-	if out, err := run("flatpak", args...); err != nil {
-		return fmt.Errorf("flatpak override: %v %s", err, strings.TrimSpace(out))
+	if err := setFlatpakEnv(flatpakGlobalOverride(home), env); err != nil {
+		return fmt.Errorf("flatpak override: %v", err)
 	}
 	if env != nil {
 		logf("gpu: games on the second card %v", env)
 	}
 	return nil
+}
+
+func flatpakGlobalOverride(home string) string {
+	return filepath.Join(home, ".local", "share", "flatpak", "overrides", "global")
+}
+
+// setFlatpakEnv writes env into the [Environment] group of Flatpak's
+// global override file (what "flatpak override --user --env=K=V" writes),
+// and removes the primeKeys env does not set. "flatpak override
+// --unset-env" cannot be used for that: it does not remove a setting, it
+// adds one that clears the variable inside every program. Other groups and
+// keys (other overrides) stay as they are; primeKeys are also taken out of
+// [Context] unset-environment, where that option put them.
+func setFlatpakEnv(file string, env map[string]string) error {
+	b, err := os.ReadFile(file)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	ours := map[string]bool{}
+	for _, k := range primeKeys {
+		ours[k] = true
+	}
+	var out []string
+	group := ""
+	sawEnv := false
+	addEnv := func() {
+		keys := make([]string, 0, len(env))
+		for k := range env {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			out = append(out, k+"="+env[k])
+		}
+	}
+	lines := strings.Split(strings.TrimRight(string(b), "\n"), "\n")
+	if len(b) == 0 {
+		lines = nil
+	}
+	for _, l := range lines {
+		t := strings.TrimSpace(l)
+		if strings.HasPrefix(t, "[") && strings.HasSuffix(t, "]") {
+			if group == "Environment" {
+				addEnv()
+			}
+			group = t[1 : len(t)-1]
+			if group == "Environment" {
+				sawEnv = true
+			}
+			out = append(out, l)
+			continue
+		}
+		k, v, isKV := strings.Cut(t, "=")
+		if isKV && group == "Environment" && ours[k] {
+			continue
+		}
+		if isKV && group == "Context" && k == "unset-environment" {
+			var keep []string
+			for _, n := range strings.Split(v, ";") {
+				if n != "" && !ours[n] {
+					keep = append(keep, n)
+				}
+			}
+			if len(keep) == 0 {
+				continue
+			}
+			l = "unset-environment=" + strings.Join(keep, ";") + ";"
+		}
+		out = append(out, l)
+	}
+	if group == "Environment" {
+		addEnv()
+	}
+	if !sawEnv && len(env) > 0 {
+		if len(out) > 0 && out[len(out)-1] != "" {
+			out = append(out, "")
+		}
+		out = append(out, "[Environment]")
+		addEnv()
+	}
+	if len(out) == 0 && len(b) == 0 {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+		return err
+	}
+	data := strings.Join(out, "\n") + "\n"
+	if err := os.WriteFile(file+".tmp", []byte(data), 0o644); err != nil {
+		return err
+	}
+	return os.Rename(file+".tmp", file)
 }
 
 // gpuSetOffload is "gpu.offload" (on: games on the strong card, default).

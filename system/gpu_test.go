@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -137,5 +138,43 @@ GPU1:
 	f := lspciFields(`01:00.0 "3D controller" "NVIDIA Corporation" "GM108M [GeForce 940M]" -ra2 "Lenovo" "Device 3815"`)
 	if len(f) < 4 || f[1] != "NVIDIA Corporation" || f[2] != "GM108M [GeForce 940M]" {
 		t.Fatalf("%q", f)
+	}
+}
+
+func TestSetFlatpakEnv(t *testing.T) {
+	f := filepath.Join(t.TempDir(), "overrides", "global")
+	// no file and nothing to set: nothing written
+	if err := setFlatpakEnv(f, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(f); !os.IsNotExist(err) {
+		t.Fatal("empty override written")
+	}
+	// what G2's first version wrote, next to someone else's settings
+	old := "[Context]\nfilesystems=/media/oros;\nunset-environment=__GLX_VENDOR_LIBRARY_NAME;MY_VAR;DRI_PRIME;\n\n[Environment]\nDRI_PRIME=\nMANGOHUD=1\n"
+	_ = os.MkdirAll(filepath.Dir(f), 0o755)
+	_ = os.WriteFile(f, []byte(old), 0o644)
+	if err := setFlatpakEnv(f, map[string]string{"DRI_PRIME": "pci-0000_01_00_0"}); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(f)
+	want := "[Context]\nfilesystems=/media/oros;\nunset-environment=MY_VAR;\n\n[Environment]\nMANGOHUD=1\nDRI_PRIME=pci-0000_01_00_0\n"
+	if string(b) != want {
+		t.Fatalf("got\n%s\nwant\n%s", b, want)
+	}
+	// one card again: our variable goes, the rest stays
+	if err := setFlatpakEnv(f, nil); err != nil {
+		t.Fatal(err)
+	}
+	b, _ = os.ReadFile(f)
+	if strings.Contains(string(b), "DRI_PRIME") || !strings.Contains(string(b), "MANGOHUD=1") || !strings.Contains(string(b), "MY_VAR") {
+		t.Fatalf("%s", b)
+	}
+	// a file with no [Environment] group gets one
+	_ = os.WriteFile(f, []byte("[Context]\nshared=network;\n"), 0o644)
+	_ = setFlatpakEnv(f, map[string]string{"__NV_PRIME_RENDER_OFFLOAD": "1", "__GLX_VENDOR_LIBRARY_NAME": "nvidia"})
+	b, _ = os.ReadFile(f)
+	if string(b) != "[Context]\nshared=network;\n\n[Environment]\n__GLX_VENDOR_LIBRARY_NAME=nvidia\n__NV_PRIME_RENDER_OFFLOAD=1\n" {
+		t.Fatalf("%q", b)
 	}
 }
