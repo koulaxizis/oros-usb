@@ -57,6 +57,17 @@ echo "== system bridge and extension"
 rm -rf "$OPT/system-ext" && cp -a system/extension "$OPT/system-ext"
 echo "$VERSION" > "$OPT/version"
 
+echo "== software center: the catalog, Flathub and its filter (oros-system soft)"
+# Only the catalog's apps can come from Flathub (flathub.filter); the
+# catalog's add-ons and models are checked in CI (scripts/check-catalog.sh).
+cp catalog/catalog.json "$OPT/catalog.json"
+"$OPT/oros-system" soft --filter --catalog "$OPT/catalog.json" > "$OPT/flathub.filter"
+grep -qx 'deny app/\*' "$OPT/flathub.filter"
+curl -fsSL --retry 3 -o "$OPT/flathub.flatpakrepo" https://dl.flathub.org/repo/flathub.flatpakrepo
+grep -qx 'Url=https://dl.flathub.org/repo/' "$OPT/flathub.flatpakrepo"
+grep -q '^GPGKey=' "$OPT/flathub.flatpakrepo"
+echo "flathub.flatpakrepo $(sha256sum "$OPT/flathub.flatpakrepo" | cut -d' ' -f1)"
+
 echo "== boot menus: hidden, orOS starts by itself after 2 seconds"
 # live-build's menus wait for a key forever; take its own templates and
 # hide them: the screen stays on the orOS picture and Esc (or any key on

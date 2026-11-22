@@ -87,6 +87,31 @@
       printHint: "Print from any app with Ctrl+P.",
       qsReboot: "Restart the computer", qsMore: "Printers, disks, update…", volume: "Volume",
       bridgeCode: "orOS Bridge pairing code: type it in orOS Studio",
+      soft: "Software", softHint: "Programs tried on orOS. They install onto this stick, stay after a restart and update by themselves.",
+      softGames: "Games and game stores", softAddons: "Add-ons for the Internet window",
+      softInstall: "Install", softOpen: "Open", softRemove: "Remove {n}", softUpdate: "Update all now",
+      softGetting: "Installing {n}… {p}%", softRemoving: "Removing {n}…", softUpdating: "Updating… {p}%",
+      softAsk: "{n} is downloaded from Flathub (about {s} GB with what it needs) and installed onto this stick. Continue?",
+      softRemoveAsk: "Remove {n}? Its settings and saved games in the home folder stay.",
+      softError: "That did not work: {e}", softNoSpace: "Not enough free space: about {s} GB is needed.",
+      softNoPersist: "Programs need a stick with a persistence partition (or orOS installed on the computer): without one they would be gone at shutdown.",
+      softOwner: "Only the stick's owner adds or removes programs and add-ons.",
+      softAddonOn: "On", softAddonHint: "The add-on installs in the Internet window in a few seconds and updates by itself; turn it off to remove it.",
+      softMore: "More choices", softFree: "Free space: {f} GB",
+      gpu: "Graphics card", gpuCards: "{n}", gpuOffload: "Games on the strong graphics card",
+      gpuOffloadHint: "On a laptop with two cards, games use the stronger one and orOS the one that saves battery.",
+      nvInstall: "Install NVIDIA's driver ({s} MB)", nvHint: "NVIDIA's own driver gives games full speed. Without it the open nouveau driver is used.",
+      nvAsk: "NVIDIA's driver ({s} MB) is downloaded from orOS's official release, checked, and used from the next start. Continue?",
+      nvAskSB: "NVIDIA's driver ({s} MB) is downloaded from orOS's official release and checked. Because Secure Boot is on, the computer must trust the orOS key once: at the next start a blue screen asks for a code that orOS shows you here. Continue?",
+      nvGetting: "Getting NVIDIA's driver… {p}%", nvOn: "NVIDIA's driver {v} is in use.",
+      nvRestart: "NVIDIA's driver is installed. It is used from the next start.",
+      nvMok: "One more step at the next start: a blue screen appears. Choose Enroll MOK › Continue › Yes, type this code, then choose Reboot.",
+      nvMokCode: "Code: {c}", nvRestartNow: "Restart now",
+      nvNotLoaded: "NVIDIA's driver is installed but the open driver is in use: {w}",
+      nvOld: "This NVIDIA card needs an older driver that Debian 13 no longer offers. It runs with the open nouveau driver.",
+      nvRemove: "Remove NVIDIA's driver", nvRemoveAsk: "Remove NVIDIA's driver? The open driver is used from the next start.",
+      nvNoPersist: "NVIDIA's driver needs a stick with a persistence partition (or orOS installed on the computer).",
+      nvUpdate: "This system's NVIDIA driver comes with the next System update, or install it again here.",
       ai: "Local AI", aiHint: "Free AI for orOS's Assistant that runs on this computer: it works without internet, and what you write never leaves the computer.",
       aiInstall: "Install local AI (about {s} GB)", aiGetting: "Setting up local AI… {p}%",
       aiKeepUsing: "You can keep using orOS. The Assistant starts using it by itself when it is ready.",
@@ -156,6 +181,31 @@
       printNone: "Δεν υπάρχουν ακόμη εκτυπωτές. Όσοι υποστηρίζουν AirPrint ή IPP Everywhere εμφανίζονται μόνοι τους όταν είναι στο ίδιο δίκτυο ή συνδεθούν με USB.",
       printHint: "Εκτύπωση από κάθε εφαρμογή με Ctrl+P.",
       qsReboot: "Επανεκκίνηση του υπολογιστή", qsMore: "Εκτυπωτές, δίσκοι, ενημέρωση…", volume: "Ένταση",
+      soft: "Λογισμικό", softHint: "Προγράμματα που δοκιμάσαμε στο orOS. Εγκαθίστανται σε αυτό το stick, μένουν μετά από επανεκκίνηση και ενημερώνονται μόνα τους.",
+      softGames: "Παιχνίδια και καταστήματα παιχνιδιών", softAddons: "Πρόσθετα για το παράθυρο Internet",
+      softInstall: "Εγκατάσταση", softOpen: "Άνοιγμα", softRemove: "Αφαίρεση: {n}", softUpdate: "Ενημέρωση όλων τώρα",
+      softGetting: "Εγκατάσταση {n}… {p}%", softRemoving: "Αφαίρεση {n}…", softUpdating: "Ενημέρωση… {p}%",
+      softAsk: "Το {n} κατεβαίνει από το Flathub (περίπου {s} GB μαζί με ό,τι χρειάζεται) και εγκαθίσταται σε αυτό το stick. Συνέχεια;",
+      softRemoveAsk: "Να αφαιρεθεί το {n}; Οι ρυθμίσεις του και τα αποθηκευμένα παιχνίδια στον φάκελο χρήστη μένουν.",
+      softError: "Δεν έγινε: {e}", softNoSpace: "Δεν φτάνει ο ελεύθερος χώρος: χρειάζονται περίπου {s} GB.",
+      softNoPersist: "Τα προγράμματα χρειάζονται stick με persistence (ή orOS εγκατεστημένο στον υπολογιστή): χωρίς αυτό θα χάνονταν στο κλείσιμο.",
+      softOwner: "Μόνο ο κάτοχος του stick προσθέτει ή αφαιρεί προγράμματα και πρόσθετα.",
+      softAddonOn: "Ενεργό", softAddonHint: "Το πρόσθετο εγκαθίσταται στο παράθυρο Internet σε λίγα δευτερόλεπτα και ενημερώνεται μόνο του· απενεργοποίησέ το για να αφαιρεθεί.",
+      softMore: "Περισσότερες επιλογές", softFree: "Ελεύθερος χώρος: {f} GB",
+      gpu: "Κάρτα γραφικών", gpuCards: "{n}", gpuOffload: "Παιχνίδια στη δυνατή κάρτα γραφικών",
+      gpuOffloadHint: "Σε laptop με δύο κάρτες, τα παιχνίδια χρησιμοποιούν τη δυνατότερη και το orOS αυτή που εξοικονομεί μπαταρία.",
+      nvInstall: "Εγκατάσταση οδηγού NVIDIA ({s} MB)", nvHint: "Ο οδηγός της ίδιας της NVIDIA δίνει στα παιχνίδια πλήρη ταχύτητα. Χωρίς αυτόν χρησιμοποιείται ο ανοιχτός οδηγός nouveau.",
+      nvAsk: "Ο οδηγός NVIDIA ({s} MB) κατεβαίνει από την επίσημη έκδοση του orOS, ελέγχεται και χρησιμοποιείται από την επόμενη εκκίνηση. Συνέχεια;",
+      nvAskSB: "Ο οδηγός NVIDIA ({s} MB) κατεβαίνει από την επίσημη έκδοση του orOS και ελέγχεται. Επειδή το Secure Boot είναι ενεργό, ο υπολογιστής πρέπει να εμπιστευτεί μία φορά το κλειδί του orOS: στην επόμενη εκκίνηση μια μπλε οθόνη ζητά έναν κωδικό που σου δείχνει εδώ το orOS. Συνέχεια;",
+      nvGetting: "Λήψη του οδηγού NVIDIA… {p}%", nvOn: "Χρησιμοποιείται ο οδηγός NVIDIA {v}.",
+      nvRestart: "Ο οδηγός NVIDIA εγκαταστάθηκε. Χρησιμοποιείται από την επόμενη εκκίνηση.",
+      nvMok: "Ένα βήμα ακόμα στην επόμενη εκκίνηση: εμφανίζεται μια μπλε οθόνη. Διάλεξε Enroll MOK › Continue › Yes, πληκτρολόγησε αυτόν τον κωδικό και μετά διάλεξε Reboot.",
+      nvMokCode: "Κωδικός: {c}", nvRestartNow: "Επανεκκίνηση τώρα",
+      nvNotLoaded: "Ο οδηγός NVIDIA είναι εγκατεστημένος, αλλά χρησιμοποιείται ο ανοιχτός οδηγός: {w}",
+      nvOld: "Αυτή η κάρτα NVIDIA χρειάζεται παλαιότερο οδηγό που το Debian 13 δεν προσφέρει πια. Δουλεύει με τον ανοιχτό οδηγό nouveau.",
+      nvRemove: "Αφαίρεση του οδηγού NVIDIA", nvRemoveAsk: "Να αφαιρεθεί ο οδηγός NVIDIA; Από την επόμενη εκκίνηση χρησιμοποιείται ο ανοιχτός οδηγός.",
+      nvNoPersist: "Ο οδηγός NVIDIA χρειάζεται stick με persistence (ή orOS εγκατεστημένο στον υπολογιστή).",
+      nvUpdate: "Ο οδηγός NVIDIA αυτού του συστήματος έρχεται με την επόμενη Ενημέρωση συστήματος, ή εγκατάστησέ τον ξανά εδώ.",
       ai: "Τοπικό AI", aiHint: "Δωρεάν AI για τον Βοηθό του orOS που τρέχει σε αυτόν τον υπολογιστή: δουλεύει χωρίς internet και ό,τι γράφεις δεν φεύγει ποτέ από τον υπολογιστή.",
       aiInstall: "Εγκατάσταση τοπικού AI (περίπου {s} GB)", aiGetting: "Ετοιμάζεται το τοπικό AI… {p}%",
       aiKeepUsing: "Μπορείς να συνεχίσεις να χρησιμοποιείς το orOS. Ο Βοηθός θα το χρησιμοποιήσει μόνος του μόλις είναι έτοιμο.",
@@ -558,6 +608,8 @@
     const aiBox = el("div", {});
     const deskBox = el("div", {});
     const claudeBox = el("div", {});
+    const gpuBox = el("div", {});
+    const softBox = el("div", {});
     const reportMsg = el("div", {});
     const reportBtn = el("button", { style: "width:100%", onclick: async () => {
       reportBtn.disabled = true;
@@ -584,6 +636,8 @@
       torBox,
       aiBox,
       claudeBox,
+      gpuBox,
+      softBox,
       el("div", { style: "margin-top:10px" }, reportBtn, reportMsg),
       el("div", { class: "power" },
         el("button", { onclick: () => call({ cmd: "power.sleep" }) }, t("sleep")),
@@ -600,6 +654,8 @@
     showAIBox(aiBox);
     showDesk(deskBox);
     showClaudeBox(claudeBox);
+    showGPUBox(gpuBox);
+    showSoftBox(softBox);
   }
 
   // Power, keyboard and the screen reader (orOS USB, oros-system desk.go).
@@ -863,7 +919,8 @@
   const aiLabel = (st, name) => {
     const i = (st.offer || []).findIndex((m) => m.name === name);
     const word = t("aiSizes").split(",")[i];
-    return word ? word + " (" + name + ")" : name;
+    const m = (st.offer || [])[i] || {};
+    return word ? word + " (" + name + ")" : m.by ? m.by + " (" + name + ")" : name;
   };
   async function showAIBox(box) {
     aiBoxEl = box;
@@ -977,6 +1034,214 @@
     more.append(el("div", { class: "row", style: "margin-top:6px" }, rm));
     if (st.freeMB >= 0) more.append(el("div", { class: "muted" }, t("aiFree", { f: gb(st.freeMB) })));
     box.replaceChildren(...parts, more, msg);
+  }
+
+  // Software (orOS USB, oros-system soft.go): only the catalog's programs
+  // and add-ons, one button each. Programs come from Flathub into the
+  // stick and update by themselves; add-ons are one switch, Chromium
+  // installs them. orOS's own (local AI, Claude, Tor, NVIDIA) keep their
+  // own sections. The page opens this section with the DOM event
+  // "oros-soft" ("open").
+  let softTimer = null, softBoxEl = null;
+  const nameOf = (it) => (it.name && (it.name[lang()] || it.name.en)) || it.id;
+  async function showSoftBox(box) {
+    softBoxEl = box;
+    const st = await call({ cmd: "soft.list" });
+    if (box !== softBoxEl || !box.isConnected) return;
+    if (!st.ok) { box.replaceChildren(); return; }
+    const again = () => showSoftBox(box);
+    const parts = [el("h3", { id: "oros-soft-section" }, t("soft")), el("div", { class: "muted" }, t("softHint"))];
+    const msg = el("div", {});
+    const owner = st.owner !== false && !state.notOwner;
+    const items = st.items || [];
+    const p = st.progress || {};
+    const busyItem = st.running ? items.find((i) => i.id === p.id) : null;
+    if (st.running) {
+      if (!softTimer) softTimer = poll(async () => {
+        const s = await call({ cmd: "soft.list" });
+        if (s.ok && s.running && softBoxEl && softBoxEl.isConnected) return showSoftBox(softBoxEl);
+        clearInterval(softTimer);
+        softTimer = null;
+        if (softBoxEl && softBoxEl.isConnected) showSoftBox(softBoxEl);
+      }, 1500);
+    } else if (p.done && p.error) {
+      msg.replaceChildren(el("div", { class: "msg err" }, t("softError", { e: p.error })));
+    }
+    const fail = (r) => {
+      const e = r.error === "no persistence" ? t("softNoPersist") : r.error === "owner only" ? t("softOwner")
+        : r.error === "no space" ? t("softNoSpace", { s: gb(r.needMB || 0) }) : t("softError", { e: r.error });
+      msg.replaceChildren(el("div", { class: "msg err" }, e));
+    };
+    const progressLine = () => {
+      const n = busyItem ? nameOf(busyItem) : "";
+      const k = p.action === "remove" ? "softRemoving" : p.action === "update" ? "softUpdating" : "softGetting";
+      return el("div", { class: "msg" }, t(k, { n, p: p.percent || 0 }));
+    };
+
+    const apps = items.filter((i) => i.kind === "flatpak");
+    if (apps.length) {
+      parts.push(el("div", { style: "margin-top:8px;font-weight:600" }, t("softGames")));
+      for (const it of apps) {
+        const info = el("div", { class: "grow" }, el("div", {}, nameOf(it)),
+          el("div", { class: "muted" }, ((it.summary && (it.summary[lang()] || it.summary.en)) || "") + (it.installed ? "" : " · " + gb(it.mb || 0) + " GB")));
+        let action = null;
+        if (st.running && p.id === it.id) action = null;
+        else if (it.installed) {
+          action = el("button", { class: "primary", onclick: async () => {
+            action.disabled = true;
+            const r = await call({ cmd: "soft.open", id: it.id });
+            action.disabled = false;
+            if (!r.ok) fail(r);
+          } }, t("softOpen"));
+        } else if (owner && st.persistent) {
+          action = el("button", { disabled: !!st.running, onclick: async () => {
+            if (!confirm(t("softAsk", { n: nameOf(it), s: gb(it.mb || 0) }))) return;
+            action.disabled = true;
+            const r = await call({ cmd: "soft.install", id: it.id });
+            if (!r.ok) { action.disabled = false; fail(r); return; }
+            again();
+          } }, t("softInstall"));
+        }
+        parts.push(el("div", { class: "row", style: "margin-top:6px" }, info, action));
+        if (st.running && p.id === it.id) parts.push(progressLine());
+      }
+    }
+    if (st.running && p.action === "update") parts.push(progressLine());
+    if (!st.persistent) parts.push(el("div", { class: "msg err" }, t("softNoPersist")));
+    else if (!owner) parts.push(el("div", { class: "muted" }, t("softOwner")));
+
+    const addons = items.filter((i) => i.kind === "addon");
+    if (addons.length) {
+      parts.push(el("div", { style: "margin-top:12px;font-weight:600" }, t("softAddons")));
+      for (const it of addons) {
+        const box2 = el("input", { type: "checkbox", checked: !!it.installed, disabled: !owner, "aria-label": nameOf(it), onchange: async () => {
+          box2.disabled = true;
+          const r = await call({ cmd: "soft.addon", id: it.id, on: box2.checked });
+          box2.disabled = false;
+          if (!r.ok) { box2.checked = !box2.checked; fail(r); }
+        } });
+        parts.push(el("label", { class: "row", style: "margin-top:6px" }, box2,
+          el("div", { class: "grow" }, el("div", {}, nameOf(it)), el("div", { class: "muted" }, (it.summary && (it.summary[lang()] || it.summary.en)) || ""))));
+      }
+      parts.push(el("div", { class: "muted", style: "margin-top:4px" }, t("softAddonHint")));
+    }
+
+    const installed = apps.filter((i) => i.installed);
+    if (owner && st.persistent && !st.running && installed.length) {
+      const more = el("details", { style: "margin-top:8px" }, el("summary", {}, t("softMore")));
+      const up = el("button", { onclick: async () => {
+        up.disabled = true;
+        const r = await call({ cmd: "soft.update" });
+        if (!r.ok) { up.disabled = false; fail(r); return; }
+        again();
+      } }, t("softUpdate"));
+      more.append(el("div", { class: "row", style: "margin-top:6px" }, up));
+      for (const it of installed) {
+        const b = el("button", { onclick: async () => {
+          if (!confirm(t("softRemoveAsk", { n: nameOf(it) }))) return;
+          b.disabled = true;
+          const r = await call({ cmd: "soft.remove", id: it.id });
+          if (!r.ok) { b.disabled = false; fail(r); return; }
+          again();
+        } }, t("softRemove", { n: nameOf(it) }));
+        more.append(el("div", { class: "row", style: "margin-top:6px" }, b));
+      }
+      if (st.freeMB >= 0) more.append(el("div", { class: "muted" }, t("softFree", { f: gb(st.freeMB) })));
+      parts.push(more);
+    }
+    box.replaceChildren(...parts, msg);
+  }
+  document.addEventListener("oros-soft", async (e) => {
+    if (e.detail !== "open" || portable()) return;
+    if (!host) open();
+    const find = () => root && root.getElementById("oros-soft-section");
+    for (let i = 0; i < 40 && !find(); i++) await new Promise((r) => setTimeout(r, 100));
+    if (find()) find().scrollIntoView({ block: "start" });
+  });
+
+  // Graphics card (orOS USB, oros-system gpu.go, nvidia.go): the cards,
+  // games on a laptop's strong card, and NVIDIA's own driver with the one
+  // step Secure Boot needs (the code for the blue screen).
+  let nvTimer = null, gpuBoxEl = null;
+  async function showGPUBox(box) {
+    gpuBoxEl = box;
+    const [g, nv] = await Promise.all([call({ cmd: "gpu.status" }), call({ cmd: "nvidia.status" })]);
+    if (box !== gpuBoxEl || !box.isConnected) return;
+    if (!g.ok) { box.replaceChildren(); return; }
+    const again = () => showGPUBox(box);
+    const owner = !state.notOwner;
+    const msg = el("div", {});
+    const parts = [el("h3", { id: "oros-gpu-section" }, t("gpu"))];
+    for (const c of g.cards || []) {
+      parts.push(el("div", { class: "muted" }, (c.name || c.vendor) + (c.driver ? " · " + c.driver : "")));
+    }
+    if (g.hybrid) {
+      const off = el("input", { type: "checkbox", checked: g.offload !== false, disabled: !owner, onchange: async () => {
+        off.disabled = true;
+        const r = await call({ cmd: "gpu.offload", on: off.checked });
+        off.disabled = false;
+        if (!r.ok) msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error })));
+      } });
+      parts.push(el("label", { class: "row", style: "margin-top:8px" }, off, el("span", { class: "grow" }, t("gpuOffload"))),
+        el("div", { class: "muted" }, t("gpuOffloadHint")));
+    }
+    if (nv.ok && nv.available) {
+      const prog = await call({ cmd: "nvidia.progress" });
+      if (box !== gpuBoxEl) return;
+      const pr = prog.progress || {};
+      const mb = Math.round((nv.size || 0) / 1e6);
+      if (prog.running) {
+        parts.push(el("div", { class: "msg" }, t("nvGetting", { p: pr.percent || 0 })));
+        if (!nvTimer) nvTimer = poll(async () => {
+          const s = await call({ cmd: "nvidia.progress" });
+          if (s.ok && s.running && gpuBoxEl && gpuBoxEl.isConnected) return;
+          clearInterval(nvTimer);
+          nvTimer = null;
+          if (gpuBoxEl && gpuBoxEl.isConnected) showGPUBox(gpuBoxEl);
+        }, 1500);
+      } else {
+        if (pr.error) msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: pr.error })));
+        if (nv.loaded) parts.push(el("div", { class: "msg" }, t("nvOn", { v: nv.driver })));
+        else if (nv.unsupported && !nv.card) parts.push(el("div", { class: "muted", style: "margin-top:6px" }, t("nvOld")));
+        else if (nv.installed) {
+          if (nv.mok === "pending") {
+            parts.push(el("div", { class: "msg" }, t("nvMok")),
+              el("div", { style: "font-size:22px;letter-spacing:3px;font-weight:700;margin:6px 0" }, t("nvMokCode", { c: String(nv.code || "") })));
+          } else if (nv.why) {
+            parts.push(el("div", { class: "msg err" }, t("nvNotLoaded", { w: nv.why })));
+          } else {
+            parts.push(el("div", { class: "msg" }, t("nvRestart")));
+          }
+          parts.push(el("div", { class: "row" }, el("button", { class: "primary", onclick: () => call({ cmd: "power.reboot" }) }, t("nvRestartNow"))));
+        } else if (nv.card) {
+          if (nv.needsUpdate) parts.push(el("div", { class: "muted" }, t("nvUpdate")));
+          parts.push(el("div", { class: "muted", style: "margin-top:6px" }, t("nvHint")));
+          if (!nv.canInstall) parts.push(el("div", { class: "msg err" }, t("nvNoPersist")));
+          else if (owner) {
+            const go = el("button", { class: "primary", style: "width:100%", onclick: async () => {
+              if (!confirm(t(nv.secureBoot ? "nvAskSB" : "nvAsk", { s: mb }))) return;
+              go.disabled = true;
+              const r = await call({ cmd: "nvidia.install" });
+              if (!r.ok) { go.disabled = false; msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error }))); return; }
+              again();
+            } }, t("nvInstall", { s: mb }));
+            parts.push(el("div", { class: "row", style: "margin-top:8px" }, go));
+          }
+        }
+        if (owner && (nv.installed || nv.loaded)) {
+          const rm = el("button", { onclick: async () => {
+            if (!confirm(t("nvRemoveAsk"))) return;
+            rm.disabled = true;
+            const r = await call({ cmd: "nvidia.remove" });
+            if (!r.ok) { rm.disabled = false; msg.replaceChildren(el("div", { class: "msg err" }, t("error", { e: r.error }))); return; }
+            setTimeout(again, 1500);
+          } }, t("nvRemove"));
+          parts.push(el("details", { style: "margin-top:8px" }, el("summary", {}, t("softMore")), el("div", { class: "row", style: "margin-top:6px" }, rm)));
+        }
+      }
+    }
+    if (parts.length === 1) { box.replaceChildren(); return; }
+    box.replaceChildren(...parts, msg);
   }
 
   // orOS's Assistant reads the local AI's state from the page:

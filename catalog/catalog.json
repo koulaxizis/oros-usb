@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "ai", "kind": "builtin", "section": "oros",
+      "name": {"en": "Local AI", "el": "Τοπική τεχνητή νοημοσύνη", "de": "Lokale KI"},
+      "summary": {"en": "Ollama with open models for orOS's Assistant, on this computer only.", "el": "Το Ollama με ανοιχτά μοντέλα για τον Βοηθό του orOS, μόνο σε αυτόν τον υπολογιστή.", "de": "Ollama mit offenen Modellen für den Assistenten von orOS, nur auf diesem Computer."},
+      "licence": "MIT", "home": "https://ollama.com"
+    },
+    {
+      "id": "claude", "kind": "builtin", "section": "oros",
+      "name": {"en": "Claude desktop", "el": "Claude για υπολογιστή", "de": "Claude Desktop"},
+      "summary": {"en": "Anthropic's Claude app, beside orOS on the screen.", "el": "Η εφαρμογή Claude της Anthropic, δίπλα στο orOS στην οθόνη.", "de": "Die Claude-App von Anthropic, neben orOS auf dem Bildschirm."},
+      "licence": "proprietary", "home": "https://claude.ai/download"
+    },
+    {
+      "id": "tor", "kind": "builtin", "section": "oros",
+      "name": {"en": "Tor Browser", "el": "Tor Browser", "de": "Tor Browser"},
+      "summary": {"en": "Private browsing through the Tor network.", "el": "Ιδιωτική περιήγηση μέσα από το δίκτυο Tor.", "de": "Privates Surfen über das Tor-Netzwerk."},
+      "licence": "MPL-2.0", "home": "https://www.torproject.org"
+    },
+    {
+      "id": "nvidia", "kind": "builtin", "section": "oros",
+      "name": {"en": "NVIDIA driver", "el": "Οδηγός NVIDIA", "de": "NVIDIA-Treiber"},
+      "summary": {"en": "NVIDIA's own driver for GeForce cards, for games at full speed.", "el": "Ο οδηγός της ίδιας της NVIDIA για κάρτες GeForce, για παιχνίδια σε πλήρη ταχύτητα.", "de": "NVIDIAs eigener Treiber für GeForce-Karten, für Spiele mit voller Leistung."},
+      "licence": "proprietary", "home": "https://www.nvidia.com/drivers"
+    },
+    {
+      "id": "com.valvesoftware.Steam", "kind": "flatpak", "section": "games", "mb": 1500,
+      "name": {"en": "Steam", "el": "Steam", "de": "Steam"},
+      "summary": {"en": "Valve's game store. Windows games run with Proton.", "el": "Το κατάστημα παιχνιδιών της Valve. Τα παιχνίδια των Windows παίζουν με το Proton.", "de": "Der Spieleladen von Valve. Windows-Spiele laufen mit Proton."},
+      "licence": "proprietary", "home": "https://store.steampowered.com"
+    },
+    {
+      "id": "com.heroicgameslauncher.hgl", "kind": "flatpak", "section": "games", "mb": 900,
+      "name": {"en": "Heroic Games Launcher", "el": "Heroic Games Launcher", "de": "Heroic Games Launcher"},
+      "summary": {"en": "Your Epic Games, GOG and Amazon Prime games.", "el": "Τα παιχνίδια σας από Epic Games, GOG και Amazon Prime.", "de": "Ihre Spiele von Epic Games, GOG und Amazon Prime."},
+      "licence": "GPL-3.0", "home": "https://heroicgameslauncher.com"
+    },
+    {
+      "id": "io.itch.itch", "kind": "flatpak", "section": "games", "mb": 700,
+      "name": {"en": "itch", "el": "itch", "de": "itch"},
+      "summary": {"en": "Independent games from itch.io.", "el": "Ανεξάρτητα παιχνίδια από το itch.io.", "de": "Unabhängige Spiele von itch.io."},
+      "licence": "MIT", "home": "https://itch.io/app"
+    },
+    {
+      "id": "net.lutris.Lutris", "kind": "flatpak", "section": "games", "mb": 900,
+      "name": {"en": "Lutris", "el": "Lutris", "de": "Lutris"},
+      "summary": {"en": "One library for games from many stores and emulators.", "el": "Μία βιβλιοθήκη για παιχνίδια από πολλά καταστήματα και εξομοιωτές.", "de": "Eine Bibliothek für Spiele aus vielen Läden und Emulatoren."},
+      "licence": "GPL-3.0", "home": "https://lutris.net"
+    },
+    {
+      "id": "com.usebottles.bottles", "kind": "flatpak", "section": "games", "mb": 900,
+      "name": {"en": "Bottles", "el": "Bottles", "de": "Bottles"},
+      "summary": {"en": "Windows programs and games, each in its own bottle.", "el": "Προγράμματα και παιχνίδια των Windows, το καθένα στο δικό του μπουκάλι.", "de": "Windows-Programme und -Spiele, jedes in seiner eigenen Flasche."},
+      "licence": "GPL-3.0", "home": "https://usebottles.com"
+    },
+    {
+      "id": "com.vysp3r.ProtonPlus", "kind": "flatpak", "section": "games", "mb": 300,
+      "name": {"en": "ProtonPlus", "el": "ProtonPlus", "de": "ProtonPlus"},
+      "summary": {"en": "Newer Proton and Wine versions for Steam, Heroic and Lutris.", "el": "Νεότερες εκδόσεις Proton και Wine για Steam, Heroic και Lutris.", "de": "Neuere Proton- und Wine-Versionen für Steam, Heroic und Lutris."},
+      "licence": "GPL-3.0", "home": "https://github.com/Vysp3r/ProtonPlus"
+    },
+    {
+      "id": "jplgfhpmjnbigmhklmmbgecoobifkmpa", "kind": "addon", "section": "addons",
+      "name": {"en": "Proton VPN", "el": "Proton VPN", "de": "Proton VPN"},
+      "summary": {"en": "Proton's VPN for the Internet window. Free plan; needs a Proton account.", "el": "Το VPN της Proton για το παράθυρο Διαδικτύου. Δωρεάν πρόγραμμα, χρειάζεται λογαριασμό Proton.", "de": "Protons VPN für das Internetfenster. Kostenloser Tarif; braucht ein Proton-Konto."},
+      "home": "https://protonvpn.com"
+    },
+    {
+      "id": "fgcngeihbacfndglmmmdkkdlhgndkaaf", "kind": "addon", "section": "addons",
+      "name": {"en": "Windscribe", "el": "Windscribe", "de": "Windscribe"},
+      "summary": {"en": "Windscribe's VPN for the Internet window. Free plan with 10 GB a month.", "el": "Το VPN της Windscribe για το παράθυρο Διαδικτύου. Δωρεάν πρόγραμμα με 10 GB τον μήνα.", "de": "Windscribes VPN für das Internetfenster. Kostenloser Tarif mit 10 GB im Monat."},
+      "home": "https://windscribe.com"
+    },
+    {
+      "id": "pkehgijcmpdhfbdbbnkijodmdjhbjlgp", "kind": "addon", "section": "addons",
+      "name": {"en": "Privacy Badger", "el": "Privacy Badger", "de": "Privacy Badger"},
+      "summary": {"en": "The EFF's tracker blocker that learns as you browse.", "el": "Ο αποκλεισμός ιχνηλατών του EFF που μαθαίνει όσο περιηγείστε.", "de": "Der Tracker-Blocker der EFF, der beim Surfen lernt."},
+      "licence": "GPL-3.0", "home": "https://privacybadger.org"
+    }
+  ],
+  "models": [
+    {"name": "granite3.3:2b", "mb": 1500, "minMemGiB": 4, "licence": "Apache-2.0", "by": "IBM",
+     "summary": {"en": "Small and quick, for older computers.", "el": "Μικρό και γρήγορο, για παλαιότερους υπολογιστές.", "de": "Klein und schnell, für ältere Computer."}},
+    {"name": "phi4-mini:3.8b", "mb": 2500, "minMemGiB": 6, "licence": "MIT", "by": "Microsoft",
+     "summary": {"en": "Good at reasoning and maths for its size.", "el": "Καλό σε συλλογισμούς και μαθηματικά για το μέγεθός του.", "de": "Gut im Denken und Rechnen für seine Größe."}},
+    {"name": "mistral:7b", "mb": 4100, "minMemGiB": 10, "licence": "Apache-2.0", "by": "Mistral AI",
+     "summary": {"en": "A well-rounded model for writing.", "el": "Ισορροπημένο μοντέλο για γραφή.", "de": "Ein ausgewogenes Modell zum Schreiben."}},
+    {"name": "olmo2:7b", "mb": 4500, "minMemGiB": 10, "licence": "Apache-2.0", "by": "Ai2",
+     "summary": {"en": "Fully open: its data and training are public too.", "el": "Εντελώς ανοιχτό: τα δεδομένα και η εκπαίδευσή του είναι επίσης δημόσια.", "de": "Ganz offen: auch seine Daten und sein Training sind öffentlich."}},
+    {"name": "deepseek-r1:7b", "mb": 4700, "minMemGiB": 10, "licence": "MIT", "by": "DeepSeek",
+     "summary": {"en": "Thinks step by step before it answers.", "el": "Σκέφτεται βήμα βήμα πριν απαντήσει.", "de": "Denkt Schritt für Schritt, bevor es antwortet."}},
+    {"name": "granite3.3:8b", "mb": 4900, "minMemGiB": 12, "licence": "Apache-2.0", "by": "IBM",
+     "summary": {"en": "Larger Granite for longer documents.", "el": "Μεγαλύτερο Granite για μεγάλα έγγραφα.", "de": "Größeres Granite für lange Dokumente."}}
+  ]
+}

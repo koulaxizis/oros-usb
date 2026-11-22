@@ -99,6 +99,8 @@ jobs:
           echo; test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://example.com' http://127.0.0.1:11434/api/tags)" = 403
           /tmp/oros-system ai --stop --dir /tmp/ai
           rm -rf /tmp/ai /tmp/aihome
+      - name: Software center catalog (Flathub apps, Chrome Web Store add-ons, Ollama models)
+        run: scripts/check-catalog.sh catalog/catalog.json
       - name: Session watchdog test (fake labwc, no VM)
         run: scripts/test-session-watchdog.sh
       - name: Build image

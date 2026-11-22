@@ -14,3 +14,6 @@ oros ALL=(root) NOPASSWD: /opt/oros/oros-system vault-base
 # for a card it supports; nvidia.go), or take it away again.
 oros ALL=(root) NOPASSWD: /opt/oros/oros-system nvidia --install
 oros ALL=(root) NOPASSWD: /opt/oros/oros-system nvidia --remove
+# ...and the software center's browser add-ons: Chromium's policy with the
+# add-ons the owner chose, only those the image's catalog lists (addons.go).
+oros ALL=(root) NOPASSWD: /opt/oros/oros-system addons --apply

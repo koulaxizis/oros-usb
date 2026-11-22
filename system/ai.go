@@ -79,7 +79,22 @@ func aiModelMB(name string) (int, bool) {
 			return m.MB, true
 		}
 	}
+	for _, m := range aiCatalogModels() {
+		if m.Name == name {
+			return m.MB, true
+		}
+	}
 	return 0, false
+}
+
+// aiCatalogModels are the software center's further models (open
+// licences, catalog/catalog.json), offered after Qwen3.
+func aiCatalogModels() []catModel {
+	c, err := loadCatalog()
+	if err != nil {
+		return nil
+	}
+	return c.Models
 }
 
 // aiRecommend picks the model for this much memory: the 8b needs about
@@ -274,8 +289,11 @@ func aiStatus() reply {
 	var offer []reply
 	for _, m := range aiModels {
 		if m.Show {
-			offer = append(offer, reply{"name": m.Name, "mb": m.MB})
+			offer = append(offer, reply{"name": m.Name, "mb": m.MB, "licence": "Apache-2.0", "by": "Qwen"})
 		}
+	}
+	for _, m := range aiCatalogModels() {
+		offer = append(offer, reply{"name": m.Name, "mb": m.MB, "licence": m.Licence, "by": m.By, "minMemGiB": m.MinMemGiB, "summary": m.Summary})
 	}
 	r["offer"] = offer
 	_, hasPin := readAIPin(aiPinFile)
