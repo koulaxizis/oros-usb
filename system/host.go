@@ -269,6 +269,16 @@ func handle(req request) reply {
 			return reply{"ok": false, "error": "owner only"}
 		}
 		return gamesDiskSet(req.Disk)
+	case "console.status":
+		return consoleStatus()
+	case "console.start":
+		return consoleStart()
+	case "console.boot":
+		// how the computer starts, for everybody on the stick
+		if !ownerOnly() {
+			return reply{"ok": false, "error": "owner only"}
+		}
+		return consoleSetBoot(req.On)
 	case "soft.list":
 		return softList()
 	case "soft.open":

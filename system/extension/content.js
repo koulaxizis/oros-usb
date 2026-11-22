@@ -93,6 +93,8 @@
       gamesLibNone: "No disk here can hold games. Disks formatted for Windows (NTFS, exFAT) cannot keep Windows games working: format one as ext4 first.",
       gamesLibAsk: "Use {d} for games? Nothing on it is erased; orOS adds a Games folder.",
       soft: "Software", softHint: "Programs tried on orOS. They install onto this stick, stay after a restart and update by themselves.",
+      console: "Console mode", consoleHint: "Steam's Big Picture alone on the screen, for the television and a controller. To come back to orOS: Power › Exit Steam.",
+      consoleStart: "Start console mode", consoleBoot: "Start the computer in console mode", consoleNoSteam: "Install Steam first: console mode is Steam's Big Picture.",
       softGames: "Games and game stores", softAddons: "Add-ons for the Internet window",
       softInstall: "Install", softOpen: "Open", softRemove: "Remove {n}", softUpdate: "Update all now",
       softGetting: "Installing {n}… {p}%", softRemoving: "Removing {n}…", softUpdating: "Updating… {p}%",
@@ -192,6 +194,8 @@
       gamesLibNone: "Κανένας δίσκος εδώ δεν μπορεί να κρατήσει παιχνίδια. Οι δίσκοι με μορφή Windows (NTFS, exFAT) δεν κρατούν σωστά τα παιχνίδια των Windows: μορφοποίησε πρώτα έναν ως ext4.",
       gamesLibAsk: "Να χρησιμοποιηθεί ο δίσκος {d} για παιχνίδια; Τίποτα δεν σβήνεται· το orOS προσθέτει έναν φάκελο Games.",
       soft: "Λογισμικό", softHint: "Προγράμματα που δοκιμάσαμε στο orOS. Εγκαθίστανται σε αυτό το stick, μένουν μετά από επανεκκίνηση και ενημερώνονται μόνα τους.",
+      console: "Λειτουργία κονσόλας", consoleHint: "Το Big Picture του Steam μόνο του στην οθόνη, για την τηλεόραση και χειριστήριο. Για επιστροφή στο orOS: Power › Exit Steam.",
+      consoleStart: "Έναρξη λειτουργίας κονσόλας", consoleBoot: "Ο υπολογιστής ξεκινά σε λειτουργία κονσόλας", consoleNoSteam: "Εγκατάστησε πρώτα το Steam: η λειτουργία κονσόλας είναι το Big Picture του Steam.",
       softGames: "Παιχνίδια και καταστήματα παιχνιδιών", softAddons: "Πρόσθετα για το παράθυρο Internet",
       softInstall: "Εγκατάσταση", softOpen: "Άνοιγμα", softRemove: "Αφαίρεση: {n}", softUpdate: "Ενημέρωση όλων τώρα",
       softGetting: "Εγκατάσταση {n}… {p}%", softRemoving: "Αφαίρεση {n}…", softUpdating: "Ενημέρωση… {p}%",
@@ -1117,6 +1121,11 @@
       }
     }
     if (st.running && p.action === "update") parts.push(progressLine());
+    if (apps.some((i) => i.id === "com.valvesoftware.Steam")) {
+      const con = el("div", {});
+      parts.push(con);
+      showConsole(con, owner, fail);
+    }
     if (apps.length && st.persistent) {
       const lib = el("div", {});
       parts.push(lib);
@@ -1173,6 +1182,34 @@
     for (let i = 0; i < 40 && !find(); i++) await new Promise((r) => setTimeout(r, 100));
     if (find()) find().scrollIntoView({ block: "start" });
   });
+
+  // Console mode (oros-system console.go): Steam's Big Picture in place of
+  // orOS until Steam ends; the owner can make the computer start in it.
+  async function showConsole(box, owner, fail) {
+    const c = await call({ cmd: "console.status" });
+    if (!c.ok || !box.isConnected) return;
+    const parts = [el("div", { style: "margin-top:12px;font-weight:600" }, t("console"))];
+    if (!c.steam) {
+      parts.push(el("div", { class: "muted" }, t("consoleNoSteam")));
+      box.replaceChildren(...parts);
+      return;
+    }
+    parts.push(el("div", { class: "muted" }, t("consoleHint")));
+    const go = el("button", { class: "primary", onclick: async () => {
+      go.disabled = true;
+      const r = await call({ cmd: "console.start" });
+      if (!r.ok) { go.disabled = false; fail(r); }
+    } }, t("consoleStart"));
+    parts.push(el("div", { class: "row", style: "margin-top:6px" }, go));
+    const boot = el("input", { type: "checkbox", checked: !!c.boot, disabled: !owner, onchange: async () => {
+      boot.disabled = true;
+      const r = await call({ cmd: "console.boot", on: boot.checked });
+      boot.disabled = false;
+      if (!r.ok) { boot.checked = !boot.checked; fail(r); }
+    } });
+    parts.push(el("label", { class: "row", style: "margin-top:6px" }, boot, el("div", { class: "grow" }, t("consoleBoot"))));
+    box.replaceChildren(...parts);
+  }
 
   // The game library on another disk (oros-system gamesdisk.go).
   async function showGamesLib(box, owner, msg) {

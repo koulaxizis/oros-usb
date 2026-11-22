@@ -15,6 +15,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 
@@ -191,6 +192,9 @@ func selftestGames(check func(string, error), info func(string, string)) {
 		}
 	}
 	check("vulkan "+strings.Join(devs, ", "), err)
+
+	_, err = exec.LookPath("gamescope")
+	check("gamescope (console mode)", err)
 
 	out, err = run("flatpak", "--version")
 	check("flatpak "+strings.TrimSpace(out), err)
