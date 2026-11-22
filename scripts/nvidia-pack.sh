@@ -162,16 +162,27 @@ mkdir -p "$W/ext/usr/lib/modprobe.d"
 cat "$W/ext/usr/lib/modprobe.d/oros-nvidia.conf"
 grep -q '^options .* modeset=1' "$W/ext/usr/lib/modprobe.d/oros-nvidia.conf"
 # Which cards this driver supports, for the System button's check: NVIDIA's
-# own list (PCI device ids with no "legacy" branch) where Debian ships it,
-# otherwise Debian's list for this driver (the .ids file nvidia-detect reads).
+# own list (PCI device ids with no "legacy" branch) or Debian's list for
+# this driver (the .ids files nvidia-detect reads). Neither is in the
+# installed packages, so the packages that carry them are only unpacked
+# here, not installed and not packed.
+mkdir -p "$W/dl" "$W/lists"
+mkdir -p "$W/root/tmp/oros-lists"
+chroot "$W/root" sh -c 'cd /tmp/oros-lists && apt-get download -q nvidia-detect nvidia-driver' 2>&1 | tail -3 || true
+cp "$W"/root/tmp/oros-lists/*.deb "$W/dl/" 2>/dev/null || true
+for d in "$W"/dl/*.deb; do if [ -f "$d" ]; then dpkg -x "$d" "$W/lists"; fi; done
 echo "lists of supported cards:"
-find "$W/root/usr" \( -iname 'supported-gpus.json*' -o -iname '*.ids' \) -path '*nvidia*' | sed "s|$W/root||"
-SUP="$(find "$W/root/usr" -iname 'supported-gpus.json*' | head -1)"
-IDS="$(find "$W/root/usr" -iname '*.ids' -path '*nvidia*' | grep -i -e current -e '/nvidia.ids$' | grep -v -i legacy | head -1 || true)"
+{ find "$W/lists" "$W/root/usr/share/nvidia" "$W/root/usr/share/doc" -iname 'supported-gpus.json*' -o -iname '*.ids' 2>/dev/null || true; } |
+	grep -v -e '/pci.ids$' -e '/amdgpu.ids$' | sed "s|$W||" | tee "$W/listfiles"
+SUP="$(grep -i 'supported-gpus.json' "$W/listfiles" | head -1 || true)"
+IDS="$(grep -i '\.ids$' "$W/listfiles" | grep -v -i legacy | grep -i -e current -e '/nvidia.ids$' -e '/nvidia-detect' | head -1 || true)"
 if [ -n "$SUP" ]; then
+	SUP="$W$SUP"
 	case "$SUP" in *.gz) zcat "$SUP" > "$W/sup.json" ;; *) cp "$SUP" "$W/sup.json" ;; esac
 	jq -c '[.chips[] | select((.legacybranch // "") == "") | .devid | ascii_downcase] | unique' "$W/sup.json" > "$W/devids"
 elif [ -n "$IDS" ]; then
+	IDS="$W$IDS"
+	echo "from $IDS: $(head -3 "$IDS" | tr '\n' ' ')"
 	# "10de 1c8d", "10DE1C8D" or "0x1c8d": the four hex digits of each device
 	grep -v '^#' "$IDS" | tr 'A-F' 'a-f' | grep -o -E '(10de[^0-9a-f]?|0x)[0-9a-f]{4}' | grep -o -E '[0-9a-f]{4}$' |
 		sed 's/^/0x/' | sort -u | jq -R . | jq -sc . > "$W/devids"
