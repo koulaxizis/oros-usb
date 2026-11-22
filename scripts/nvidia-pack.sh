@@ -143,11 +143,42 @@ mkdir -p "$W/ext/usr/share/doc/oros-nvidia"
 while read -r p; do
 	[ -f "$W/root/usr/share/doc/$p/copyright" ] && cp "$W/root/usr/share/doc/$p/copyright" "$W/ext/usr/share/doc/oros-nvidia/$p.copyright"
 done < "$W/pkgs"
-# Which cards this driver supports (NVIDIA's own list: PCI device ids
-# with no "legacy" branch), for the System button's check.
-SUP="$(find "$W/root/usr/share" -name supported-gpus.json | head -1)"
-[ -n "$SUP" ] || { echo "no supported-gpus.json" >&2; exit 1; }
-jq -c '[.chips[] | select((.legacybranch // "") == "") | .devid | ascii_downcase] | unique' "$SUP" > "$W/devids"
+# Debian names the modules nvidia-current*.ko; the usual names point to
+# them, and the options go to the real names (kmod reads /usr/lib/modprobe.d,
+# which the pack brings).
+mkdir -p "$W/ext/usr/lib/modprobe.d"
+{
+	echo "# orOS NVIDIA pack (scripts/nvidia-pack.sh): Debian's module names"
+	for ko in "$W/ext/$MODDIR"/nvidia*.ko; do
+		m="$(basename "$ko" .ko)"
+		short="${m/nvidia-current/nvidia}"
+		[ "$short" = "$m" ] || echo "alias $short $m"
+		case "$short" in
+		nvidia) echo "options $m NVreg_PreserveVideoMemoryAllocations=1" ;;
+		nvidia-drm) echo "options $m modeset=1 fbdev=1" ;;
+		esac
+	done
+} > "$W/ext/usr/lib/modprobe.d/oros-nvidia.conf"
+cat "$W/ext/usr/lib/modprobe.d/oros-nvidia.conf"
+grep -q '^options .* modeset=1' "$W/ext/usr/lib/modprobe.d/oros-nvidia.conf"
+# Which cards this driver supports, for the System button's check: NVIDIA's
+# own list (PCI device ids with no "legacy" branch) where Debian ships it,
+# otherwise Debian's list for this driver (the .ids file nvidia-detect reads).
+echo "lists of supported cards:"
+find "$W/root/usr" \( -iname 'supported-gpus.json*' -o -iname '*.ids' \) -path '*nvidia*' | sed "s|$W/root||"
+SUP="$(find "$W/root/usr" -iname 'supported-gpus.json*' | head -1)"
+IDS="$(find "$W/root/usr" -iname '*.ids' -path '*nvidia*' | grep -i -e current -e '/nvidia.ids$' | grep -v -i legacy | head -1 || true)"
+if [ -n "$SUP" ]; then
+	case "$SUP" in *.gz) zcat "$SUP" > "$W/sup.json" ;; *) cp "$SUP" "$W/sup.json" ;; esac
+	jq -c '[.chips[] | select((.legacybranch // "") == "") | .devid | ascii_downcase] | unique' "$W/sup.json" > "$W/devids"
+elif [ -n "$IDS" ]; then
+	# "10de 1c8d", "10DE1C8D" or "0x1c8d": the four hex digits of each device
+	grep -v '^#' "$IDS" | tr 'A-F' 'a-f' | grep -o -E '(10de[^0-9a-f]?|0x)[0-9a-f]{4}' | grep -o -E '[0-9a-f]{4}$' |
+		sed 's/^/0x/' | sort -u | jq -R . | jq -sc . > "$W/devids"
+else
+	echo "no list of supported cards" >&2
+	exit 1
+fi
 test "$(jq length "$W/devids")" -gt 100
 # systemd-sysext merges the pack only into the system it was built for.
 mkdir -p "$W/ext/usr/lib/extension-release.d"

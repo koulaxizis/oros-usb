@@ -503,6 +503,9 @@ func nvidiaBoot() {
 	}
 	_, _ = run("modprobe", "nvidia-uvm")
 	v := readTrim("/sys/module/nvidia/version")
+	if v == "" {
+		v = readTrim("/sys/module/nvidia_current/version") // Debian's name
+	}
 	logf("nvidia: driver %s loaded", v)
 	writeNvidiaRun(nvidiaRun{Loaded: true, Driver: v})
 	// the enrolment is done: the code is no longer needed
@@ -629,6 +632,13 @@ func nvidiaSelftest(pack string) int {
 	} else {
 		check("GSP firmware", nil)
 	}
+	// Debian's names (nvidia-current*) behind the usual ones, with the
+	// pack's options: what nvidiaBoot's modprobe will load.
+	dry, err := run("modprobe", "-n", "-v", "nvidia-drm")
+	if err == nil && !strings.Contains(dry, "modeset=1") {
+		err = fmt.Errorf("%q", strings.TrimSpace(dry))
+	}
+	check("modprobe nvidia-drm (dry run, modeset=1)", err)
 	signer, err := run("modinfo", "-F", "signer", "nvidia")
 	if err == nil && strings.TrimSpace(signer) == "" {
 		err = errors.New("not signed")
