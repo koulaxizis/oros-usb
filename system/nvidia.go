@@ -458,7 +458,7 @@ func nvidiaBoot() {
 	fallback := func(why string) {
 		logf("nvidia: %s; nouveau instead", why)
 		_, _ = run("systemd-sysext", "unmerge")
-		_ = os.Remove("/run/extensions/oros-nvidia.raw")
+		unlinkPack()
 		_, _ = run("modprobe", "nouveau")
 		writeNvidiaRun(nvidiaRun{Why: why})
 	}
@@ -481,12 +481,7 @@ func nvidiaBoot() {
 		fallback("Secure Boot: the orOS key is not enrolled yet")
 		return
 	}
-	if err := os.MkdirAll("/run/extensions", 0o755); err != nil {
-		fallback(err.Error())
-		return
-	}
-	_ = os.Remove("/run/extensions/oros-nvidia.raw")
-	if err := os.Symlink(pack, "/run/extensions/oros-nvidia.raw"); err != nil {
+	if err := linkPack(pack); err != nil {
 		fallback(err.Error())
 		return
 	}
@@ -616,12 +611,15 @@ func nvidiaSelftest(pack string) int {
 		check("pack size "+pin.File, serr)
 		fmt.Fprintf(&b, "info driver %s, %d cards, ephemeral key %v\n", pin.Driver, len(pin.DevIDs), pin.Ephemeral)
 	}
-	_ = os.MkdirAll("/run/extensions", 0o755)
-	link := "/run/extensions/oros-nvidia.raw"
-	_ = os.Remove(link)
-	check("link", os.Symlink(pack, link))
+	check("link", linkPack(pack))
+	osr, _ := os.ReadFile("/etc/os-release")
+	for _, l := range strings.Split(string(osr), "\n") {
+		if strings.HasPrefix(l, "ID=") || strings.HasPrefix(l, "SYSEXT_LEVEL=") || strings.HasPrefix(l, "VERSION_ID=") {
+			fmt.Fprintf(&b, "info os-release %s\n", l)
+		}
+	}
 	out, err := run("systemd-sysext", "refresh")
-	if err == nil && !sysextMerged() {
+	if !sysextMerged() {
 		// refresh says nothing when it skips an image: ask it why
 		dbg := exec.Command("systemd-sysext", "refresh")
 		dbg.Env = append(os.Environ(), "SYSTEMD_LOG_LEVEL=debug")
@@ -667,7 +665,7 @@ func nvidiaSelftest(pack string) int {
 	mok, _ := run("mokutil", "--test-key", nvidiaCert)
 	fmt.Fprintf(&b, "info secure boot %v, orOS key: %q\n", secureBootOn(), parseMokTest(mok))
 	_, _ = run("systemd-sysext", "unmerge")
-	_ = os.Remove(link)
+	unlinkPack()
 	if failed {
 		b.WriteString("FAIL\n")
 	} else {
@@ -693,4 +691,26 @@ func cmdErrIf(name, out string, err error) error {
 func sysextMerged() bool {
 	_, err := os.Stat("/usr/lib/extension-release.d/extension-release.oros-nvidia")
 	return err == nil
+}
+
+// nvidiaLink is where systemd-sysext finds the pack. A bind mount, not a
+// symlink: systemd names the image after the file it finds, and the
+// pack's file is named after its release.
+const nvidiaLink = "/run/extensions/oros-nvidia.raw"
+
+func linkPack(pack string) error {
+	unlinkPack()
+	if err := os.MkdirAll("/run/extensions", 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(nvidiaLink, nil, 0o644); err != nil {
+		return err
+	}
+	out, err := run("mount", "--bind", "-o", "ro", pack, nvidiaLink)
+	return cmdErrIf("mount --bind", out, err)
+}
+
+func unlinkPack() {
+	_, _ = run("umount", nvidiaLink)
+	_ = os.Remove(nvidiaLink)
 }
