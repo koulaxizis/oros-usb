@@ -564,6 +564,9 @@ func scanLinesCR(data []byte, atEOF bool) (int, []byte, error) {
 // from the center update by themselves, with the Flathub filter of this
 // image. Nothing happens when nothing was installed.
 func softAuto(home string) {
+	if err := gamesOverride(); err != nil {
+		logf("games: flatpak override: %v", err)
+	}
 	if _, err := os.Stat(filepath.Join(flatpakUserDir(home), "app")); err != nil {
 		return
 	}

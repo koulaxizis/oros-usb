@@ -177,6 +177,9 @@ stop() {
 # boot), before the first window; the center's programs update by
 # themselves once a day.
 sudo -n /opt/oros/oros-system addons --apply < /dev/null > /dev/null 2>&1
+# The game library's disk, when the owner chose one and it is plugged in
+# (oros-system gamesdisk.go): at /media/oros/games before any game store.
+sudo -n /opt/oros/oros-system mount --games-boot < /dev/null > /dev/null 2>&1
 /opt/oros/oros-system soft --auto < /dev/null > /dev/null 2>&1 &
 
 starts=0

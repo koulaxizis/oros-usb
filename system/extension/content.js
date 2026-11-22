@@ -87,6 +87,11 @@
       printHint: "Print from any app with Ctrl+P.",
       qsReboot: "Restart the computer", qsMore: "Printers, disks, update…", volume: "Volume",
       bridgeCode: "orOS Bridge pairing code: type it in orOS Studio",
+      gamesLib: "Game library on another disk", gamesLibHint: "Games take a lot of space. Choose a disk formatted for Linux (ext4, btrfs or xfs), 16 GB or more: orOS opens it at every start.",
+      gamesLibOn: "Games go to {d}, folder {p}. In Steam add it once under Settings › Storage › Add drive; in Heroic or Lutris choose it as the install folder.",
+      gamesLibAway: "The game disk {d} is not plugged in.", gamesLibUse: "Use for games", gamesLibOff: "Stop using it for games",
+      gamesLibNone: "No disk here can hold games. Disks formatted for Windows (NTFS, exFAT) cannot keep Windows games working: format one as ext4 first.",
+      gamesLibAsk: "Use {d} for games? Nothing on it is erased; orOS adds a Games folder.",
       soft: "Software", softHint: "Programs tried on orOS. They install onto this stick, stay after a restart and update by themselves.",
       softGames: "Games and game stores", softAddons: "Add-ons for the Internet window",
       softInstall: "Install", softOpen: "Open", softRemove: "Remove {n}", softUpdate: "Update all now",
@@ -181,6 +186,11 @@
       printNone: "Δεν υπάρχουν ακόμη εκτυπωτές. Όσοι υποστηρίζουν AirPrint ή IPP Everywhere εμφανίζονται μόνοι τους όταν είναι στο ίδιο δίκτυο ή συνδεθούν με USB.",
       printHint: "Εκτύπωση από κάθε εφαρμογή με Ctrl+P.",
       qsReboot: "Επανεκκίνηση του υπολογιστή", qsMore: "Εκτυπωτές, δίσκοι, ενημέρωση…", volume: "Ένταση",
+      gamesLib: "Βιβλιοθήκη παιχνιδιών σε άλλο δίσκο", gamesLibHint: "Τα παιχνίδια πιάνουν πολύ χώρο. Διάλεξε δίσκο με μορφή Linux (ext4, btrfs ή xfs), 16 GB και πάνω: το orOS τον ανοίγει σε κάθε εκκίνηση.",
+      gamesLibOn: "Τα παιχνίδια πάνε στον δίσκο {d}, φάκελος {p}. Στο Steam πρόσθεσέ τον μία φορά από Settings › Storage › Add drive· στο Heroic ή στο Lutris διάλεξέ τον ως φάκελο εγκατάστασης.",
+      gamesLibAway: "Ο δίσκος παιχνιδιών {d} δεν είναι συνδεδεμένος.", gamesLibUse: "Χρήση για παιχνίδια", gamesLibOff: "Να μη χρησιμοποιείται για παιχνίδια",
+      gamesLibNone: "Κανένας δίσκος εδώ δεν μπορεί να κρατήσει παιχνίδια. Οι δίσκοι με μορφή Windows (NTFS, exFAT) δεν κρατούν σωστά τα παιχνίδια των Windows: μορφοποίησε πρώτα έναν ως ext4.",
+      gamesLibAsk: "Να χρησιμοποιηθεί ο δίσκος {d} για παιχνίδια; Τίποτα δεν σβήνεται· το orOS προσθέτει έναν φάκελο Games.",
       soft: "Λογισμικό", softHint: "Προγράμματα που δοκιμάσαμε στο orOS. Εγκαθίστανται σε αυτό το stick, μένουν μετά από επανεκκίνηση και ενημερώνονται μόνα τους.",
       softGames: "Παιχνίδια και καταστήματα παιχνιδιών", softAddons: "Πρόσθετα για το παράθυρο Internet",
       softInstall: "Εγκατάσταση", softOpen: "Άνοιγμα", softRemove: "Αφαίρεση: {n}", softUpdate: "Ενημέρωση όλων τώρα",
@@ -1107,6 +1117,11 @@
       }
     }
     if (st.running && p.action === "update") parts.push(progressLine());
+    if (apps.length && st.persistent) {
+      const lib = el("div", {});
+      parts.push(lib);
+      showGamesLib(lib, owner, msg);
+    }
     if (!st.persistent) parts.push(el("div", { class: "msg err" }, t("softNoPersist")));
     else if (!owner) parts.push(el("div", { class: "muted" }, t("softOwner")));
 
@@ -1158,6 +1173,41 @@
     for (let i = 0; i < 40 && !find(); i++) await new Promise((r) => setTimeout(r, 100));
     if (find()) find().scrollIntoView({ block: "start" });
   });
+
+  // The game library on another disk (oros-system gamesdisk.go).
+  async function showGamesLib(box, owner, msg) {
+    const g = await call({ cmd: "games.disk" });
+    if (!g.ok || !box.isConnected) return;
+    const diskName = (d) => (d.label || d.model || d.path) + " · " + gb(Math.round((d.size || 0) / 1e6)) + " GB";
+    const parts = [el("div", { style: "margin-top:12px;font-weight:600" }, t("gamesLib"))];
+    const set = async (path, b) => {
+      b.disabled = true;
+      const r = await call({ cmd: "games.diskSet", disk: path });
+      if (!r.ok) { b.disabled = false; msg.replaceChildren(el("div", { class: "msg err" }, t("softError", { e: r.error }))); return; }
+      showGamesLib(box, owner, msg);
+    };
+    const chosen = g.chosen;
+    if (chosen) {
+      const d = (g.disks || []).find((x) => x.uuid === chosen.uuid);
+      const name = d ? diskName(d) : (chosen.label || chosen.uuid);
+      parts.push(el("div", { class: g.open ? "msg" : "muted" }, g.open ? t("gamesLibOn", { d: name, p: g.path }) : t("gamesLibAway", { d: name })));
+      if (owner) {
+        const off = el("button", { onclick: () => set("", off) }, t("gamesLibOff"));
+        parts.push(el("div", { class: "row", style: "margin-top:6px" }, off));
+      }
+    } else {
+      parts.push(el("div", { class: "muted" }, t("gamesLibHint")));
+      const ok = (g.disks || []).filter((d) => !d.why);
+      if (!ok.length) parts.push(el("div", { class: "muted", style: "margin-top:4px" }, t("gamesLibNone")));
+      else if (owner) {
+        for (const d of ok) {
+          const b = el("button", { onclick: () => { if (confirm(t("gamesLibAsk", { d: diskName(d) }))) set(d.path, b); } }, t("gamesLibUse"));
+          parts.push(el("div", { class: "row", style: "margin-top:6px" }, el("span", { class: "grow" }, diskName(d) + " · " + d.fstype), b));
+        }
+      }
+    }
+    box.replaceChildren(...parts);
+  }
 
   // Graphics card (orOS USB, oros-system gpu.go, nvidia.go): the cards,
   // games on a laptop's strong card, and NVIDIA's own driver with the one
