@@ -67,6 +67,11 @@ cp -a /usr/share/live/build/bootloaders/grub-pc /usr/share/live/build/bootloader
 printf '\nset default=0\nset timeout_style=hidden\nset timeout=2\n' >> config/bootloaders/grub-pc/config.cfg
 sed -i 's/^timeout .*/timeout 20/' config/bootloaders/isolinux/isolinux.cfg
 grep -q '^timeout 20' config/bootloaders/isolinux/isolinux.cfg
+# GRUB's ${oros_gpu} (NVIDIA's options from /oros-system/gpu.cfg, below) on
+# every live entry: in the templates, where live-build leaves it as it is.
+T="$(grep -rl '@APPEND_LIVE@' config/bootloaders/grub-pc || true)"
+[ -n "$T" ] || { echo "no @APPEND_LIVE@ in live-build's GRUB templates" >&2; exit 1; }
+sed -i 's|@APPEND_LIVE@|@APPEND_LIVE@ ${oros_gpu}|g' $T
 # vesamenu shows only its countdown line while hidden; draw it in no colour.
 cat >> config/bootloaders/isolinux/isolinux.cfg <<'ISOLINUX'
 menu hidden
