@@ -130,3 +130,15 @@ firmware-intel-sound
 firmware-sof-signed
 amd64-microcode
 intel-microcode
+
+# Games (G1, 2026-11-22): the system side that Steam, Heroic, itch and
+# Lutris need once the software center installs them as Flatpaks from
+# Flathub (they bring their own 32-bit libraries and Proton/Wine): Flatpak
+# and its portals (file dialogs, the screen staying on), gamemode (the
+# processor at full speed while a game runs; pkexec sets the governor),
+# Valve's udev rules for controllers and Steam Input (steam-devices,
+# contrib), and vulkaninfo for the graphics check and the boot test.
+flatpak xdg-desktop-portal xdg-desktop-portal-gtk
+gamemode pkexec
+steam-devices
+vulkan-tools

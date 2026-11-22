@@ -127,8 +127,8 @@ cp "$WORK/bridge/THIRD_PARTY.md" "$DOC/orOS-Bridge-THIRD_PARTY.md"
 # has no GOROOT/LICENSE, so the text is kept in the repository.
 cp licenses/Go-BSD.txt "$DOC/Go-BSD.txt"
 # and those of the Go modules they are built with
-for m in github.com/ProtonMail/go-crypto github.com/cloudflare/circl golang.org/x/crypto golang.org/x/sys github.com/klauspost/compress; do
-  cp "$(cd system && go list -m -f '{{.Dir}}' "$m")/LICENSE" "$DOC/Go-modules-$(basename "$m").txt"
+for m in github.com/ProtonMail/go-crypto github.com/cloudflare/circl golang.org/x/crypto golang.org/x/sys github.com/klauspost/compress github.com/godbus/dbus/v5; do
+  cp "$(cd system && go list -m -f '{{.Dir}}' "$m")/LICENSE" "$DOC/Go-modules-$(basename "${m%/v5}").txt"
 done
 for m in fyne.io/systray github.com/godbus/dbus/v5 github.com/ulikunitz/xz; do
   d="$(cd "$WORK/portable/launcher" && go list -m -f '{{.Dir}}' "$m" 2>/dev/null)" || continue

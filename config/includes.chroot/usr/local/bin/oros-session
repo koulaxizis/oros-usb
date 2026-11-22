@@ -22,6 +22,10 @@ if [ ! -f "$ROOT/app/index.html" ] || [ "$IMAGE_BUILD" != "$(cat "$ROOT/.image-b
 fi
 
 export LANG=C.UTF-8
+# Programs installed as Flatpaks (the software center, games) keep their
+# icons and launchers in the home folder; this is the path flatpak's own
+# profile script adds in a normal login.
+export XDG_DATA_DIRS="$HOME/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share"
 # orOS Files' "This computer": the launcher lets the orOS page (only it)
 # reach the home folder and the disks under /media/oros, and lists and
 # opens disks with oros-system. The usual folders are there from the start

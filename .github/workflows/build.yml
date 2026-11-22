@@ -57,7 +57,11 @@ jobs:
             echo "version=0.0.0-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
       - name: Unit tests (oros-system)
-        run: cd system && go test ./...
+        # on a session bus, so the screen-stays-on service (games.go) is
+        # tested for real too
+        run: |
+          cd system
+          if command -v dbus-run-session >/dev/null; then dbus-run-session -- go test ./...; else go test ./...; fi
       - name: Tor button download (the real Tor Browser from torproject.org)
         run: |
           scripts/tor-key.sh /tmp/tor-key.gpg
