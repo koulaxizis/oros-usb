@@ -254,7 +254,8 @@ fi
 # a PrtSc screenshot through grim, the screens through wlr-randr, swayidle,
 # the keyboard labwc runs with, espeak-ng voices and Orca, and the system
 # side of games (games.go: Vulkan, Flatpak and portals, gamemode,
-# /dev/uinput, kernel settings, the screen staying on).
+# /dev/uinput, kernel settings, the screen staying on) and the graphics
+# cards (gpu.go).
 DESKF="$(find "$MNT" -maxdepth 5 -name .oros-selftest-desk | head -1)"
 [ -z "$DESKF" ] || { echo "== desktop self-test"; cat "$DESKF"; }
 if [ -n "${WATCHDOG_TEST:-}" ]; then

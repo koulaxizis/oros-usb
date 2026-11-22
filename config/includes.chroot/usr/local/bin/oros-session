@@ -164,6 +164,10 @@ stop() {
 # it is installed, Ollama starts with the first session of the boot. It
 # is not inside labwc, so a watchdog restart leaves it running.
 /opt/oros/oros-system ai --serve < /dev/null > /dev/null 2>&1 &
+# Laptops with two graphics cards: games and other Flatpak programs run on
+# the strong card, orOS and the desktop stay on the one driving the screen
+# (oros-system gpu --apply, a Flatpak override; nothing on one-card PCs).
+/opt/oros/oros-system gpu --apply < /dev/null > /dev/null 2>&1
 
 starts=0
 while true; do

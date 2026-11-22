@@ -650,6 +650,7 @@ func selftestDeskMain() int {
 		check("espeak-ng "+v, err)
 	}
 	selftestGames(check, info)
+	selftestGPU(check, info)
 
 	out, err = run("orca", "--version")
 	check("orca "+strings.TrimSpace(out), err)

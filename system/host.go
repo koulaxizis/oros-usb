@@ -237,6 +237,14 @@ func handle(req request) reply {
 			return aiSetGPU(req.On)
 		}
 		return aiRemove()
+	case "gpu.status":
+		return gpuStatus()
+	case "gpu.offload":
+		// a setting of the computer, like the AI's graphics card switch
+		if !ownerOnly() {
+			return reply{"ok": false, "error": "owner only"}
+		}
+		return gpuSetOffload(req.On)
 	case "claude.status":
 		return claudeStatus()
 	case "claude.install":

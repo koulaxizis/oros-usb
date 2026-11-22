@@ -7,7 +7,9 @@
 // lists them as JSON, "oros-system time" to set the time zone, and
 // "oros-system vault-base" to make the folder for encrypted users (vault.go),
 // "oros-system ai" sets up and starts the local AI (ai.go), and
-// "oros-system claude" downloads Anthropic's Claude desktop (claude.go).
+// "oros-system claude" downloads Anthropic's Claude desktop (claude.go),
+// "oros-system gpu" lists the graphics cards and, with --apply, puts games
+// on a laptop's second card (gpu.go).
 // "keyboard", "idle", "screen", "display" and "reader" are the session's
 // desktop parts (desk.go, display.go): keyboard layouts, the screen going
 // off and sleep when idle, second screens, and the Orca screen reader.
@@ -34,6 +36,9 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "claude" {
 		os.Exit(claudeMain(os.Args[2:]))
+	}
+	if len(os.Args) > 1 && os.Args[1] == "gpu" {
+		os.Exit(gpuMain(os.Args[2:]))
 	}
 	if len(os.Args) > 1 && os.Args[1] == "ai" {
 		os.Exit(aiMain(os.Args[2:]))
@@ -79,6 +84,6 @@ func main() {
 		}
 		return
 	}
-	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | ai --fetch [--model M] | ai --serve | claude --fetch | keyboard --layouts|--options | idle | screen --off|--on | display --apply | reader --enabled|--session  (or run by Chromium)")
+	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | gpu [--apply] | ai --fetch [--model M] | ai --serve | claude --fetch | keyboard --layouts|--options | idle | screen --off|--on | display --apply | reader --enabled|--session  (or run by Chromium)")
 	os.Exit(2)
 }
