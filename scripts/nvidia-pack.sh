@@ -36,9 +36,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# The level the image's os-release carries too (build.sh), so the pack is
-# merged only into the system it was built for.
-sysext_level() { echo "orOS-$1" | tr -c 'A-Za-z0-9._\n' '_'; }
 
 KVER="$(ls "$CHROOT/usr/lib/modules" | sort -V | tail -1)"
 echo "kernel $KVER"
@@ -208,9 +205,14 @@ else
 	exit 1
 fi
 test "$(jq length "$W/devids")" -gt 100
-# systemd-sysext merges the pack only into the system it was built for.
+# systemd-sysext merges the pack only into this Debian release.
 mkdir -p "$W/ext/usr/lib/extension-release.d"
-printf 'ID=debian\nSYSEXT_LEVEL=%s\n' "$(sysext_level "$VERSION")" \
+# The image's own description (nvidia.json) names this exact pack, so
+# systemd-sysext only has to check the Debian release; the live system's
+# os-release is not ours to extend (an added SYSEXT_LEVEL did not reach it).
+VERSION_ID="$(. "$CHROOT/etc/os-release" && echo "$VERSION_ID")"
+[ -n "$VERSION_ID" ]
+printf 'ID=debian\nVERSION_ID=%s\n' "$VERSION_ID" \
 	> "$W/ext/usr/lib/extension-release.d/extension-release.oros-nvidia"
 # The file goes with the pack under any name (the boot links it as
 # oros-nvidia.raw, the self-test too, but a renamed copy still merges).

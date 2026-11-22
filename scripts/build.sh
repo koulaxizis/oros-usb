@@ -119,9 +119,6 @@ lb config
 (lb bootstrap && lb chroot) 2>&1 | tee build.log
 
 echo "== NVIDIA's driver as a separate download (scripts/nvidia-pack.sh)"
-# The pack is merged only into the system it was built for: both carry
-# the same SYSEXT_LEVEL.
-echo "SYSEXT_LEVEL=$(echo "orOS-$VERSION" | tr -c 'A-Za-z0-9._\n' '_')" >> chroot/usr/lib/os-release
 scripts/nvidia-pack.sh chroot "$VERSION" out chroot/opt/oros 2>&1 | tee -a build.log
 test -s chroot/opt/oros/nvidia.json
 
