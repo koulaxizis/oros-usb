@@ -651,12 +651,17 @@ func nvidiaSelftest(pack string) int {
 		err = fmt.Errorf("%q", strings.TrimSpace(dry))
 	}
 	check("modprobe nvidia-drm (dry run, modeset=1)", err)
-	signer, err := run("modinfo", "-F", "signer", "nvidia")
+	// modinfo does not follow modprobe.d aliases: Debian's own name
+	mod := "nvidia"
+	if _, err := run("modinfo", "-F", "name", mod); err != nil {
+		mod = "nvidia-current"
+	}
+	signer, err := run("modinfo", "-F", "signer", mod)
 	if err == nil && strings.TrimSpace(signer) == "" {
 		err = errors.New("not signed")
 	}
 	check("nvidia.ko signed by "+strings.TrimSpace(signer), err)
-	vm, err := run("modinfo", "-F", "vermagic", "nvidia")
+	vm, err := run("modinfo", "-F", "vermagic", mod)
 	uname, _ := run("uname", "-r")
 	if err == nil && !strings.HasPrefix(strings.TrimSpace(vm), strings.TrimSpace(uname)+" ") {
 		err = fmt.Errorf("built for %q, running %q", strings.TrimSpace(vm), strings.TrimSpace(uname))
