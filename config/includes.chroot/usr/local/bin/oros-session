@@ -88,6 +88,12 @@ export OROS_ALIVE="${XDG_RUNTIME_DIR:-/tmp}/oros-alive-$(id -u)"
 # orOS Bridge's pairing code while Studio waits for it (oros-kiosk; the
 # System extension shows it through oros-system).
 export OROS_BRIDGE_CODE="${XDG_RUNTIME_DIR:-/tmp}/oros-bridge-code-$(id -u)"
+# Console mode (oros-system console.go): the System panel asks for it with
+# this file and ends labwc; the loop below then runs Steam's Big Picture
+# in its place until Steam ends.
+export OROS_CONSOLE="${XDG_RUNTIME_DIR:-/tmp}/oros-console-$(id -u)"
+rm -f "$OROS_CONSOLE"
+console_boot=1
 FIRST="${OROS_WATCHDOG_FIRST:-60}"
 QUIET="${OROS_WATCHDOG_QUIET:-40}"
 MAX=3
@@ -184,6 +190,24 @@ sudo -n /opt/oros/oros-system mount --games-boot < /dev/null > /dev/null 2>&1
 
 starts=0
 while true; do
+	# Console mode, when asked for or (first start of the boot only) when
+	# the owner chose to start the computer in it. Leaving Steam comes back
+	# here and orOS starts.
+	want=0
+	if [ -f "$OROS_CONSOLE" ]; then
+		want=1
+	elif [ "$console_boot" = 1 ] && [ ! -f /home/.oros-selftest ] && /opt/oros/oros-system console --boot-wanted 2>/dev/null; then
+		want=1
+	fi
+	rm -f "$OROS_CONSOLE"
+	console_boot=0
+	if [ "$want" = 1 ]; then
+		kb
+		note "console mode"
+		/opt/oros/oros-system console --run <&0 >> "$LOG" 2>&1
+		note "console mode exit $?"
+		sleep 1
+	fi
 	# Only one session runs, so browser lock files left by a crash, a power
 	# cut or the installer's copy are stale; Chromium would otherwise think
 	# the profile is open elsewhere and show a blank window.

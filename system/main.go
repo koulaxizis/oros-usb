@@ -45,6 +45,9 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "gpu" {
 		os.Exit(gpuMain(os.Args[2:]))
 	}
+	if len(os.Args) > 1 && os.Args[1] == "console" {
+		os.Exit(consoleMain(os.Args[2:]))
+	}
 	if len(os.Args) > 1 && os.Args[1] == "soft" {
 		os.Exit(softMain(os.Args[2:]))
 	}
