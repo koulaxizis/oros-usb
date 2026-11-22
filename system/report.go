@@ -22,6 +22,7 @@ var reportCommands = [][]string{
 	{"timedatectl"},
 	{"free", "-m"},
 	{"lspci", "-nnk"},
+	{"/opt/oros/oros-system", "gpu"},
 	{"lsusb"},
 	{"lsblk", "-o", "NAME,SIZE,TYPE,FSTYPE,LABEL,MOUNTPOINT,TRAN,MODEL"},
 	{"df", "-h"},

@@ -106,7 +106,7 @@ func TestUpdateEncrypted(t *testing.T) {
 		t.Fatal("slots written into the encrypted data")
 	}
 	cfg, err := os.ReadFile(filepath.Join(sys, "oros-system", "boot.cfg"))
-	if err != nil || !strings.Contains(string(cfg), "persistence-label=orosdisk live-media=/dev/disk/by-uuid/sys-1 live-media-path=/oros-system/A toram=filesystem.squashfs") {
+	if err != nil || !strings.Contains(string(cfg), "persistence-label=orosdisk ${oros_gpu} live-media=/dev/disk/by-uuid/sys-1 live-media-path=/oros-system/A toram=filesystem.squashfs") {
 		t.Fatalf("boot.cfg %v:\n%s", err, cfg)
 	}
 }

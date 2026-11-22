@@ -37,7 +37,8 @@ jobs:
             debootstrap xorriso squashfs-tools dosfstools mtools grub-efi-amd64-bin grub-pc-bin \
             syslinux syslinux-common isolinux qemu-system-x86 qemu-utils ovmf socat netpbm \
             fdisk parted e2fsprogs util-linux udev tesseract-ocr ntfs-3g unzip curl initramfs-tools-core \
-            gnupg gpgv xz-utils jq cmake g++ make libx11-dev cryptsetup-bin
+            gnupg gpgv xz-utils jq cmake g++ make libx11-dev cryptsetup-bin \
+            openssl kmod zstd attr
       - uses: actions/checkout@v4
       - name: Version
         id: v
@@ -103,6 +104,10 @@ jobs:
       - name: Build image
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # The orOS key NVIDIA's modules are signed with (Secure Boot); without
+          # it (forks, until the owner adds it) a key for this build only.
+          NVIDIA_MOK_KEY: ${{ secrets.NVIDIA_MOK_KEY }}
+          NVIDIA_MOK_CERT: ${{ secrets.NVIDIA_MOK_CERT }}
         run: scripts/build.sh "${{ steps.v.outputs.version }}"
       - name: Boot menus in the image
         run: |
@@ -111,6 +116,12 @@ jobs:
             echo "== $f"; rm -f /tmp/menu
             xorriso -osirrox on -indev "$ISO" -extract "/$f" /tmp/menu >/dev/null 2>&1 && head -60 /tmp/menu || echo "(none)"
           done
+          # every entry carries GRUB's ${oros_gpu} (NVIDIA's driver, gpu.cfg)
+          xorriso -osirrox on -indev "$ISO" -extract /boot/grub/grub.cfg /tmp/menu >/dev/null 2>&1
+          grep -q 'oros_gpu' /tmp/menu || { echo "::error::the boot menu lacks \${oros_gpu}"; exit 1; }
+          xorriso -osirrox on -indev "$ISO" -extract /boot/grub/config.cfg /tmp/menu >/dev/null 2>&1
+          grep -q 'oros-system/gpu.cfg' /tmp/menu
+          ls -l out/*-nvidia.raw
       - name: Licences and sources on the stick
         run: |
           V="${{ steps.v.outputs.version }}"
@@ -128,7 +139,7 @@ jobs:
           test -s "out/orOS-USB-$V-packages.txt"
           echo "$(grep -c snapshot.debian.org/package /tmp/notices/SOURCES.txt) source packages listed"
       - name: Boot test (QEMU, UEFI Secure Boot, persistence)
-        run: scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
+        run: NVIDIA_PACK="out/orOS-USB-${{ steps.v.outputs.version }}-nvidia.raw" scripts/test-boot.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out
       - name: Free disk space (after the boot test)
         # Each VM test leaves multi-GB disk images; the runner has room for
         # only a few at once. Screenshots and logs stay for the upload.
@@ -239,8 +250,9 @@ jobs:
             BETA_EL="Beta: για δοκιμές. Σε μερικά PC η πρώτη εκκίνηση δείχνει λευκή οθόνη (η επανεκκίνηση το διορθώνει). Στείλε Σύστημα › Αναφορά προβλήματος όταν κάτι δεν πάει καλά."
             NOTES="$(printf '%s\n\n%s\n\n%s' "$BETA_EN" "$BETA_EL" "$NOTES")" ;;
           esac
-          scripts/update-assets.sh "out/orOS-USB-$VERSION.iso" out/update "$VERSION"
+          scripts/update-assets.sh "out/orOS-USB-$VERSION.iso" out/update "$VERSION" "out/orOS-USB-$VERSION-nvidia.raw"
           gh release create "$TAG" --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY" \
             "out/orOS-USB-$VERSION.iso" out/update/update.json out/update/filesystem.squashfs out/update/vmlinuz out/update/initrd.img \
+            "out/orOS-USB-$VERSION-nvidia.raw" \
             "out/orOS-USB-$VERSION-sources.txt" "out/orOS-USB-$VERSION-packages.txt" \
             --title "$TITLE" --notes "$NOTES"

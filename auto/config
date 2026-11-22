@@ -6,7 +6,9 @@ set -e
 # boot screen), only errors from the kernel and udev, no systemd status
 # lines, no blinking cursor. The serial console is for the CI boot tests;
 # without plymouth.ignore-serial-consoles Plymouth sees it and shows its
-# text mode (every boot message) instead of the orOS screen.
+# text mode (every boot message) instead of the orOS screen. GRUB's
+# ${oros_gpu} is added to the menu templates by scripts/build.sh (lb config
+# would expand it to nothing here).
 lb config noauto \
 	--distribution trixie \
 	--archive-areas "main contrib non-free non-free-firmware" \
