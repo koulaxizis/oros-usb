@@ -193,8 +193,13 @@ func selftestGames(check func(string, error), info func(string, string)) {
 	}
 	check("vulkan "+strings.Join(devs, ", "), err)
 
-	_, err = exec.LookPath("gamescope")
-	check("gamescope (console mode)", err)
+	// Console mode uses gamescope when the system has it (Debian 13 does
+	// not ship it); otherwise Big Picture runs in labwc.
+	if _, err := exec.LookPath("gamescope"); err == nil {
+		info("console mode", "gamescope")
+	} else {
+		info("console mode", "labwc (no gamescope)")
+	}
 
 	out, err = run("flatpak", "--version")
 	check("flatpak "+strings.TrimSpace(out), err)

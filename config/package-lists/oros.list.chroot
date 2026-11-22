@@ -142,9 +142,6 @@ flatpak xdg-desktop-portal xdg-desktop-portal-gtk
 gamemode pkexec
 steam-devices
 vulkan-tools
-# Console mode (G7): gamescope, Valve's compositor for games, shows Steam's
-# Big Picture alone on the screen (oros-system console.go)
-gamescope
 
 # NVIDIA's own driver (G5) is a separate download (scripts/nvidia-pack.sh,
 # system/nvidia.go); mokutil asks the firmware to trust the orOS key that

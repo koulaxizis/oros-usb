@@ -3,15 +3,16 @@ package main
 // Console mode (wave G7): the computer becomes a games console, for a
 // laptop on the television with a controller. Steam's Big Picture (its
 // controller interface) runs alone on the screen in gamescope, Valve's
-// compositor for games (the one the Steam Deck uses), instead of orOS.
+// compositor for games (the one the Steam Deck uses), when the system has
+// it (Debian 13 has no package), otherwise in labwc, instead of orOS.
 // Leaving Steam (Power › Exit Steam) brings orOS back.
 //
 // The System panel's Software section starts it ("console.start": the
 // request file, then labwc ends) and can make every start of the computer
 // begin in it ("console.boot", the owner's choice, ~/oros/data/console.json).
 // oros-session runs "oros-system console --run" on tty1 in place of labwc.
-// When gamescope cannot start on this graphics card (some old cards,
-// virtual machines), Steam's Big Picture runs in labwc instead.
+// When gamescope is missing or cannot start on this graphics card (some
+// old cards, virtual machines), Steam's Big Picture runs in labwc.
 
 import (
 	"encoding/json"
