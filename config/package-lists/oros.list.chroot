@@ -142,3 +142,8 @@ flatpak xdg-desktop-portal xdg-desktop-portal-gtk
 gamemode pkexec
 steam-devices
 vulkan-tools
+
+# NVIDIA's own driver (G5) is a separate download (scripts/nvidia-pack.sh,
+# system/nvidia.go); mokutil asks the firmware to trust the orOS key that
+# signs its modules when Secure Boot is on.
+mokutil

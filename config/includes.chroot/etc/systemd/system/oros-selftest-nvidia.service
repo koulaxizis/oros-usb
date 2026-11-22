@@ -1,0 +1,15 @@
+# Boot tests only: when the test put this build's NVIDIA pack on the
+# persistence partition, check that it merges into the system, carries the
+# driver's files and that its modules are signed for this kernel
+# (oros-system nvidia --selftest; /home/.oros-selftest-nvidia.txt).
+[Unit]
+Description=orOS NVIDIA pack self-test
+ConditionPathExists=/home/.oros-selftest-nvidia.raw
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/oros/oros-system nvidia --selftest /home/.oros-selftest-nvidia.raw
+
+[Install]
+WantedBy=multi-user.target

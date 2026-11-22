@@ -54,6 +54,14 @@ else
 fi
 mkdir -p "$PHOME"
 touch "$PHOME/.oros-selftest"
+# This build's NVIDIA driver pack (scripts/nvidia-pack.sh), checked by the
+# image's oros-selftest-nvidia.service: it merges, has the driver's files,
+# and its modules are signed for this kernel.
+if [ -n "${NVIDIA_PACK:-}" ]; then
+	cp "$NVIDIA_PACK" "$PHOME/.oros-selftest-nvidia.raw"
+else
+	rm -f "$PHOME/.oros-selftest-nvidia.raw"
+fi
 if [ -n "${WATCHDOG_TEST:-}" ]; then
 	echo "$WATCHDOG_TEST" > "$PHOME/.oros-watchdog-test"
 else
@@ -263,6 +271,16 @@ if [ -n "${WATCHDOG_TEST:-}" ]; then
 elif [ -z "$DESKF" ] || ! grep -qx "PASS" "$DESKF"; then
 	echo "FAIL: the desktop self-test (screenshot, screens, idle, keyboard, voices, games) did not pass" >&2
 	OK=0
+fi
+# NVIDIA's driver pack (when the test brought one).
+if [ -n "${NVIDIA_PACK:-}" ]; then
+	NVF="$(find "$MNT" -maxdepth 5 -name .oros-selftest-nvidia.txt | head -1)"
+	[ -z "$NVF" ] || { echo "== NVIDIA pack self-test"; cat "$NVF"; }
+	if [ -z "$NVF" ] || ! grep -qx "PASS" "$NVF"; then
+		echo "FAIL: the NVIDIA driver pack did not merge or is not signed for this kernel" >&2
+		grep -a "nvidia\|sysext" "$OUT/serial.log" | tail -20 >&2 || true
+		OK=0
+	fi
 fi
 # Encrypted users: the data partition has the ext4 encrypt feature (set by
 # mkfs, or by the initramfs at the first start), and oros-system's

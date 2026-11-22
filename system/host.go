@@ -245,6 +245,20 @@ func handle(req request) reply {
 			return reply{"ok": false, "error": "owner only"}
 		}
 		return gpuSetOffload(req.On)
+	case "nvidia.status":
+		return nvidiaStatus()
+	case "nvidia.progress":
+		return readProgress(nvidiaProgressFile)
+	case "nvidia.install", "nvidia.remove":
+		// the computer's driver, for everybody on the stick
+		if !ownerOnly() {
+			return reply{"ok": false, "error": "owner only"}
+		}
+		if req.Cmd == "nvidia.install" {
+			_ = os.Remove(nvidiaProgressFile)
+			return startRoot("nvidia", "--install")
+		}
+		return startRoot("nvidia", "--remove")
 	case "claude.status":
 		return claudeStatus()
 	case "claude.install":

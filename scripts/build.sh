@@ -84,6 +84,18 @@ if regexp --set=1:orosdev '^\(?([^,)]+)' "$root"; then
 else
 	search --no-floppy --file --set=orosupd /oros-system/boot.cfg
 fi
+# NVIDIA's own driver (oros-system nvidia): gpu.cfg sets ${oros_gpu}, which
+# every entry adds to the kernel's options (nouveau off, NVIDIA's
+# modesetting on). Without the file it stays empty.
+set oros_gpu=""
+if regexp --set=1:orosdev '^\(?([^,)]+)' "$root"; then
+	search --no-floppy --file --set=orosgpu --hint="${orosdev}," /oros-system/gpu.cfg
+else
+	search --no-floppy --file --set=orosgpu /oros-system/gpu.cfg
+fi
+if [ -n "$orosgpu" ]; then
+	source ($orosgpu)/oros-system/gpu.cfg
+fi
 if [ -n "$orosupd" ]; then
 	source ($orosupd)/oros-system/boot.cfg
 fi
@@ -100,6 +112,13 @@ lb config
 # lb build in its stages, so the licences and the source list of the
 # finished system go into it and onto the stick before the image is made.
 (lb bootstrap && lb chroot) 2>&1 | tee build.log
+
+echo "== NVIDIA's driver as a separate download (scripts/nvidia-pack.sh)"
+# The pack is merged only into the system it was built for: both carry
+# the same SYSEXT_LEVEL.
+echo "SYSEXT_LEVEL=$(echo "orOS-$VERSION" | tr -c 'A-Za-z0-9._\n' '_')" >> chroot/usr/lib/os-release
+scripts/nvidia-pack.sh chroot "$VERSION" out chroot/opt/oros 2>&1 | tee -a build.log
+test -s chroot/opt/oros/nvidia.json
 
 echo "== initramfs: encrypted data (oros-unlock) and the boot screen's text"
 # live-boot runs /scripts/live-realpremount before it looks for

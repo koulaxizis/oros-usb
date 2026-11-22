@@ -10,3 +10,7 @@ oros ALL=(root) NOPASSWD: /opt/oros/oros-system time --zone *
 # ...and make the folder for encrypted users on the data partition (owned by
 # oros, closed to others; nothing else is changed).
 oros ALL=(root) NOPASSWD: /opt/oros/oros-system vault-base
+# ...and NVIDIA's driver (only the official release's pack for this system,
+# for a card it supports; nvidia.go), or take it away again.
+oros ALL=(root) NOPASSWD: /opt/oros/oros-system nvidia --install
+oros ALL=(root) NOPASSWD: /opt/oros/oros-system nvidia --remove

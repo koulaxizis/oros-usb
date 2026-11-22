@@ -42,6 +42,9 @@ var updateFiles = []string{"filesystem.squashfs", "vmlinuz", "initrd.img"}
 type updateManifest struct {
 	Version string       `json:"version"`
 	Files   []updateFile `json:"files"`
+	// Nvidia is the release's NVIDIA driver pack (nvidia.go), downloaded
+	// only where one is installed. Older systems ignore it.
+	Nvidia *updateFile `json:"nvidia,omitempty"`
 }
 
 type updateFile struct {
@@ -172,8 +175,14 @@ func bootArgs(cmdline, uuid, slot string) string {
 		case "BOOT_IMAGE", "initrd", "findiso", "live-media", "live-media-path", "live-media-timeout", "toram":
 			continue
 		}
+		// NVIDIA's options came from GRUB's ${oros_gpu} (gpu.cfg); the new
+		// entry asks GRUB again, so removing the driver takes effect there too.
+		if strings.Contains(" "+nvidiaArgs+" ", " "+a+" ") || a == "${oros_gpu}" {
+			continue
+		}
 		keep = append(keep, a)
 	}
+	keep = append(keep, "${oros_gpu}")
 	// toram: the system is copied into memory and the partition released,
 	// so live-boot can then mount the same partition for persistence.
 	keep = append(keep, "live-media=/dev/disk/by-uuid/"+uuid, "live-media-path=/"+updateDir+"/"+slot, "toram=filesystem.squashfs")
@@ -315,8 +324,12 @@ func update(o updateOpts, step func(string, int)) error {
 	if err := syscall.Statfs(slots, &st); err != nil {
 		return err
 	}
-	if free := int64(st.Bavail) * int64(st.Bsize); free < m.size()+256<<20 {
-		return fmt.Errorf("not enough space: %d MB free, %d MB needed", free>>20, (m.size()+256<<20)>>20)
+	need := m.size()
+	if m.Nvidia != nil && readNvidiaState().File != "" {
+		need += m.Nvidia.Size
+	}
+	if free := int64(st.Bavail) * int64(st.Bsize); free < need+256<<20 {
+		return fmt.Errorf("not enough space: %d MB free, %d MB needed", free>>20, (need+256<<20)>>20)
 	}
 	if err := os.MkdirAll(newDir, 0o755); err != nil {
 		return err
@@ -331,6 +344,14 @@ func update(o updateOpts, step func(string, int)) error {
 			return err
 		}
 		done += f.Size
+	}
+	// NVIDIA's driver for the new system, where one is installed. A failed
+	// download does not stop the update: that system starts with nouveau
+	// and System offers the driver again.
+	if m.Nvidia != nil && readNvidiaState().File != "" {
+		if err := fetchNvidiaPack(o.source, *m.Nvidia); err != nil {
+			logf("update: NVIDIA driver: %v", err)
+		}
 	}
 	if err := os.WriteFile(filepath.Join(newDir, "version"), []byte(m.Version+"\n"), 0o644); err != nil {
 		return err
@@ -368,6 +389,12 @@ func fetchFile(src string, f updateFile, dir string, progress func(int64)) error
 		return err
 	}
 	defer in.Close()
+	return copyChecked(in, f, dir, progress)
+}
+
+// copyChecked writes in to dir/f.Name and fails unless the size and the
+// SHA-256 are the expected ones.
+func copyChecked(in io.Reader, f updateFile, dir string, progress func(int64)) error {
 	out, err := os.Create(filepath.Join(dir, f.Name))
 	if err != nil {
 		return err
@@ -408,5 +435,29 @@ func fetchFile(src string, f updateFile, dir string, progress func(int64)) error
 	if n != f.Size || hex.EncodeToString(h.Sum(nil)) != f.SHA256 {
 		return fmt.Errorf("%s: download damaged (checksum)", f.Name)
 	}
+	return nil
+}
+
+// fetchNvidiaPack puts the new system's driver pack next to the running
+// one (the boot menu keeps both systems).
+func fetchNvidiaPack(src string, f updateFile) error {
+	if !regexp.MustCompile(`^orOS-USB-[0-9A-Za-z.+-]{1,40}-nvidia\.raw$`).MatchString(f.Name) ||
+		!regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(f.SHA256) || f.Size <= 0 {
+		return fmt.Errorf("bad NVIDIA entry %q", f.Name)
+	}
+	tmp := filepath.Join(nvidiaDir, ".new")
+	_ = os.RemoveAll(tmp)
+	if err := os.MkdirAll(tmp, 0o755); err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmp)
+	if err := fetchFile(src, f, tmp, func(int64) {}); err != nil {
+		return err
+	}
+	if err := os.Rename(filepath.Join(tmp, f.Name), filepath.Join(nvidiaDir, f.Name)); err != nil {
+		return err
+	}
+	s := readNvidiaState()
+	prunePacks(s.File, f.Name)
 	return nil
 }

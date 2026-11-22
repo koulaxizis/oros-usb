@@ -37,6 +37,9 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "claude" {
 		os.Exit(claudeMain(os.Args[2:]))
 	}
+	if len(os.Args) > 1 && os.Args[1] == "nvidia" {
+		os.Exit(nvidiaMain(os.Args[2:]))
+	}
 	if len(os.Args) > 1 && os.Args[1] == "gpu" {
 		os.Exit(gpuMain(os.Args[2:]))
 	}
@@ -84,6 +87,6 @@ func main() {
 		}
 		return
 	}
-	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | gpu [--apply] | ai --fetch [--model M] | ai --serve | claude --fetch | keyboard --layouts|--options | idle | screen --off|--on | display --apply | reader --enabled|--session  (or run by Chromium)")
+	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | gpu [--apply] | nvidia [--install|--remove|--boot|--auto] | ai --fetch [--model M] | ai --serve | claude --fetch | keyboard --layouts|--options | idle | screen --off|--on | display --apply | reader --enabled|--session  (or run by Chromium)")
 	os.Exit(2)
 }

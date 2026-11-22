@@ -1,0 +1,19 @@
+# NVIDIA's own driver (oros-system nvidia, wave G5): when GRUB started with
+# NVIDIA's options (/oros-system/gpu.cfg, written when the driver was
+# installed), merge the driver pack for this system over /usr and load the
+# modules before the session starts. Anything missing or failing (a new
+# system without its pack yet, Secure Boot without the orOS key, a card the
+# driver does not support) brings nouveau back instead.
+[Unit]
+Description=orOS NVIDIA driver
+ConditionKernelCommandLine=modprobe.blacklist=nouveau
+After=local-fs.target systemd-modules-load.service
+Before=oros-session.service display-manager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/oros/oros-system nvidia --boot
+
+[Install]
+WantedBy=multi-user.target

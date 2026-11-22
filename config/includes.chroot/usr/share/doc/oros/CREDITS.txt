@@ -34,6 +34,13 @@ Downloaded only when asked (System > Local AI), never part of the image
   Qwen3 models        Apache-2.0, the Qwen team (Alibaba Cloud), through
                       Ollama's library  https://ollama.com/library/qwen3
   Tor Browser         see the Tor button (torproject.org)
+  NVIDIA driver       proprietary (NVIDIA Software License), NVIDIA
+                      Corporation, as packaged by Debian (non-free); with
+                      egl-wayland and egl-gbm (MIT). Downloaded only on a
+                      computer with a supported NVIDIA card (System >
+                      graphics card); its licence files stay in
+                      /usr/share/doc/oros-nvidia while it is in use, its
+                      Debian sources are listed in /opt/oros/nvidia-sources.txt
   Claude desktop      proprietary, Anthropic PBC; downloaded from Anthropic
                       (downloads.claude.ai) only when asked (System >
                       Claude desktop), under Anthropic's terms
