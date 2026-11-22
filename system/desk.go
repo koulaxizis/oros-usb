@@ -311,6 +311,9 @@ func idleMain() int {
 	var seen time.Time
 	failures := 0
 	screens := ""
+	// games and videos that ask the screen to stay on (games.go)
+	holds := serveScreenSaver()
+	heldBy := ""
 	for {
 		if k := outputsKey(); k != "" && k != screens {
 			screens = k
@@ -330,6 +333,18 @@ func idleMain() int {
 			}
 			time.Sleep(5 * time.Second)
 			continue
+		}
+		if holds != nil {
+			if on, app := holds.held(); on {
+				if child != nil || app != heldBy {
+					stop()
+					logf("idle: %q keeps the screen awake", app)
+				}
+				heldBy = app
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			heldBy = ""
 		}
 		var mt time.Time
 		if st, err := os.Stat(deskFile(home)); err == nil {
@@ -634,6 +649,8 @@ func selftestDeskMain() int {
 		}
 		check("espeak-ng "+v, err)
 	}
+	selftestGames(check, info)
+
 	out, err = run("orca", "--version")
 	check("orca "+strings.TrimSpace(out), err)
 	out, _ = run("spd-say", "--list-output-modules")

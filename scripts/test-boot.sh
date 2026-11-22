@@ -252,13 +252,15 @@ elif [ "$(mtype -i "$FSTICK" ::hello.txt 2>/dev/null)" != "orOS computer files" 
 fi
 # The session's desktop parts (oros-system selftest-desk, inside labwc):
 # a PrtSc screenshot through grim, the screens through wlr-randr, swayidle,
-# the keyboard labwc runs with, espeak-ng voices and Orca.
+# the keyboard labwc runs with, espeak-ng voices and Orca, and the system
+# side of games (games.go: Vulkan, Flatpak and portals, gamemode,
+# /dev/uinput, kernel settings, the screen staying on).
 DESKF="$(find "$MNT" -maxdepth 5 -name .oros-selftest-desk | head -1)"
 [ -z "$DESKF" ] || { echo "== desktop self-test"; cat "$DESKF"; }
 if [ -n "${WATCHDOG_TEST:-}" ]; then
 	:
 elif [ -z "$DESKF" ] || ! grep -qx "PASS" "$DESKF"; then
-	echo "FAIL: the desktop self-test (screenshot, screens, idle, keyboard, voices) did not pass" >&2
+	echo "FAIL: the desktop self-test (screenshot, screens, idle, keyboard, voices, games) did not pass" >&2
 	OK=0
 fi
 # Encrypted users: the data partition has the ext4 encrypt feature (set by

@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/ProtonMail/go-crypto v1.3.0
+	github.com/godbus/dbus/v5 v5.1.0
 	github.com/klauspost/compress v1.18.0
 )
 
