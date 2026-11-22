@@ -527,6 +527,7 @@ func nvidiaStatus() reply {
 	}
 	r["available"] = true
 	r["driver"] = pin.Driver
+	r["size"] = pin.Size
 	cards := readGPUs()
 	if c := nvidiaCardFor(pin, cards); c != nil {
 		r["card"] = c.Slot
