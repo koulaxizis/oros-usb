@@ -29,6 +29,7 @@ type volume struct {
 	Mount    string `json:"mount,omitempty"`
 	ReadOnly bool   `json:"readonly,omitempty"` // mounted read-only
 	Internal bool   `json:"internal"`
+	UUID     string `json:"uuid,omitempty"`
 }
 
 // Filesystems Debian's kernel reads without extra packages.
@@ -36,7 +37,7 @@ var volumeFS = map[string]bool{"vfat": true, "exfat": true, "ntfs": true, "ext4"
 
 // lsblkRun lists block devices; a variable so tests can feed their own.
 var lsblkRun = func() (string, error) {
-	out, err := run("lsblk", "-J", "-l", "-b", "-o", "NAME,PATH,PKNAME,TYPE,SIZE,FSTYPE,LABEL,MOUNTPOINT,RM,HOTPLUG,TRAN,MODEL")
+	out, err := run("lsblk", "-J", "-l", "-b", "-o", "NAME,PATH,PKNAME,TYPE,SIZE,FSTYPE,LABEL,UUID,MOUNTPOINT,RM,HOTPLUG,TRAN,MODEL")
 	if err != nil {
 		return "", errors.New(strings.TrimSpace(out))
 	}
@@ -106,6 +107,7 @@ func pickVolumes(lsblkJSON string, system map[string]bool) ([]volume, error) {
 			Size             json.Number
 			FSType           *string `json:"fstype"`
 			Label            *string
+			UUID             *string `json:"uuid"`
 			Mountpoint       *string
 			RM, Hotplug      any
 			Tran, Model      *string
@@ -157,7 +159,7 @@ func pickVolumes(lsblkJSON string, system map[string]bool) ([]volume, error) {
 		if b.Type == "part" {
 			info = disks[parent]
 		}
-		v := volume{Path: b.Path, Label: label, FSType: fs, Size: size, Model: info.model, USB: info.usb, Internal: !info.usb}
+		v := volume{Path: b.Path, Label: label, FSType: fs, Size: size, Model: info.model, USB: info.usb, Internal: !info.usb, UUID: str(b.UUID)}
 		if mp := str(b.Mountpoint); strings.HasPrefix(mp, mediaRoot+"/") {
 			v.Mount = mp
 		}
@@ -309,7 +311,16 @@ func mountMain(args []string) int {
 	fl := flag.NewFlagSet("mount", flag.ContinueOnError)
 	dev := fl.String("dev", "", "partition to open")
 	off := fl.Bool("unmount", false, "close it instead")
-	if err := fl.Parse(args); err != nil || *dev == "" {
+	games := fl.String("games-set", "", "make this partition the game library (games.go)")
+	gamesOff := fl.Bool("games-off", false, "no game library on another disk")
+	gamesBoot := fl.Bool("games-boot", false, "session start: open the game library's disk")
+	if err := fl.Parse(args); err != nil {
+		return 2
+	}
+	if *games != "" || *gamesOff || *gamesBoot {
+		return gamesDiskMain(*games, *gamesOff)
+	}
+	if *dev == "" {
 		fmt.Fprintln(os.Stderr, "usage: oros-system mount --dev /dev/sdX1 [--unmount]")
 		return 2
 	}

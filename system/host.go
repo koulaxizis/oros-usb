@@ -261,6 +261,14 @@ func handle(req request) reply {
 			return startRoot("nvidia", "--install")
 		}
 		return startRoot("nvidia", "--remove")
+	case "games.disk":
+		return gamesDiskStatus()
+	case "games.diskSet":
+		// a disk of the computer, for everybody on the stick
+		if !ownerOnly() {
+			return reply{"ok": false, "error": "owner only"}
+		}
+		return gamesDiskSet(req.Disk)
 	case "soft.list":
 		return softList()
 	case "soft.open":
