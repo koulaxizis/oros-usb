@@ -25,10 +25,13 @@ VERSION="$2"
 OUT="$(mkdir -p "$3" && realpath "$3")"
 OPT="$4"
 NAME="orOS-USB-$VERSION-nvidia.raw"
-W="$(mktemp -d)"
+# Next to the chroot, not in /tmp: a container's /tmp is often itself an
+# overlay, which cannot be an overlay's upper folder.
+W="$(mktemp -d -p "$(dirname "$CHROOT")" .nvidia-pack.XXXXXX)"
 cleanup() {
 	for m in dev/pts dev proc sys; do umount -l "$W/root/$m" 2>/dev/null || true; done
 	umount -l "$W/root" 2>/dev/null || true
+	umount -l "$W/t" 2>/dev/null || true
 	rm -rf "$W"
 }
 trap cleanup EXIT
@@ -59,7 +62,13 @@ openssl x509 -in "$W/mok.pem" -outform DER -out "$W/mok.der"
 # reaches the image) where Debian's packages are installed and DKMS builds
 # the modules for the image's kernel.
 mkdir -p "$W/up" "$W/work" "$W/root"
-mount -t overlay overlay -o "lowerdir=$CHROOT,upperdir=$W/up,workdir=$W/work" "$W/root"
+if ! mount -t overlay overlay -o "lowerdir=$CHROOT,upperdir=$W/up,workdir=$W/work" "$W/root"; then
+	echo "overlay on $(dirname "$CHROOT") refused: upper folder in memory"
+	mkdir -p "$W/t"
+	mount -t tmpfs -o size=8G tmpfs "$W/t"
+	mkdir -p "$W/t/up" "$W/t/work"
+	mount -t overlay overlay -o "lowerdir=$CHROOT,upperdir=$W/t/up,workdir=$W/t/work" "$W/root"
+fi
 for m in proc sys dev dev/pts; do mkdir -p "$W/root/$m"; mount --bind "/$m" "$W/root/$m"; done
 cp /etc/resolv.conf "$W/root/etc/resolv.conf"
 # DKMS signs with /var/lib/dkms/mok.key when it is there.
