@@ -36,6 +36,8 @@ type request struct {
 	Web string `json:"web,omitempty"`
 	// Model is a local AI model (ai.install, ai.forget; ai.go).
 	Model string `json:"model,omitempty"`
+	// ID is a software center entry (soft.*; soft.go).
+	ID string `json:"id,omitempty"`
 	// Kid is the page's id for its screen lock record (lockbio.go); Text
 	// the line a prompt shows (unused here: fprintd has no window).
 	Kid  string `json:"kid,omitempty"`
@@ -259,6 +261,20 @@ func handle(req request) reply {
 			return startRoot("nvidia", "--install")
 		}
 		return startRoot("nvidia", "--remove")
+	case "soft.list":
+		return softList()
+	case "soft.open":
+		return softOpen(req.ID)
+	case "soft.install", "soft.remove", "soft.update", "soft.addon":
+		// Programs and add-ons are the computer's, for everybody on the
+		// stick, like the local AI's models.
+		if !ownerOnly() {
+			return reply{"ok": false, "error": "owner only"}
+		}
+		if req.Cmd == "soft.addon" {
+			return addonSet(req.ID, req.On)
+		}
+		return softStart(strings.TrimPrefix(req.Cmd, "soft."), req.ID)
 	case "claude.status":
 		return claudeStatus()
 	case "claude.install":

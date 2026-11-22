@@ -172,6 +172,12 @@ stop() {
 # supports when nothing needs the person (Secure Boot off, or the orOS key
 # already enrolled); it is used from the next start (oros-system nvidia).
 /opt/oros/oros-system nvidia --auto < /dev/null > /dev/null 2>&1 &
+# The software center (Settings › Software, oros-system soft.go/addons.go):
+# Chromium's policy for the add-ons the owner chose (/etc is new at every
+# boot), before the first window; the center's programs update by
+# themselves once a day.
+sudo -n /opt/oros/oros-system addons --apply < /dev/null > /dev/null 2>&1
+/opt/oros/oros-system soft --auto < /dev/null > /dev/null 2>&1 &
 
 starts=0
 while true; do
