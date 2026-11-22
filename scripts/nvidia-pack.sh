@@ -135,6 +135,23 @@ done < "$W/pkgs" | sort -u | while read -r f; do
 	mkdir -p "$W/ext$(dirname "$dst")"
 	cp -a "$src" "$W/ext$dst"
 done
+# Debian points the usual library and ICD names (libGLX_nvidia.so.0, the
+# Vulkan and EGL files) at the driver through update-alternatives, as
+# links into /etc/alternatives that no package lists. The overlay's upper
+# folder holds every link the install made: those into the pack's own files
+# go in, resolved, since /etc is not part of a system extension.
+UP="$W/up"
+[ -d "$W/t/up" ] && UP="$W/t/up"
+(cd "$UP" && find usr -type l) | sort | while read -r l; do
+	case "$(readlink "$UP/$l")" in /etc/alternatives/* | */etc/alternatives/*) ;; *) continue ;; esac
+	[ -e "$W/ext/$l" ] || [ -L "$W/ext/$l" ] && continue
+	t="$(chroot "$W/root" readlink -f "/$l" 2>/dev/null)" || continue
+	case "$t" in /usr/*) ;; *) continue ;; esac
+	[ -e "$W/ext$t" ] || continue
+	mkdir -p "$W/ext/$(dirname "$l")"
+	ln -s "$t" "$W/ext/$l"
+	echo "alternative /$l -> $t"
+done
 mkdir -p "$W/ext/$MODDIR"
 cp -a "$W/root/$MODDIR"/*.ko "$W/ext/$MODDIR/"
 for f in "$W/root/usr/lib/modules/$KVER"/modules.*; do cp -a "$f" "$W/ext/usr/lib/modules/$KVER/"; done
@@ -195,6 +212,10 @@ test "$(jq length "$W/devids")" -gt 100
 mkdir -p "$W/ext/usr/lib/extension-release.d"
 printf 'ID=debian\nSYSEXT_LEVEL=%s\n' "$(sysext_level "$VERSION")" \
 	> "$W/ext/usr/lib/extension-release.d/extension-release.oros-nvidia"
+# The file goes with the pack under any name (the boot links it as
+# oros-nvidia.raw, the self-test too, but a renamed copy still merges).
+setfattr -n user.extension-release.strict -v false \
+	"$W/ext/usr/lib/extension-release.d/extension-release.oros-nvidia" 2>/dev/null || echo "no setfattr: the pack must be named oros-nvidia.raw"
 
 rm -f "$OUT/$NAME"
 mksquashfs "$W/ext" "$OUT/$NAME" -comp zstd -all-root -quiet -no-progress

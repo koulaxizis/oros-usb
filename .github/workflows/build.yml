@@ -38,7 +38,7 @@ jobs:
             syslinux syslinux-common isolinux qemu-system-x86 qemu-utils ovmf socat netpbm \
             fdisk parted e2fsprogs util-linux udev tesseract-ocr ntfs-3g unzip curl initramfs-tools-core \
             gnupg gpgv xz-utils jq cmake g++ make libx11-dev cryptsetup-bin \
-            openssl kmod zstd
+            openssl kmod zstd attr
       - uses: actions/checkout@v4
       - name: Version
         id: v

@@ -36,6 +36,7 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -493,6 +494,10 @@ func nvidiaBoot() {
 		fallback("systemd-sysext: " + strings.TrimSpace(out))
 		return
 	}
+	if !sysextMerged() {
+		fallback("systemd-sysext did not take the driver")
+		return
+	}
 	_ = os.MkdirAll("/run/modprobe.d", 0o755)
 	_ = os.WriteFile("/run/modprobe.d/oros-nvidia.conf", []byte(
 		"# oros-system nvidia (G5)\noptions nvidia-drm modeset=1 fbdev=1\noptions nvidia NVreg_PreserveVideoMemoryAllocations=1\n"), 0o644)
@@ -616,7 +621,16 @@ func nvidiaSelftest(pack string) int {
 	_ = os.Remove(link)
 	check("link", os.Symlink(pack, link))
 	out, err := run("systemd-sysext", "refresh")
+	if err == nil && !sysextMerged() {
+		// refresh says nothing when it skips an image: ask it why
+		dbg := exec.Command("systemd-sysext", "refresh")
+		dbg.Env = append(os.Environ(), "SYSTEMD_LOG_LEVEL=debug")
+		o, _ := dbg.CombinedOutput()
+		err = fmt.Errorf("not merged: %s", strings.ReplaceAll(strings.TrimSpace(lastLines(string(o), 25)), "\n", " | "))
+	}
 	check("systemd-sysext merge", cmdErrIf("systemd-sysext", out, err))
+	st, _ := run("systemd-sysext", "status")
+	fmt.Fprintf(&b, "info sysext status: %s\n", strings.Join(strings.Fields(st), " "))
 	for _, f := range []string{
 		"/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.0",
 		"/usr/lib/x86_64-linux-gnu/libEGL_nvidia.so.0",
@@ -671,4 +685,12 @@ func cmdErrIf(name, out string, err error) error {
 		return nil
 	}
 	return cmdErr(name, out, err)
+}
+
+// sysextMerged: the pack's extension-release file shows under /usr once
+// systemd-sysext has merged it (refresh skips an image it does not take
+// without failing).
+func sysextMerged() bool {
+	_, err := os.Stat("/usr/lib/extension-release.d/extension-release.oros-nvidia")
+	return err == nil
 }
