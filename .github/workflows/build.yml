@@ -20,6 +20,11 @@ on:
 permissions:
   contents: write
 
+# Debian's golang-go is older than the toolchain pinned in system/go.mod;
+# Go downloads the pinned, checksum-verified toolchain on first use.
+env:
+  GOTOOLCHAIN: go1.26.11
+
 jobs:
   image:
     runs-on: ubuntu-latest
