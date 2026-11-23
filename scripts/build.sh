@@ -10,6 +10,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$(mktemp -d)"
 OPT="$ROOT/config/includes.chroot/opt/oros"
 cd "$ROOT"
+# Debian's golang-go is older than the toolchain pinned in system/go.mod;
+# Go downloads the pinned, checksum-verified toolchain on first use.
+export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.26.11}"
 
 echo "== orOS web app"
 git clone -q --depth 1 https://github.com/koulaxizis/oros "$WORK/oros"
