@@ -242,6 +242,7 @@
     exit: "Exit orOS", sleep: "Sleep", winFull: "Full screen", winWindow: "Show in a window",
     pcRestart: "Restart the computer", pcShutdown: "Shut down the computer", pcSleep: "Put the computer to sleep",
     sure: "{a}? Click again to confirm.", appUpdate: "orOS update",
+    lockSure: "Tap again: {a}",
     appUpdateAvail: "A newer orOS is ready to download ({v}). It opens the next time you start orOS.",
     appUpdating: "Downloading orOS… {mb} MB", appUpdated: "Done. Close orOS and start it again to use the new version.",
     appUpdateNone: "This is the newest orOS ({v}).",
@@ -269,6 +270,7 @@
     exit: "Έξοδος από το orOS", sleep: "Αναστολή", winFull: "Πλήρης οθόνη", winWindow: "Εμφάνιση σε παράθυρο",
     pcRestart: "Επανεκκίνηση του υπολογιστή", pcShutdown: "Τερματισμός του υπολογιστή", pcSleep: "Αναστολή του υπολογιστή",
     sure: "{a}; Πάτα ξανά για επιβεβαίωση.", appUpdate: "Ενημέρωση του orOS",
+    lockSure: "Πάτα ξανά: {a}",
     appUpdateAvail: "Υπάρχει νεότερο orOS για λήψη ({v}). Ανοίγει την επόμενη φορά που θα ξεκινήσεις το orOS.",
     appUpdating: "Λήψη του orOS… {mb} MB", appUpdated: "Έτοιμο. Κλείσε το orOS και άνοιξέ το ξανά για τη νέα έκδοση.",
     appUpdateNone: "Έχεις το νεότερο orOS ({v}).",
@@ -422,6 +424,15 @@
   function applyPlatform() {
     // orOS's Settings › Report a problem offers "Save with this computer's
     // logs" while this is set (see "Problem report from orOS" below).
+    // orOS's Settings › System › About this device names the orOS form
+    // from this (orOS DEVINFO-1); only "usb" or "portable".
+    document.documentElement.setAttribute("data-oros-sys-platform", portable() ? "portable" : "usb");
+    // orOS's Storage card (orOS STORE-1): "free total" in bytes of the
+    // disk orOS's data is on; whole numbers only.
+    const dk = state.disk;
+    if (dk && Number.isSafeInteger(dk.free) && Number.isSafeInteger(dk.total) && dk.total > 0 && dk.free >= 0) {
+      document.documentElement.setAttribute("data-oros-sys-disk", dk.free + " " + dk.total);
+    } else document.documentElement.removeAttribute("data-oros-sys-disk");
     if (has("report")) document.documentElement.setAttribute("data-oros-report", "1");
     else document.documentElement.removeAttribute("data-oros-report");
     // orOS's "Check for updates" opens our System update while this is
@@ -501,6 +512,7 @@
     if (state.night && (!portable() || has("night"))) document.documentElement.setAttribute("data-oros-sys-night", "1");
     else document.documentElement.removeAttribute("data-oros-sys-night");
     qsStep();
+    lockFill(false);       // a lock screen that opened before the first status
   }
 
   // Night Light from orOS (nightlight.js): while data-oros-sys-night is
@@ -2006,6 +2018,40 @@
     qsStep();
     if (e.detail === "open") qsFill();
   });
+
+  // orOS's lock screen (orOS LOCKPOW-1): Sleep, Restart and Shut down at
+  // its foot. orOS keeps an empty #lock-power-sys and sends "oros-lock"
+  // ("open" / "close"). A first tap arms a button for 5 s and a second
+  // one does it, so a brush of the hand turns nothing off. A portable
+  // copy offers them only where the host can (caps power / sleep).
+  var lockKey = "";      // var: paintButton may run before this line
+  function lockFill(force) {
+    const box = document.getElementById("lock-power-sys");
+    if (!box) return;
+    const key = state.platform + "|" + has("power") + "|" + has("sleep") + "|" + document.documentElement.lang;
+    if (!force && key === lockKey && box.childNodes.length) return;   // keep an armed button armed
+    lockKey = key;
+    if (portable() && !has("power")) { box.replaceChildren(); return; }
+    const btn = (label, cmd) => {
+      const b = el("button", { type: "button", class: "lk-pow" }, label);
+      let armed = 0;
+      const calm = () => { armed = 0; b.textContent = label; b.classList.remove("lk-pow-armed"); };
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (armed && Date.now() - armed < 5000) { calm(); call({ cmd }); return; }
+        armed = Date.now();
+        b.textContent = t("lockSure", { a: label });
+        b.classList.add("lk-pow-armed");
+        setTimeout(() => { if (armed && Date.now() - armed >= 5000) calm(); }, 5100);
+      });
+      return b;
+    };
+    const items = [];
+    if (!portable() || has("sleep")) items.push(btn(t("sleep"), "power.sleep"));
+    items.push(btn(t("restart"), "power.reboot"), btn(t("shutdown"), "power.off"));
+    box.replaceChildren(...items);
+  }
+  document.addEventListener("oros-lock", (e) => { if (e.detail === "open") lockFill(true); });
 
   // Tor: the first press asks, then downloads Tor Browser into the home
   // folder (oros-system checks its signature); later presses start it at
