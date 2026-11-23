@@ -427,6 +427,12 @@
     // orOS's Settings › System › About this device names the orOS form
     // from this (orOS DEVINFO-1); only "usb" or "portable".
     document.documentElement.setAttribute("data-oros-sys-platform", portable() ? "portable" : "usb");
+    // orOS's Storage card (orOS STORE-1): "free total" in bytes of the
+    // disk orOS's data is on; whole numbers only.
+    const dk = state.disk;
+    if (dk && Number.isSafeInteger(dk.free) && Number.isSafeInteger(dk.total) && dk.total > 0 && dk.free >= 0) {
+      document.documentElement.setAttribute("data-oros-sys-disk", dk.free + " " + dk.total);
+    } else document.documentElement.removeAttribute("data-oros-sys-disk");
     if (has("report")) document.documentElement.setAttribute("data-oros-report", "1");
     else document.documentElement.removeAttribute("data-oros-report");
     // orOS's "Check for updates" opens our System update while this is

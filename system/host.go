@@ -426,7 +426,23 @@ func status() reply {
 	// Another user than the owner is signed in: the extension hides the
 	// system update and the install (and handle refuses them).
 	res["notOwner"] = !ownerOnly()
+	// orOS's Storage card (orOS STORE-1): free and total bytes of the
+	// disk that holds the home folder (where orOS keeps its data).
+	if home, err := os.UserHomeDir(); err == nil {
+		if free, total, ok := diskSpace(home); ok {
+			res["disk"] = map[string]int64{"free": free, "total": total}
+		}
+	}
 	return res
+}
+
+// diskSpace: bytes free for this user and the disk's size.
+func diskSpace(dir string) (free, total int64, ok bool) {
+	var st syscall.Statfs_t
+	if err := syscall.Statfs(dir, &st); err != nil || st.Blocks == 0 {
+		return 0, 0, false
+	}
+	return int64(st.Bavail) * int64(st.Bsize), int64(st.Blocks) * int64(st.Bsize), true
 }
 
 type network struct {
