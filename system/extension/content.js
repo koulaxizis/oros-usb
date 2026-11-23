@@ -424,6 +424,9 @@
   function applyPlatform() {
     // orOS's Settings › Report a problem offers "Save with this computer's
     // logs" while this is set (see "Problem report from orOS" below).
+    // orOS's Settings › System › About this device names the orOS form
+    // from this (orOS DEVINFO-1); only "usb" or "portable".
+    document.documentElement.setAttribute("data-oros-sys-platform", portable() ? "portable" : "usb");
     if (has("report")) document.documentElement.setAttribute("data-oros-report", "1");
     else document.documentElement.removeAttribute("data-oros-report");
     // orOS's "Check for updates" opens our System update while this is
