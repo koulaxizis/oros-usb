@@ -32,6 +32,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -258,16 +259,18 @@ func protonPick(b []byte) (tag, gz, sum string, size int64, err error) {
 	if r.Draft || r.Pre || !protonTagRe.MatchString(r.Tag) {
 		return "", "", "", 0, fmt.Errorf("GE-Proton release %q is not a release", r.Tag)
 	}
+	var names []string
 	for _, a := range r.Assets {
-		switch a.Name {
-		case r.Tag + ".tar.gz":
+		names = append(names, a.Name)
+		switch {
+		case protonArchive(r.Tag, a.Name) && gz == "":
 			gz, size = a.URL, a.Size
-		case r.Tag + ".sha512sum":
+		case strings.HasPrefix(a.Name, r.Tag) && strings.HasSuffix(a.Name, ".sha512sum") && sum == "":
 			sum = a.URL
 		}
 	}
 	if gz == "" || sum == "" {
-		return "", "", "", 0, fmt.Errorf("GE-Proton %s: archive or checksum missing", r.Tag)
+		return "", "", "", 0, fmt.Errorf("GE-Proton %s: archive or checksum missing (%s)", r.Tag, strings.Join(names, ", "))
 	}
 	for _, u := range []string{gz, sum} {
 		if !protonURL(u) {
@@ -278,6 +281,17 @@ func protonPick(b []byte) (tag, gz, sum string, size int64, err error) {
 		return "", "", "", 0, fmt.Errorf("GE-Proton %s: size %d", r.Tag, size)
 	}
 	return r.Tag, gz, sum, size, nil
+}
+
+// protonArchive: the release's archive, "<tag>.tar.gz" (or .tar.xz,
+// .tar.zst, which tar unpacks the same way).
+func protonArchive(tag, name string) bool {
+	for _, ext := range []string{".tar.gz", ".tar.xz", ".tar.zst"} {
+		if name == tag+ext {
+			return true
+		}
+	}
+	return false
 }
 
 // protonURL: https on GitHub only (the archives redirect to GitHub's
@@ -412,7 +426,7 @@ func protonUpdate(home, latest string, step func(string, int)) (string, error) {
 	if err := protonGet(sumURL, 4096, &sumText, nil); err != nil {
 		return "", err
 	}
-	want, err := protonSum([]byte(sumText.String()), tag+".tar.gz")
+	want, err := protonSum([]byte(sumText.String()), path.Base(gzURL))
 	if err != nil {
 		return "", err
 	}
@@ -422,7 +436,7 @@ func protonUpdate(home, latest string, step func(string, int)) (string, error) {
 		return "", err
 	}
 	defer os.RemoveAll(work)
-	file := filepath.Join(work, "download.tar.gz")
+	file := filepath.Join(work, "download"+strings.TrimPrefix(path.Base(gzURL), tag))
 	f, err := os.Create(file)
 	if err != nil {
 		return "", err
@@ -449,7 +463,7 @@ func protonUpdate(home, latest string, step func(string, int)) (string, error) {
 	if err := os.MkdirAll(out, 0o755); err != nil {
 		return "", err
 	}
-	if o, err := exec.Command("tar", "-xzf", file, "-C", out, "--no-same-owner").CombinedOutput(); err != nil {
+	if o, err := exec.Command("tar", "-xf", file, "-C", out, "--no-same-owner").CombinedOutput(); err != nil {
 		return "", fmt.Errorf("unpacking GE-Proton: %v %s", err, strings.TrimSpace(string(o)))
 	}
 	_ = os.Remove(file)

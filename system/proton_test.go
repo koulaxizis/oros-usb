@@ -29,6 +29,10 @@ func TestProtonPick(t *testing.T) {
 	if err != nil || tag != "GE-Proton10-25" || !strings.HasSuffix(gz, ".tar.gz") || !strings.HasSuffix(sum, ".sha512sum") || size != 1000 {
 		t.Fatalf("pick: %q %q %q %d %v", tag, gz, sum, size, err)
 	}
+	xz := strings.ReplaceAll(protonRelJSON("GE-Proton11-14", "github.com"), "GE-Proton11-14.tar.gz", "GE-Proton11-14.tar.xz")
+	if _, gz, _, _, err := protonPick([]byte(xz)); err != nil || !strings.HasSuffix(gz, ".tar.xz") {
+		t.Errorf(".tar.xz release: %q %v", gz, err)
+	}
 	for name, j := range map[string]string{
 		"other host":  protonRelJSON("GE-Proton10-25", "example.com"),
 		"bad tag":     protonRelJSON("GE-Proton10-25;rm", "github.com"),

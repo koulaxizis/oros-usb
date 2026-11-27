@@ -67,12 +67,12 @@ code="$(curl -sS -o "$T/ge.json" -w '%{http_code}' --retry 3 "${auth[@]}" -H 'Ac
 	https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest)"
 tag="$(jq -r '.tag_name // empty' "$T/ge.json" 2>/dev/null || true)"
 if [ "$code" = 200 ] && [[ "$tag" =~ ^GE-Proton[0-9]{1,3}-[0-9]{1,4}$ ]] \
-	&& jq -e --arg t "$tag" '[.assets[].name] | index($t + ".tar.gz") and index($t + ".sha512sum")' "$T/ge.json" > /dev/null; then
-	echo "ok GE-Proton $tag: $(jq -r --arg t "$tag" '.assets[] | select(.name == $t + ".tar.gz") | .size / 1000000 | floor' "$T/ge.json") MB"
+	&& jq -e --arg t "$tag" '[.assets[].name] | (map(select(. == $t + ".tar.gz" or . == $t + ".tar.xz" or . == $t + ".tar.zst")) | length > 0) and (map(select(startswith($t) and endswith(".sha512sum"))) | length > 0)' "$T/ge.json" > /dev/null; then
+	echo "ok GE-Proton $tag: $(jq -r '[.assets[].name] | join(", ")' "$T/ge.json")"
 elif [ "$code" = 403 ] || [ "$code" = 429 ]; then
 	echo "skip GE-Proton: GitHub's rate limit (HTTP $code)"
 else
-	fail "GE-Proton latest release: HTTP $code, tag '$tag', archive or checksum missing"
+	fail "GE-Proton latest release: HTTP $code, tag '$tag', archive or checksum missing ($(jq -r '[.assets[]?.name] | join(", ")' "$T/ge.json" 2>/dev/null || true))"
 fi
 
 [ -f "$T/bad" ] && bad=1
