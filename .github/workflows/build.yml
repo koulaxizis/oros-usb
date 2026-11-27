@@ -44,7 +44,7 @@ jobs:
             fdisk parted e2fsprogs util-linux udev tesseract-ocr ntfs-3g unzip curl initramfs-tools-core \
             gnupg gpgv xz-utils jq cmake g++ make libx11-dev cryptsetup-bin \
             openssl kmod zstd attr
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Version
         id: v
         env:
@@ -203,7 +203,7 @@ jobs:
         run: scripts/test-install.sh "out/orOS-USB-${{ steps.v.outputs.version }}.iso" test-out/install-encrypted
       - name: Screenshots and logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: boot-test
           path: |
@@ -229,7 +229,7 @@ jobs:
             build.log
           retention-days: 14
       - name: Image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: orOS-USB
           path: |
