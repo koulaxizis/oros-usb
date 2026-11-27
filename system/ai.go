@@ -72,9 +72,9 @@ var aiModels = []struct {
 	Show bool
 	Old  bool
 }{
-	{"qwen3.5:0.8b", 1000, true, false},
+	{"qwen3.5:0.8b", 1300, true, false},
 	{"qwen3.5:2b", 2700, true, false},
-	{"qwen3.5:4b", 3400, true, false},
+	{"qwen3.5:4b", 3300, true, false},
 	{"qwen3.5:9b", 6600, true, false},
 	{"qwen3:1.7b", 1400, false, true},
 	{"qwen3:4b", 2500, false, true},
