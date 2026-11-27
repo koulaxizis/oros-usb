@@ -125,7 +125,7 @@
       aiAsk: "About {s} GB is downloaded once from the official sources and checked. On a slow connection this takes a while; you can keep using orOS. Continue?",
       aiAskModel: "About {s} GB is downloaded and checked. Continue?",
       aiReady: "Ready. The Assistant uses it by itself. It is slower than online AI, especially on older computers.",
-      aiMore: "More choices", aiModel: "Model", aiRec: "recommended", aiSizes: "Small,Medium,Large",
+      aiMore: "More choices", aiModel: "Model", aiRec: "recommended", aiSizes: "Tiny,Small,Medium,Large",
       aiModelHint: "Bigger models answer better but more slowly and need more memory.",
       aiAdd: "Download this model", aiNoModel: "No model yet.", aiModels: "On this computer: {m}",
       aiGPU: "Use the graphics card", aiGPUHint: "Faster with a supported card. Turn it off if answers fail or the screen misbehaves.",
@@ -226,7 +226,7 @@
       aiAsk: "Θα κατέβουν μία φορά περίπου {s} GB από τις επίσημες πηγές και θα ελεγχθούν. Σε αργή σύνδεση θα πάρει λίγη ώρα· μπορείς να συνεχίσεις να χρησιμοποιείς το orOS. Συνέχεια;",
       aiAskModel: "Θα κατέβουν περίπου {s} GB και θα ελεγχθούν. Συνέχεια;",
       aiReady: "Έτοιμο. Ο Βοηθός το χρησιμοποιεί μόνος του. Είναι πιο αργό από το online AI, ειδικά σε παλιότερους υπολογιστές.",
-      aiMore: "Περισσότερες επιλογές", aiModel: "Μοντέλο", aiRec: "προτείνεται", aiSizes: "Μικρό,Μεσαίο,Μεγάλο",
+      aiMore: "Περισσότερες επιλογές", aiModel: "Μοντέλο", aiRec: "προτείνεται", aiSizes: "Πολύ μικρό,Μικρό,Μεσαίο,Μεγάλο",
       aiModelHint: "Τα μεγαλύτερα μοντέλα απαντούν καλύτερα, αλλά πιο αργά, και θέλουν περισσότερη μνήμη.",
       aiAdd: "Λήψη αυτού του μοντέλου", aiNoModel: "Δεν υπάρχει ακόμη μοντέλο.", aiModels: "Σε αυτόν τον υπολογιστή: {m}",
       aiGPU: "Χρήση της κάρτας γραφικών", aiGPUHint: "Πιο γρήγορο με κάρτα που υποστηρίζεται. Κλείσ' το αν οι απαντήσεις αποτυγχάνουν ή η οθόνη κάνει περίεργα.",
@@ -941,7 +941,7 @@
     return true;
   }
   let aiLast = {};
-  // Models by size for people who do not know their names: "Large (qwen3:8b)".
+  // Models by size for people who do not know their names: "Large (qwen3.5:9b)".
   const aiLabel = (st, name) => {
     const i = (st.offer || []).findIndex((m) => m.name === name);
     const word = t("aiSizes").split(",")[i];

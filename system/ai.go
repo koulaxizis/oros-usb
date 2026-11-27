@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -32,7 +33,8 @@ import (
 // the SHA-256 that the image's build pinned (scripts/ollama.sh writes
 // /opt/oros/ollama.json), and keeps only what runs on the processor (the
 // graphics card libraries are most of the download and are skipped while
-// it is unpacked). Then it downloads one open model (Qwen3, Apache-2.0)
+// it is unpacked). Then it downloads one open model (Qwen 3.5,
+// Apache-2.0, the family the browser Assistant offers through WebLLM)
 // through Ollama itself.
 //
 // Ollama listens on 127.0.0.1:11434 only and lets in only the orOS page
@@ -60,17 +62,23 @@ var (
 )
 
 // aiModels are the models offered, smallest first, with their download
-// size in MB (ollama.com/library/qwen3). qwen3:0.6b is for the CI test only
-// and is not shown.
+// size in MB (ollama.com/library/qwen3.5; scripts/check-catalog.sh checks
+// names and sizes against Ollama's library on every build). The Qwen3
+// models were offered until 2026-11: they are not offered any more, but a
+// computer that has one keeps it, and it can still be removed (Old).
 var aiModels = []struct {
 	Name string
 	MB   int
 	Show bool
+	Old  bool
 }{
-	{"qwen3:0.6b", 523, false},
-	{"qwen3:1.7b", 1400, true},
-	{"qwen3:4b", 2500, true},
-	{"qwen3:8b", 5200, true},
+	{"qwen3.5:0.8b", 1000, true, false},
+	{"qwen3.5:2b", 2700, true, false},
+	{"qwen3.5:4b", 3400, true, false},
+	{"qwen3.5:9b", 6600, true, false},
+	{"qwen3:1.7b", 1400, false, true},
+	{"qwen3:4b", 2500, false, true},
+	{"qwen3:8b", 5200, false, true},
 }
 
 func aiModelMB(name string) (int, bool) {
@@ -88,7 +96,7 @@ func aiModelMB(name string) (int, bool) {
 }
 
 // aiCatalogModels are the software center's further models (open
-// licences, catalog/catalog.json), offered after Qwen3.
+// licences, catalog/catalog.json), offered after Qwen 3.5.
 func aiCatalogModels() []catModel {
 	c, err := loadCatalog()
 	if err != nil {
@@ -97,17 +105,20 @@ func aiCatalogModels() []catModel {
 	return c.Models
 }
 
-// aiRecommend picks the model for this much memory: the 8b needs about
-// 6 GB free while it answers, the 4b about 3.5 GB. A "16 GB" computer
-// reports a little less than 16 GiB.
+// aiRecommend picks the model for this much memory, leaving room for
+// orOS and the browser while it answers: the 9b needs about 8 GB, the 4b
+// about 4.5 GB, the 2b about 3.5 GB. A "16 GB" computer reports a little
+// less than 16 GiB, an "8 GB" one a little less than 8.
 func aiRecommend(memGiB float64) string {
 	switch {
 	case memGiB >= 14:
-		return "qwen3:8b"
+		return "qwen3.5:9b"
 	case memGiB >= 7:
-		return "qwen3:4b"
+		return "qwen3.5:4b"
+	case memGiB >= 5:
+		return "qwen3.5:2b"
 	default:
-		return "qwen3:1.7b"
+		return "qwen3.5:0.8b"
 	}
 }
 
@@ -286,6 +297,25 @@ func aiStatus() reply {
 	r["freeMB"] = freeMB(dir)
 	r["address"] = aiAPI
 	r["gpu"] = aiGPU(dir)
+	_, hasPin := readAIPin(aiPinFile)
+	r["available"] = hasPin == nil
+	var have []string
+	if aiRunning() {
+		r["serving"] = true
+		if l, err := aiList(); err == nil {
+			r["models"] = l
+			have = l
+		}
+	}
+	r["offer"] = aiOffer(have)
+	return r
+}
+
+// aiOffer is the list the System panel shows: the Qwen 3.5 sizes (the
+// panel names them Tiny to Large in this order), the software center's
+// models, then the models no longer offered that this computer still has,
+// so that they keep their name and their Remove button.
+func aiOffer(have []string) []reply {
 	var offer []reply
 	for _, m := range aiModels {
 		if m.Show {
@@ -295,16 +325,12 @@ func aiStatus() reply {
 	for _, m := range aiCatalogModels() {
 		offer = append(offer, reply{"name": m.Name, "mb": m.MB, "licence": m.Licence, "by": m.By, "minMemGiB": m.MinMemGiB, "summary": m.Summary})
 	}
-	r["offer"] = offer
-	_, hasPin := readAIPin(aiPinFile)
-	r["available"] = hasPin == nil
-	if aiRunning() {
-		r["serving"] = true
-		if l, err := aiList(); err == nil {
-			r["models"] = l
+	for _, m := range aiModels {
+		if m.Old && slices.Contains(have, m.Name) {
+			offer = append(offer, reply{"name": m.Name, "mb": m.MB, "licence": "Apache-2.0", "by": "Qwen"})
 		}
 	}
-	return r
+	return offer
 }
 
 // aiInstall is "ai.install": the engine (when missing) and the model, in
@@ -485,7 +511,7 @@ func aiMain(args []string) int {
 	fl.BoolVar(&fetch, "fetch", false, "download and check Ollama (when missing), then the model")
 	fl.BoolVar(&serve, "serve", false, "start Ollama in the background when it is installed")
 	fl.BoolVar(&stop, "stop", false, "stop Ollama")
-	fl.StringVar(&o.model, "model", "", "model to download (qwen3:1.7b, qwen3:4b, qwen3:8b)")
+	fl.StringVar(&o.model, "model", "", "model to download (qwen3.5:0.8b, qwen3.5:2b, qwen3.5:4b, qwen3.5:9b)")
 	fl.StringVar(&o.dir, "dir", aiDir(home), "folder for Ollama and its models")
 	fl.StringVar(&o.pin, "pin", aiPinFile, "the build's pin of the Ollama release (JSON)")
 	fl.StringVar(&o.progress, "progress", aiProgressFile(home), "progress file (JSON)")
@@ -504,7 +530,7 @@ func aiMain(args []string) int {
 		return 0
 	}
 	if !fetch {
-		fmt.Fprintln(os.Stderr, "usage: oros-system ai --fetch [--model qwen3:4b] [--dir D] | ai --serve | ai --stop")
+		fmt.Fprintln(os.Stderr, "usage: oros-system ai --fetch [--model qwen3.5:4b] [--dir D] | ai --serve | ai --stop")
 		return 2
 	}
 	if o.model != "" {
