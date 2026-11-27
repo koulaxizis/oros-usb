@@ -29,6 +29,15 @@ func TestProtonPick(t *testing.T) {
 	if err != nil || tag != "GE-Proton10-25" || !strings.HasSuffix(gz, ".tar.gz") || !strings.HasSuffix(sum, ".sha512sum") || size != 1000 {
 		t.Fatalf("pick: %q %q %q %d %v", tag, gz, sum, size, err)
 	}
+	// GE-Proton11 and later: one archive per processor
+	arch := `{"tag_name":"GE-Proton11-14","assets":[
+{"name":"GE-Proton11-14-aarch64.sha512sum","browser_download_url":"https://github.com/a/aarch64.sha512sum","size":1},
+{"name":"GE-Proton11-14-aarch64.tar.gz","browser_download_url":"https://github.com/a/aarch64.tar.gz","size":5},
+{"name":"GE-Proton11-14-x86_64.sha512sum","browser_download_url":"https://github.com/a/x86_64.sha512sum","size":1},
+{"name":"GE-Proton11-14-x86_64.tar.gz","browser_download_url":"https://github.com/a/x86_64.tar.gz","size":7}]}`
+	if _, gz, sum, size, err := protonPick([]byte(arch)); err != nil || !strings.Contains(gz, protonArch()) || !strings.Contains(sum, protonArch()) || size == 0 {
+		t.Errorf("per-processor release: %q %q %v", gz, sum, err)
+	}
 	xz := strings.ReplaceAll(protonRelJSON("GE-Proton11-14", "github.com"), "GE-Proton11-14.tar.gz", "GE-Proton11-14.tar.xz")
 	if _, gz, _, _, err := protonPick([]byte(xz)); err != nil || !strings.HasSuffix(gz, ".tar.xz") {
 		t.Errorf(".tar.xz release: %q %v", gz, err)
@@ -68,7 +77,11 @@ func TestProtonSum(t *testing.T) {
 	if err != nil || got != h {
 		t.Fatalf("%q %v", got, err)
 	}
-	if _, err := protonSum([]byte(h+"  other.tar.gz\n"), "GE-Proton10-25.tar.gz"); err == nil {
+	if got, err := protonSum([]byte(h+"  GE-Proton11-14.tar.gz\n"), "GE-Proton11-14-x86_64.tar.gz"); err != nil || got != h {
+		t.Error("the file's only checksum not taken")
+	}
+	two := h + "  a.tar.gz\n" + strings.Repeat("cd", 64) + "  b.tar.gz\n"
+	if _, err := protonSum([]byte(two), "GE-Proton10-25.tar.gz"); err == nil {
 		t.Error("checksum of another file accepted")
 	}
 	if _, err := protonSum([]byte("zz  GE-Proton10-25.tar.gz\n"), "GE-Proton10-25.tar.gz"); err == nil {

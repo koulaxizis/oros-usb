@@ -35,6 +35,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -259,18 +260,26 @@ func protonPick(b []byte) (tag, gz, sum string, size int64, err error) {
 	if r.Draft || r.Pre || !protonTagRe.MatchString(r.Tag) {
 		return "", "", "", 0, fmt.Errorf("GE-Proton release %q is not a release", r.Tag)
 	}
+	// Since GE-Proton11 each release has one archive per processor,
+	// "<tag>-x86_64.tar.gz" with "<tag>-x86_64.sha512sum"; older ones
+	// "<tag>.tar.gz" with "<tag>.sha512sum". The archive picks its checksum.
 	var names []string
+	base := ""
+	for _, pre := range []string{r.Tag + "-" + protonArch(), r.Tag} {
+		for _, a := range r.Assets {
+			if gz == "" && protonArchive(pre, a.Name) {
+				gz, size, base = a.URL, a.Size, pre
+			}
+		}
+	}
 	for _, a := range r.Assets {
 		names = append(names, a.Name)
-		switch {
-		case protonArchive(r.Tag, a.Name) && gz == "":
-			gz, size = a.URL, a.Size
-		case strings.HasPrefix(a.Name, r.Tag) && strings.HasSuffix(a.Name, ".sha512sum") && sum == "":
+		if base != "" && a.Name == base+".sha512sum" {
 			sum = a.URL
 		}
 	}
 	if gz == "" || sum == "" {
-		return "", "", "", 0, fmt.Errorf("GE-Proton %s: archive or checksum missing (%s)", r.Tag, strings.Join(names, ", "))
+		return "", "", "", 0, fmt.Errorf("GE-Proton %s: archive or checksum missing for %s (%s)", r.Tag, protonArch(), strings.Join(names, ", "))
 	}
 	for _, u := range []string{gz, sum} {
 		if !protonURL(u) {
@@ -281,6 +290,14 @@ func protonPick(b []byte) (tag, gz, sum string, size int64, err error) {
 		return "", "", "", 0, fmt.Errorf("GE-Proton %s: size %d", r.Tag, size)
 	}
 	return r.Tag, gz, sum, size, nil
+}
+
+// protonArch: GE-Proton's name for this processor.
+func protonArch() string {
+	if runtime.GOARCH == "arm64" {
+		return "aarch64"
+	}
+	return "x86_64"
 }
 
 // protonArchive: the release's archive, "<tag>.tar.gz" (or .tar.xz,
@@ -364,16 +381,27 @@ func protonGet(u string, max int64, out io.Writer, progress func(n, total int64)
 	}
 }
 
-// protonSum finds the archive's SHA-512 in the release's .sha512sum.
+// protonSum finds the archive's SHA-512 in the release's .sha512sum: the
+// line naming the archive, or the file's only line (it belongs to this
+// archive alone, and some name the archive without the processor).
 func protonSum(b []byte, file string) (string, error) {
+	var only []string
 	sc := bufio.NewScanner(strings.NewReader(string(b)))
 	for sc.Scan() {
 		f := strings.Fields(sc.Text())
-		if len(f) == 2 && strings.TrimPrefix(f[1], "*") == file && len(f[0]) == 128 {
-			if _, err := hex.DecodeString(f[0]); err == nil {
-				return strings.ToLower(f[0]), nil
-			}
+		if len(f) != 2 || len(f[0]) != 128 {
+			continue
 		}
+		if _, err := hex.DecodeString(f[0]); err != nil {
+			continue
+		}
+		if strings.TrimPrefix(f[1], "*") == file {
+			return strings.ToLower(f[0]), nil
+		}
+		only = append(only, strings.ToLower(f[0]))
+	}
+	if len(only) == 1 {
+		return only[0], nil
 	}
 	return "", fmt.Errorf("no checksum for %s", file)
 }
@@ -468,6 +496,9 @@ func protonUpdate(home, latest string, step func(string, int)) (string, error) {
 	}
 	_ = os.Remove(file)
 	got := filepath.Join(out, tag)
+	if _, err := os.Stat(got); err != nil {
+		got = filepath.Join(out, tag+"-"+protonArch())
+	}
 	for _, need := range []string{"proton", "compatibilitytool.vdf", "files"} {
 		if _, err := os.Stat(filepath.Join(got, need)); err != nil {
 			return "", fmt.Errorf("GE-Proton %s has an unexpected layout (%s)", tag, need)
