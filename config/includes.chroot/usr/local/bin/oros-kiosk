@@ -14,6 +14,13 @@ if [ -x /opt/oros/oros-bridge ]; then
 		--code-file "${OROS_BRIDGE_CODE:-${XDG_RUNTIME_DIR:-/tmp}/oros-bridge-code}" \
 		< /dev/null >> "$HOME/oros/data/bridge.log" 2>&1 &
 fi
+# The portals started by D-Bus (xdg-desktop-portal-wlr shares the screen
+# for orOS Screen Capture and Screen recording, QS-REC-1) need this
+# labwc's Wayland; a watchdog restart brings a new one.
+if command -v dbus-update-activation-environment >/dev/null; then
+	dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP < /dev/null > /dev/null 2>&1
+	systemctl --user try-restart xdg-desktop-portal-wlr.service < /dev/null > /dev/null 2>&1
+fi
 # Inside labwc too (they need its Wayland): the screen going off and sleep
 # when nobody uses the computer (swayidle with the System panel's times),
 # and the Orca screen reader when it is on (oros-system desk.go). Both end

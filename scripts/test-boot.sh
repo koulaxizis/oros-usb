@@ -261,7 +261,7 @@ fi
 # The session's desktop parts (oros-system selftest-desk, inside labwc):
 # a PrtSc screenshot through grim, the screens through wlr-randr, swayidle,
 # the keyboard labwc runs with, espeak-ng voices and Orca, and the system
-# side of games (games.go: Vulkan, Flatpak and portals, gamemode,
+# side of games (games.go: Vulkan, Flatpak and portals with screen sharing, gamemode,
 # /dev/uinput, kernel settings, the screen staying on) and the graphics
 # cards (gpu.go).
 DESKF="$(find "$MNT" -maxdepth 5 -name .oros-selftest-desk | head -1)"

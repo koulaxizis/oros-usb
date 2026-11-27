@@ -139,6 +139,12 @@ intel-microcode
 # Valve's udev rules for controllers and Steam Input (steam-devices,
 # contrib), and vulkaninfo for the graphics check and the boot test.
 flatpak xdg-desktop-portal xdg-desktop-portal-gtk
+# Screen sharing and recording of the whole screen (orOS Screen Capture and
+# Quick settings' Screen recording, QS-REC-1, 2026-11-27): Chromium asks
+# the ScreenCast portal, which wlroots compositors like labwc answer with
+# xdg-desktop-portal-wlr over PipeWire (portals.conf, its config in
+# /etc/xdg/xdg-desktop-portal-wlr).
+xdg-desktop-portal-wlr
 gamemode pkexec
 steam-devices
 vulkan-tools

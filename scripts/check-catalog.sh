@@ -5,12 +5,14 @@
 #   - every Flathub app exists on Flathub;
 #   - every add-on is on the Chrome Web Store and is a Manifest V3
 #     extension (Chromium no longer runs V2 ones);
-#   - every model is in Ollama's library, about as large as the catalog says;
+#   - every model is in Ollama's library, about as large as the catalog says,
+#     and so are the local AI's own models (aiModels in system/ai.go);
 #   - GE-Proton's newest release still has the archive and checksum that
 #     oros-system proton --update takes (proton.go).
-#   scripts/check-catalog.sh [catalog.json]
+#   scripts/check-catalog.sh [catalog.json] [ai.go]
 set -euo pipefail
 CAT="${1:-catalog/catalog.json}"
+AIGO="${2:-$(dirname "$0")/../system/ai.go}"
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 bad=0
@@ -44,7 +46,12 @@ for id in $(jq -r '.items[] | select(.kind == "addon") | .id' "$CAT"); do
 	fi
 done
 
-jq -r '.models[] | "\(.name) \(.mb)"' "$CAT" | while read -r name mb; do
+{
+	jq -r '.models[] | "\(.name) \(.mb)"' "$CAT"
+	sed -nE 's/^\t\{"([a-z0-9._-]+:[a-z0-9._-]+)", ([0-9]+),.*/\1 \2/p' "$AIGO"
+} > "$T/models"
+[ "$(grep -c '^qwen' "$T/models")" -ge 4 ] || fail "no local AI models read from $AIGO"
+while read -r name mb; do
 	repo="${name%%:*}"
 	tag="${name#*:}"
 	if ! curl -fsSL --retry 3 -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
@@ -60,7 +67,8 @@ jq -r '.models[] | "\(.name) \(.mb)"' "$CAT" | while read -r name mb; do
 	else
 		echo "ok model $name: $real MB"
 	fi
-done
+done < "$T/models"
+
 auth=()
 [ -n "${OROS_GITHUB_TOKEN:-}" ] && auth=(-H "Authorization: Bearer $OROS_GITHUB_TOKEN")
 code="$(curl -sS -o "$T/ge.json" -w '%{http_code}' --retry 3 "${auth[@]}" -H 'Accept: application/vnd.github+json' \

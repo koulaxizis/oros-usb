@@ -109,13 +109,13 @@ jobs:
           scripts/ollama.sh /tmp/ollama.json && cat /tmp/ollama.json
           (cd system && go build -buildvcs=false -o /tmp/oros-system .)
           mkdir -p /tmp/aihome/oros/data
-          HOME=/tmp/aihome /tmp/oros-system ai --fetch --model qwen3:0.6b --dir /tmp/ai \
+          HOME=/tmp/aihome /tmp/oros-system ai --fetch --model qwen3.5:0.8b --dir /tmp/ai \
             --pin /tmp/ollama.json --progress /tmp/ai.json || { cat /tmp/aihome/oros/data/ai-serve.log; exit 1; }
           cat /tmp/ai.json; echo
           du -sh /tmp/ai/ollama /tmp/ai/models
           # orOS's page gets an answer; another site is turned away.
           curl -fsS --max-time 300 -H 'Origin: http://localhost:47800' http://127.0.0.1:11434/api/chat \
-            -d '{"model":"qwen3:0.6b","stream":false,"think":false,"messages":[{"role":"user","content":"Say hello in Greek."}]}' \
+            -d '{"model":"qwen3.5:0.8b","stream":false,"think":false,"messages":[{"role":"user","content":"Say hello in Greek."}]}' \
             | tee /tmp/ai-answer.json | jq -e '.message.content | length > 0'
           echo; test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://example.com' http://127.0.0.1:11434/api/tags)" = 403
           /tmp/oros-system ai --stop --dir /tmp/ai
