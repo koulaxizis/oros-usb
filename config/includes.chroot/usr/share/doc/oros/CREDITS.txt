@@ -57,6 +57,9 @@ The system underneath: Debian 13 "trixie"  https://www.debian.org/
                       bubblewrap (LGPL-2.0+)  https://flatpak.org/
   xdg-desktop-portal, LGPL-2.1+, the Flatpak and freedesktop.org
   -gtk                contributors (file dialogs for Flatpak programs)
+  xdg-desktop-portal- MIT, the xdg-desktop-portal-wlr contributors
+  wlr                 (screen sharing and recording with labwc)
+                      https://github.com/emersion/xdg-desktop-portal-wlr
   gamemode            BSD-3-Clause, Feral Interactive  https://github.com/FeralInteractive/gamemode
   steam-devices       Valve's udev rules for controllers, packaged by
                       Debian (licence in /usr/share/doc/steam-devices)

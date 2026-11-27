@@ -231,6 +231,12 @@ func selftestGames(check func(string, error), info func(string, string)) {
 	err = conn.Object("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop").
 		Call("org.freedesktop.DBus.Peer.Ping", 0).Err
 	check("portals (xdg-desktop-portal)", err)
+	// QS-REC-1: the ScreenCast portal (xdg-desktop-portal-wlr) answers, so
+	// Chromium can share and record the whole screen.
+	var sv dbus.Variant
+	err = conn.Object("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop").
+		Call("org.freedesktop.DBus.Properties.Get", 0, "org.freedesktop.portal.ScreenCast", "version").Store(&sv)
+	check("screen sharing (ScreenCast portal, xdg-desktop-portal-wlr)", err)
 
 	// the idle loop polls every 5 s: hold, see it held, give it back
 	var cookie uint32

@@ -22,6 +22,9 @@ if [ ! -f "$ROOT/app/index.html" ] || [ "$IMAGE_BUILD" != "$(cat "$ROOT/.image-b
 fi
 
 export LANG=C.UTF-8
+# labwc is a wlroots compositor: the portals pick the wlr backend for
+# screen sharing by this name (portals.conf, QS-REC-1).
+export XDG_CURRENT_DESKTOP=labwc:wlroots
 # Programs installed as Flatpaks (the software center, games) keep their
 # icons and launchers in the home folder; this is the path flatpak's own
 # profile script adds in a normal login.
@@ -64,7 +67,9 @@ if [ -f /opt/oros/ubol/manifest.json ]; then
 fi
 # --enable-speech-dispatcher gives orOS's read-aloud the computer's own
 # espeak-ng voices (speech-dispatcher; orOS uses local voices only).
-ARGS="--ozone-platform=wayland --start-maximized --disable-features=Translate --load-extension=$EXT --default-background-color=ff1b1a18 --disable-background-timer-throttling --enable-speech-dispatcher --enable-logging --v=0"
+# WebRTCPipeWireCapturer: sharing or recording the whole screen goes
+# through the ScreenCast portal (xdg-desktop-portal-wlr, QS-REC-1).
+ARGS="--ozone-platform=wayland --start-maximized --enable-features=WebRTCPipeWireCapturer --disable-features=Translate --load-extension=$EXT --default-background-color=ff1b1a18 --disable-background-timer-throttling --enable-speech-dispatcher --enable-logging --v=0"
 # The keyboard layouts chosen in the System panel (oros-system desk.go,
 # ~/oros/data/desk.json; us,gr with Alt+Shift until then). labwc reads
 # them only when it starts, so each start of the loop below asks again.
