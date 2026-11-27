@@ -11,7 +11,9 @@
 // "oros-system gpu" lists the graphics cards and, with --apply, puts games
 // on a laptop's second card (gpu.go), "oros-system soft" installs and
 // updates the software center's programs from Flathub (soft.go) and root's
-// "oros-system addons --apply" its browser add-ons (addons.go).
+// "oros-system addons --apply" its browser add-ons (addons.go), and
+// "oros-system proton --update" brings the newest GE-Proton into Steam
+// (proton.go).
 // "keyboard", "idle", "screen", "display" and "reader" are the session's
 // desktop parts (desk.go, display.go): keyboard layouts, the screen going
 // off and sleep when idle, second screens, and the Orca screen reader.
@@ -50,6 +52,9 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "soft" {
 		os.Exit(softMain(os.Args[2:]))
+	}
+	if len(os.Args) > 1 && os.Args[1] == "proton" {
+		os.Exit(protonMain(os.Args[2:]))
 	}
 	if len(os.Args) > 1 && os.Args[1] == "addons" {
 		os.Exit(addonsMain(os.Args[2:]))
@@ -98,6 +103,6 @@ func main() {
 		}
 		return
 	}
-	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | gpu [--apply] | nvidia [--install|--remove|--boot|--auto] | soft --install|--remove --id ID|--update|--auto | addons --apply | ai --fetch [--model M] | ai --serve | claude --fetch | keyboard --layouts|--options | idle | screen --off|--on | display --apply | reader --enabled|--session  (or run by Chromium)")
+	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | gpu [--apply] | nvidia [--install|--remove|--boot|--auto] | soft --install|--remove --id ID|--update|--auto | proton --update | addons --apply | ai --fetch [--model M] | ai --serve | claude --fetch | keyboard --layouts|--options | idle | screen --off|--on | display --apply | reader --enabled|--session  (or run by Chromium)")
 	os.Exit(2)
 }

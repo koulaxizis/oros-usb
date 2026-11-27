@@ -86,6 +86,22 @@ jobs:
           head -c 4 "$exe" | od -c | head -1
           du -sh /tmp/claude/root
           rm -rf /tmp/claude
+      - name: GE-Proton download (the real newest release, checksum checked)
+        env:
+          OROS_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/gehome/oros/data
+          (cd system && HOME=/tmp/gehome go run . proton --update)
+          cat /tmp/gehome/oros/data/soft.json /tmp/gehome/oros/data/geproton.json; echo
+          d=/tmp/gehome/.var/app/com.valvesoftware.Steam/data/Steam/compatibilitytools.d/GE-Proton-orOS
+          test -x "$d/proton" && test -d "$d/files"
+          grep -q '"GE-Proton-orOS"' "$d/compatibilitytool.vdf"
+          du -sh "$d"
+          # the same version again downloads nothing
+          touch "$d/.marker"
+          (cd system && HOME=/tmp/gehome go run . proton --update)
+          test -f "$d/.marker"
+          rm -rf /tmp/gehome
       - name: Local AI download (the real Ollama and its smallest model, one answer)
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -104,7 +120,9 @@ jobs:
           echo; test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://example.com' http://127.0.0.1:11434/api/tags)" = 403
           /tmp/oros-system ai --stop --dir /tmp/ai
           rm -rf /tmp/ai /tmp/aihome
-      - name: Software center catalog (Flathub apps, Chrome Web Store add-ons, Ollama models)
+      - name: Software center catalog (Flathub apps, Chrome Web Store add-ons, Ollama models, GE-Proton)
+        env:
+          OROS_GITHUB_TOKEN: ${{ github.token }}
         run: scripts/check-catalog.sh catalog/catalog.json
       - name: Session watchdog test (fake labwc, no VM)
         run: scripts/test-session-watchdog.sh
