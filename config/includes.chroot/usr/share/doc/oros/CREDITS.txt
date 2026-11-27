@@ -31,8 +31,9 @@ Downloaded only when asked (System > Local AI), never part of the image
                       licence files stay next to it in
                       ~/.local/share/oros-ai/ollama/lib/ollama
                       https://github.com/ollama/ollama
-  Qwen3 models        Apache-2.0, the Qwen team (Alibaba Cloud), through
-                      Ollama's library  https://ollama.com/library/qwen3
+  Qwen 3.5 models     Apache-2.0, the Qwen team (Alibaba Cloud), through
+                      Ollama's library  https://ollama.com/library/qwen3.5
+                      (Qwen3 until 2026-11, kept where installed)
   Tor Browser         see the Tor button (torproject.org)
   NVIDIA driver       proprietary (NVIDIA Software License), NVIDIA
                       Corporation, as packaged by Debian (non-free); with

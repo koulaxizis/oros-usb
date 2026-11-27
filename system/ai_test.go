@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -76,10 +77,53 @@ func TestAIKeep(t *testing.T) {
 }
 
 func TestAIRecommend(t *testing.T) {
-	for mem, want := range map[float64]string{3.7: "qwen3:1.7b", 7.6: "qwen3:4b", 11.5: "qwen3:4b", 15.4: "qwen3:8b", 31: "qwen3:8b"} {
+	for mem, want := range map[float64]string{1.8: "qwen3.5:0.8b", 3.7: "qwen3.5:0.8b", 5.6: "qwen3.5:2b", 7.6: "qwen3.5:4b", 11.5: "qwen3.5:4b", 15.4: "qwen3.5:9b", 31: "qwen3.5:9b"} {
 		if got := aiRecommend(mem); got != want {
 			t.Errorf("aiRecommend(%v) = %s, want %s", mem, got, want)
 		}
+	}
+}
+
+// The Qwen 3.5 sizes come first in size order (the panel names them Tiny
+// to Large by position), every recommendation is among them, and a Qwen3
+// model from before shows only on a computer that has it, after the rest,
+// and can still be removed.
+func TestAIOffer(t *testing.T) {
+	old := catalogFile
+	defer func() { catalogFile = old }()
+	catalogFile = "../catalog/catalog.json"
+	names := func(o []reply) []string {
+		var n []string
+		for _, m := range o {
+			n = append(n, m["name"].(string))
+		}
+		return n
+	}
+	offer := names(aiOffer(nil))
+	if want := []string{"qwen3.5:0.8b", "qwen3.5:2b", "qwen3.5:4b", "qwen3.5:9b"}; !slices.Equal(offer[:4], want) {
+		t.Fatalf("offer starts %v, want %v", offer[:4], want)
+	}
+	for _, n := range offer {
+		if strings.HasPrefix(n, "qwen3:") {
+			t.Errorf("%s offered on a computer that does not have it", n)
+		}
+	}
+	for _, mem := range []float64{2, 4, 6, 8, 12, 16, 64} {
+		if r := aiRecommend(mem); !slices.Contains(offer[:4], r) {
+			t.Errorf("aiRecommend(%v) = %s, not offered", mem, r)
+		}
+	}
+	got := names(aiOffer([]string{"qwen3:8b", "qwen3.5:4b", "llama3:8b"}))
+	if got[len(got)-1] != "qwen3:8b" || len(got) != len(offer)+1 {
+		t.Errorf("with qwen3:8b installed the offer is %v", got)
+	}
+	for _, n := range []string{"qwen3:1.7b", "qwen3:4b", "qwen3:8b"} {
+		if _, ok := aiModelMB(n); !ok {
+			t.Errorf("%s can no longer be removed", n)
+		}
+	}
+	if _, ok := aiModelMB("qwen3:0.6b"); ok {
+		t.Error("qwen3:0.6b (the old CI model) is still known")
 	}
 }
 
@@ -181,10 +225,10 @@ func TestAIPull(t *testing.T) {
 	defer func() { aiAPI = old }()
 
 	var steps []int
-	if err := aiPull("qwen3:4b", func(p int) { steps = append(steps, p) }); err != nil {
+	if err := aiPull("qwen3.5:4b", func(p int) { steps = append(steps, p) }); err != nil {
 		t.Fatal(err)
 	}
-	if got["model"] != "qwen3:4b" {
+	if got["model"] != "qwen3.5:4b" {
 		t.Errorf("asked for %v", got)
 	}
 	if fmt.Sprint(steps) != "[0 50 100]" {
@@ -201,7 +245,7 @@ func TestAIPullError(t *testing.T) {
 	old := aiAPI
 	aiAPI = srv.URL
 	defer func() { aiAPI = old }()
-	if err := aiPull("qwen3:4b", func(int) {}); err == nil || !strings.Contains(err.Error(), "does not exist") {
+	if err := aiPull("qwen3.5:4b", func(int) {}); err == nil || !strings.Contains(err.Error(), "does not exist") {
 		t.Fatalf("err = %v", err)
 	}
 }
