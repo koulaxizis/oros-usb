@@ -469,6 +469,16 @@ func TestDiskOpen(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "Downloads")); err != nil {
 		t.Fatal(err)
 	}
+	// The second window starts in the background too: wait for it to write
+	// its arguments, or the temporary folder's clean-up can race with it
+	// ("directory not empty").
+	for i := 0; i < 50 && !strings.Contains(string(b), "Downloads"); i++ {
+		time.Sleep(20 * time.Millisecond)
+		b, _ = os.ReadFile(out)
+	}
+	if !strings.Contains(string(b), "Downloads") {
+		t.Fatalf("downloads args %q", b)
+	}
 }
 
 func TestReport(t *testing.T) {

@@ -1,0 +1,7 @@
+# xdg-desktop-portal-wlr on orOS USB (QS-REC-1). labwc runs as a kiosk
+# with no output chooser (no slurp or wofi), so a screen share takes the
+# first screen without asking again: the person already chose "Entire
+# screen" in Chromium's own picker.
+[screencast]
+chooser_type=none
+max_fps=60
