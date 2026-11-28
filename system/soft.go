@@ -359,16 +359,80 @@ func softOpen(id string) reply {
 
 const softShell = `"$1" run "$2"; command -v wlrctl >/dev/null && wlrctl toplevel maximize title:orOS; exit 0`
 
+// backgroundApps are the catalog's programs that start with every session
+// once installed, with their arguments: Proton Mail Bridge serves orOS
+// Mail's Proton accounts on 127.0.0.1:1143/1025 (the launcher's mail
+// socket) and has to be running for them, without a window of its own.
+// Fixed here, never taken from the catalog.
+var backgroundApps = map[string][]string{
+	"ch.protonmail.protonmail-bridge": {"--no-window"},
+}
+
+// flatpakRunning lists the apps flatpak runs now.
+func flatpakRunning() map[string]bool {
+	m := map[string]bool{}
+	out, err := exec.Command(flatpakBin, "ps", "--columns=application").Output()
+	if err != nil {
+		return m
+	}
+	for id := range parseFlatpakList(string(out)) {
+		m[id] = true
+	}
+	return m
+}
+
+// softSession is "oros-system soft --session" (oros-kiosk, inside labwc,
+// at every start: the programs need its Wayland and end with it).
+func softSession() {
+	c, err := loadCatalog()
+	if err != nil {
+		return
+	}
+	inst := flatpakInstalled()
+	running := flatpakRunning()
+	for _, id := range backgroundIDs() {
+		if _, ok := c.item(id, "flatpak"); !ok {
+			continue
+		}
+		if _, ok := inst[id]; !ok || running[id] {
+			continue
+		}
+		cmd := exec.Command(flatpakBin, append([]string{"run", id}, backgroundApps[id]...)...)
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+		if f := logFile("soft-run.log"); f != nil {
+			cmd.Stdout, cmd.Stderr = f, f
+			defer f.Close()
+		}
+		if err := cmd.Start(); err != nil {
+			logf("soft: start %s: %v", id, err)
+			continue
+		}
+		go func() { _ = cmd.Wait() }()
+	}
+	// the programs keep running after this process ends
+	time.Sleep(time.Second)
+}
+
+func backgroundIDs() []string {
+	var k []string
+	for id := range backgroundApps {
+		k = append(k, id)
+	}
+	sort.Strings(k)
+	return k
+}
+
 // --- oros-system soft (the background work, as the person) ---
 
 func softMain(args []string) int {
 	fl := flag.NewFlagSet("soft", flag.ContinueOnError)
-	var install, remove, update, auto, filter bool
+	var install, remove, update, auto, session, filter bool
 	var id string
 	fl.BoolVar(&install, "install", false, "install a catalog app from Flathub")
 	fl.BoolVar(&remove, "remove", false, "remove a catalog app")
 	fl.BoolVar(&update, "update", false, "update every installed app")
 	fl.BoolVar(&auto, "auto", false, "session start: the daily update")
+	fl.BoolVar(&session, "session", false, "labwc start: the installed programs that run in the background")
 	fl.BoolVar(&filter, "filter", false, "print the Flathub filter for the catalog")
 	fl.StringVar(&id, "id", "", "the app (a catalog id)")
 	cat := fl.String("catalog", catalogFile, "with --filter: the catalog to read (the build)")
@@ -394,6 +458,10 @@ func softMain(args []string) int {
 		softAuto(home)
 		return 0
 	}
+	if session {
+		softSession()
+		return 0
+	}
 	action := ""
 	switch {
 	case install:
@@ -403,7 +471,7 @@ func softMain(args []string) int {
 	case update:
 		action = "update"
 	default:
-		fmt.Fprintln(os.Stderr, "usage: oros-system soft --install|--remove --id ID | --update | --auto | --filter")
+		fmt.Fprintln(os.Stderr, "usage: oros-system soft --install|--remove --id ID | --update | --auto | --session | --filter")
 		return 2
 	}
 	_ = os.MkdirAll(softDir(home), 0o700)

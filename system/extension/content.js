@@ -95,7 +95,9 @@
       soft: "Software", softHint: "Programs tried on orOS. They install onto this stick, stay after a restart and update by themselves.",
       console: "Console mode", consoleHint: "Steam's Big Picture alone on the screen, for the television and a controller. To come back to orOS: Power › Exit Steam.",
       consoleStart: "Start console mode", consoleBoot: "Start the computer in console mode", consoleNoSteam: "Install Steam first: console mode is Steam's Big Picture.",
-      softGames: "Games and game stores", softAddons: "Add-ons for the Internet window",
+      softGames: "Games and game stores", softApps: "Programs",
+      softBridgeHint: "Open it once and sign in to Proton. Then add your Proton address in orOS Mail with the password Bridge shows (Mailbox details). Bridge starts by itself with orOS.",
+      softAddons: "Add-ons for the Internet window",
       softInstall: "Install", softOpen: "Open", softRemove: "Remove {n}", softUpdate: "Update all now",
       softGetting: "Installing {n}… {p}%", softRemoving: "Removing {n}…", softUpdating: "Updating… {p}%",
       softAsk: "{n} is downloaded from Flathub (about {s} GB with what it needs) and installed onto this stick. Continue?",
@@ -203,7 +205,9 @@
       soft: "Λογισμικό", softHint: "Προγράμματα που δοκιμάσαμε στο orOS. Εγκαθίστανται σε αυτό το stick, μένουν μετά από επανεκκίνηση και ενημερώνονται μόνα τους.",
       console: "Λειτουργία κονσόλας", consoleHint: "Το Big Picture του Steam μόνο του στην οθόνη, για την τηλεόραση και χειριστήριο. Για επιστροφή στο orOS: Power › Exit Steam.",
       consoleStart: "Έναρξη λειτουργίας κονσόλας", consoleBoot: "Ο υπολογιστής ξεκινά σε λειτουργία κονσόλας", consoleNoSteam: "Εγκατάστησε πρώτα το Steam: η λειτουργία κονσόλας είναι το Big Picture του Steam.",
-      softGames: "Παιχνίδια και καταστήματα παιχνιδιών", softAddons: "Πρόσθετα για το παράθυρο Internet",
+      softGames: "Παιχνίδια και καταστήματα παιχνιδιών", softApps: "Προγράμματα",
+      softBridgeHint: "Άνοιξέ το μία φορά και συνδέσου στην Proton. Μετά πρόσθεσε τη διεύθυνση Proton στο orOS Mail με τον κωδικό που δείχνει το Bridge (Mailbox details). Το Bridge ξεκινά μόνο του με το orOS.",
+      softAddons: "Πρόσθετα για το παράθυρο Internet",
       softInstall: "Εγκατάσταση", softOpen: "Άνοιγμα", softRemove: "Αφαίρεση: {n}", softUpdate: "Ενημέρωση όλων τώρα",
       softGetting: "Εγκατάσταση {n}… {p}%", softRemoving: "Αφαίρεση {n}…", softUpdating: "Ενημέρωση… {p}%",
       softAsk: "Το {n} κατεβαίνει από το Flathub (περίπου {s} GB μαζί με ό,τι χρειάζεται) και εγκαθίσταται σε αυτό το stick. Συνέχεια;",
@@ -1119,9 +1123,12 @@
     };
 
     const apps = items.filter((i) => i.kind === "flatpak");
-    if (apps.length) {
-      parts.push(el("div", { style: "margin-top:8px;font-weight:600" }, t("softGames")));
-      for (const it of apps) {
+    // Game stores first, then the other programs (Proton Mail Bridge).
+    const groups = [["softGames", apps.filter((i) => i.section === "games")], ["softApps", apps.filter((i) => i.section !== "games")]];
+    for (const [title, list] of groups) {
+      if (!list.length) continue;
+      parts.push(el("div", { style: "margin-top:8px;font-weight:600" }, t(title)));
+      for (const it of list) {
         const info = el("div", { class: "grow" }, el("div", {}, nameOf(it)),
           el("div", { class: "muted" }, ((it.summary && (it.summary[lang()] || it.summary.en)) || "") + (it.installed ? "" : " · " + gb(it.mb || 0) + " GB")));
         let action = null;
@@ -1144,6 +1151,7 @@
         }
         parts.push(el("div", { class: "row", style: "margin-top:6px" }, info, action));
         if (st.running && p.id === it.id) parts.push(progressLine());
+        if (it.installed && it.id === "ch.protonmail.protonmail-bridge") parts.push(el("div", { class: "muted" }, t("softBridgeHint")));
       }
     }
     if (st.running && p.action === "update" && p.id !== "ge-proton") parts.push(progressLine());
@@ -1157,7 +1165,7 @@
       parts.push(pr);
       showProton(pr, owner, st, fail, again);
     }
-    if (apps.length && st.persistent) {
+    if (apps.some((i) => i.section === "games") && st.persistent) {
       const lib = el("div", {});
       parts.push(lib);
       showGamesLib(lib, owner, msg);

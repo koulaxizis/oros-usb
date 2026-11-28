@@ -153,3 +153,9 @@ vulkan-tools
 # system/nvidia.go); mokutil asks the firmware to trust the orOS key that
 # signs its modules when Secure Boot is on.
 mokutil
+
+# The keyring (Secret Service) for programs from the software center:
+# Proton Mail Bridge keeps the key of its own store there and does not
+# sign in without one. oros-system keyring opens it at every session
+# start with a password of its own (keyring.go), so nobody is asked.
+gnome-keyring

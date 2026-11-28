@@ -178,6 +178,10 @@ stop() {
 	sleep 1
 }
 
+# The keyring (Secret Service) that programs like Proton Mail Bridge keep
+# their keys in, open before anything asks for it, with no question to
+# the person (oros-system keyring.go).
+/opt/oros/oros-system keyring < /dev/null >> "$LOG" 2>&1
 # Local AI for orOS's Assistant (System › Local AI, oros-system ai): once
 # it is installed, Ollama starts with the first session of the boot. It
 # is not inside labwc, so a watchdog restart leaves it running.
