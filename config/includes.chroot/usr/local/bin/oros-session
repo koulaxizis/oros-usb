@@ -67,6 +67,11 @@ if [ -f /opt/oros/ubol/manifest.json ]; then
 fi
 # --enable-speech-dispatcher gives orOS's read-aloud the computer's own
 # espeak-ng voices (speech-dispatcher; orOS uses local voices only).
+# Chromium lists it among its "unsupported" flags and would show a yellow
+# warning bar over orOS at every start; the managed policy
+# CommandLineFlagSecurityWarningsEnabled=false (oros.json) hides that bar.
+# These flags are the only ones Chromium starts with here (this script and
+# oros-system webArgs), so the bar would never warn about anything else.
 # WebRTCPipeWireCapturer: sharing or recording the whole screen goes
 # through the ScreenCast portal (xdg-desktop-portal-wlr, QS-REC-1).
 ARGS="--ozone-platform=wayland --start-maximized --enable-features=WebRTCPipeWireCapturer --disable-features=Translate --load-extension=$EXT --default-background-color=ff1b1a18 --disable-background-timer-throttling --enable-speech-dispatcher --enable-logging --v=0"
