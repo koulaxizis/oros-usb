@@ -11,15 +11,17 @@ ROOT="$HOME/oros"
 mkdir -p "$ROOT/data"
 
 # The image carries orOS in /opt/oros/app (read-only). ~/oros/app links
-# to it; "oros-portable update" replaces the link with a newer copy on the
-# persistence partition. A new image resets the link (copying thousands of
-# files to the stick made the first start very slow).
-IMAGE_BUILD="$(cat /opt/oros/app/.oros-build 2>/dev/null)"
-if [ ! -f "$ROOT/app/index.html" ] || [ "$IMAGE_BUILD" != "$(cat "$ROOT/.image-build" 2>/dev/null)" ]; then
-	rm -rf "$ROOT/app" "$ROOT/app.old" "$ROOT/app.new"
-	ln -s /opt/oros/app "$ROOT/app"
-	echo "$IMAGE_BUILD" > "$ROOT/.image-build"
-fi
+# to it, or to a newer orOS the launcher downloaded onto the persistence
+# partition (oros-app-link keeps the newer one when the image changes).
+/usr/local/bin/oros-app-link "$ROOT" /opt/oros/app
+# orOS updates itself (oros-portable autoupdate.go: checks every 6 hours,
+# downloads the exact commit, swaps it in at the next start) only with a
+# persistence partition: without one the home folder lives in memory and
+# every start would download orOS again. The no-auto-update file in
+# ~/oros/data turns it off.
+for p in /run/live/persistence/*/persistence.conf; do
+	[ -f "$p" ] && export OROS_APP_AUTO_UPDATE=1
+done
 
 export LANG=C.UTF-8
 # labwc is a wlroots compositor: the portals pick the wlr backend for
