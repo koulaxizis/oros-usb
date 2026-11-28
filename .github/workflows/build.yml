@@ -126,6 +126,8 @@ jobs:
         run: scripts/check-catalog.sh catalog/catalog.json
       - name: Session watchdog test (fake labwc, no VM)
         run: scripts/test-session-watchdog.sh
+      - name: orOS app link test (which orOS a start serves, no VM)
+        run: scripts/test-app-link.sh
       - name: Build image
         env:
           GITHUB_TOKEN: ${{ github.token }}

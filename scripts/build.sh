@@ -20,6 +20,9 @@ rm -rf "$OPT" && mkdir -p "$OPT/app"
 (cd "$WORK/oros" && tar --exclude=./.git --exclude=./.github --exclude=./android \
 	--exclude=./relay --exclude=./extension --exclude=./tests -cf - .) | tar -xf - -C "$OPT/app"
 echo "$VERSION $(git -C "$WORK/oros" rev-parse --short HEAD)" > "$OPT/app/.oros-build"
+# The launcher's automatic update compares this commit with orOS main, so
+# a stick whose image is current downloads nothing.
+git -C "$WORK/oros" rev-parse HEAD > "$OPT/app/.oros-commit"
 OROS_COMMIT="$(git -C "$WORK/oros" rev-parse HEAD)"
 
 echo "== launcher from oros-portable"

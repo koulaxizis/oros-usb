@@ -23,7 +23,7 @@ printf '%s\n' 'en_US.UTF-8 UTF-8' 'el_GR.UTF-8 UTF-8' 'de_DE.UTF-8 UTF-8' > /etc
 locale-gen
 # The launcher and the system bridge must be executable even if they were
 # copied without the bit; sudo ignores rule files with loose permissions.
-chmod 0755 /opt/oros/oros-portable /opt/oros/oros-system /opt/oros/oros-bridge /usr/local/bin/oros-kiosk
+chmod 0755 /opt/oros/oros-portable /opt/oros/oros-system /opt/oros/oros-bridge /usr/local/bin/oros-kiosk /usr/local/bin/oros-app-link
 chmod 0440 /etc/sudoers.d/oros-install
 systemctl enable oros-nvidia.service oros-selftest-nvidia.service oros-selftest.service oros-selftest-files.service oros-selftest-vault.service oros-journal.service oros-time.service oros-bluetooth.service
 # The system log lives in /home, which orOS keeps (oros-journal.service).
