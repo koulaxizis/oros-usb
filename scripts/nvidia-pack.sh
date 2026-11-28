@@ -45,6 +45,14 @@ if [ -n "${NVIDIA_MOK_KEY:-}" ] && [ -n "${NVIDIA_MOK_CERT:-}" ]; then
 	printf '%s\n' "$NVIDIA_MOK_KEY" > "$W/mok.key"
 	printf '%s\n' "$NVIDIA_MOK_CERT" > "$W/mok.pem"
 	EPHEMERAL=false
+	# a key that does not belong to the certificate signs modules no
+	# computer accepts: stop here (nothing of either is printed)
+	if [ "$(openssl pkey -in "$W/mok.key" -pubout 2>/dev/null | sha256sum)" != \
+		"$(openssl x509 -in "$W/mok.pem" -noout -pubkey 2>/dev/null | sha256sum)" ]; then
+		echo "NVIDIA_MOK_KEY and NVIDIA_MOK_CERT do not belong together (or one is not PEM)" >&2
+		exit 1
+	fi
+	echo "signing key: $(openssl x509 -in "$W/mok.pem" -noout -subject), $(openssl x509 -in "$W/mok.pem" -noout -enddate)"
 else
 	echo "NVIDIA_MOK_KEY/NVIDIA_MOK_CERT not set: a key for this build only"
 	openssl req -new -x509 -newkey rsa:2048 -nodes -days 36500 -subj "/CN=orOS test build module key/" \
