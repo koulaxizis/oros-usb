@@ -87,3 +87,29 @@ func TestPolicyLetsOnlyOrOSExtensionsReadOrOS(t *testing.T) {
 		}
 	}
 }
+
+// oros-session starts Chromium with --enable-speech-dispatcher (orOS's
+// read-aloud with the computer's own voices). Chromium counts it among its
+// "unsupported" flags and shows a yellow warning bar over orOS at every
+// start unless the managed policy turns those warnings off (a 2026-11-28
+// report from a real USB). Both halves must stay together.
+func TestSpeechDispatcherFlagHasNoWarningBar(t *testing.T) {
+	sess, err := os.ReadFile("../config/includes.chroot/usr/local/bin/oros-session")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !regexp.MustCompile(`(?m)^ARGS="[^"]*--enable-speech-dispatcher[ "]`).Match(sess) {
+		t.Skip("oros-session no longer passes --enable-speech-dispatcher")
+	}
+	b, err := os.ReadFile("../config/includes.chroot/etc/chromium/policies/managed/oros.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pol map[string]any
+	if err := json.Unmarshal(b, &pol); err != nil {
+		t.Fatal(err)
+	}
+	if v, ok := pol["CommandLineFlagSecurityWarningsEnabled"].(bool); !ok || v {
+		t.Fatalf("CommandLineFlagSecurityWarningsEnabled = %v, want false", pol["CommandLineFlagSecurityWarningsEnabled"])
+	}
+}

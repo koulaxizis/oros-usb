@@ -25,6 +25,7 @@
   "NewTabPageLocation": "https://duckduckgo.com/",
   "HomepageLocation": "https://duckduckgo.com/",
   "ShowHomeButton": true,
+  "CommandLineFlagSecurityWarningsEnabled": false,
   "ExtensionSettings": {
     "*": {
       "runtime_blocked_hosts": [
