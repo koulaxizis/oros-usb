@@ -105,6 +105,13 @@
       softOwner: "Only the stick's owner adds or removes programs and add-ons.",
       softAddonOn: "On", softAddonHint: "The add-on installs in the Internet window in a few seconds and updates by itself; turn it off to remove it.",
       softMore: "More choices", softFree: "Free space: {f} GB",
+      proton: "GE-Proton", protonHint: "Proton with extra game fixes, often what a game on an NVIDIA card needs. In Steam pick it once per game: Properties › Compatibility › GE-Proton (orOS); from then on that game always runs the newest one.",
+      protonHave: "Installed: {v}", protonNone: "Not installed yet.", protonUpdate: "Update GE-Proton", protonInstall: "Install GE-Proton",
+      protonAsk: "The newest GE-Proton (about 500 MB, about 1.5 GB unpacked) is downloaded from GitHub (GloriousEggroll/proton-ge-custom) and checked. Continue?",
+      protonGetting: "Getting GE-Proton… {p}%", protonDone: "GE-Proton is up to date. If Steam is open, restart it to see a new version.",
+      protonAuto: "Download new GE-Proton versions automatically", protonAutoHint: "Once a day when orOS starts, only when a new version came out.",
+      protonRemove: "Remove GE-Proton (orOS)", protonRemoveAsk: "Remove GE-Proton (orOS)? Games set to it go back to Steam's own Proton. Versions from ProtonPlus stay.",
+      protonNoSteam: "Steam is not installed.",
       gpu: "Graphics card", gpuCards: "{n}", gpuOffload: "Games on the strong graphics card",
       gpuOffloadHint: "On a laptop with two cards, games use the stronger one and orOS the one that saves battery.",
       nvInstall: "Install NVIDIA's driver ({s} MB)", nvHint: "NVIDIA's own driver gives games full speed. Without it the open nouveau driver is used.",
@@ -206,6 +213,13 @@
       softOwner: "Μόνο ο κάτοχος του stick προσθέτει ή αφαιρεί προγράμματα και πρόσθετα.",
       softAddonOn: "Ενεργό", softAddonHint: "Το πρόσθετο εγκαθίσταται στο παράθυρο Internet σε λίγα δευτερόλεπτα και ενημερώνεται μόνο του· απενεργοποίησέ το για να αφαιρεθεί.",
       softMore: "Περισσότερες επιλογές", softFree: "Ελεύθερος χώρος: {f} GB",
+      proton: "GE-Proton", protonHint: "Το Proton με επιπλέον διορθώσεις για παιχνίδια, συχνά αυτό που χρειάζεται ένα παιχνίδι σε κάρτα NVIDIA. Στο Steam το διαλέγεις μία φορά ανά παιχνίδι: Properties › Compatibility › GE-Proton (orOS)· από εκεί και πέρα το παιχνίδι τρέχει πάντα το νεότερο.",
+      protonHave: "Εγκατεστημένο: {v}", protonNone: "Δεν έχει εγκατασταθεί ακόμη.", protonUpdate: "Ενημέρωση GE-Proton", protonInstall: "Εγκατάσταση GE-Proton",
+      protonAsk: "Το νεότερο GE-Proton (περίπου 500 MB, περίπου 1,5 GB μετά την αποσυμπίεση) κατεβαίνει από το GitHub (GloriousEggroll/proton-ge-custom) και ελέγχεται. Συνέχεια;",
+      protonGetting: "Λήψη GE-Proton… {p}%", protonDone: "Το GE-Proton είναι ενημερωμένο. Αν το Steam είναι ανοιχτό, κλείσ' το και άνοιξέ το ξανά για να δει τη νέα έκδοση.",
+      protonAuto: "Αυτόματη λήψη νέων εκδόσεων GE-Proton", protonAutoHint: "Μία φορά τη μέρα, όταν ξεκινά το orOS, μόνο όταν βγει νέα έκδοση.",
+      protonRemove: "Αφαίρεση GE-Proton (orOS)", protonRemoveAsk: "Να αφαιρεθεί το GE-Proton (orOS); Τα παιχνίδια που το χρησιμοποιούν γυρίζουν στο Proton του Steam. Οι εκδόσεις του ProtonPlus μένουν.",
+      protonNoSteam: "Το Steam δεν είναι εγκατεστημένο.",
       gpu: "Κάρτα γραφικών", gpuCards: "{n}", gpuOffload: "Παιχνίδια στη δυνατή κάρτα γραφικών",
       gpuOffloadHint: "Σε laptop με δύο κάρτες, τα παιχνίδια χρησιμοποιούν τη δυνατότερη και το orOS αυτή που εξοικονομεί μπαταρία.",
       nvInstall: "Εγκατάσταση οδηγού NVIDIA ({s} MB)", nvHint: "Ο οδηγός της ίδιας της NVIDIA δίνει στα παιχνίδια πλήρη ταχύτητα. Χωρίς αυτόν χρησιμοποιείται ο ανοιχτός οδηγός nouveau.",
@@ -1132,11 +1146,16 @@
         if (st.running && p.id === it.id) parts.push(progressLine());
       }
     }
-    if (st.running && p.action === "update") parts.push(progressLine());
+    if (st.running && p.action === "update" && p.id !== "ge-proton") parts.push(progressLine());
     if (apps.some((i) => i.id === "com.valvesoftware.Steam")) {
       const con = el("div", {});
       parts.push(con);
       showConsole(con, owner, fail);
+    }
+    if (apps.some((i) => i.id === "com.valvesoftware.Steam" && i.installed)) {
+      const pr = el("div", {});
+      parts.push(pr);
+      showProton(pr, owner, st, fail, again);
     }
     if (apps.length && st.persistent) {
       const lib = el("div", {});
@@ -1194,6 +1213,53 @@
     for (let i = 0; i < 40 && !find(); i++) await new Promise((r) => setTimeout(r, 100));
     if (find()) find().scrollIntoView({ block: "start" });
   });
+
+  // GE-Proton (oros-system proton.go): one button brings the newest into
+  // Steam under one fixed name; the owner may let it come by itself.
+  async function showProton(box, owner, st, fail, again) {
+    const g = await call({ cmd: "proton.status" });
+    if (!g.ok || !box.isConnected) return;
+    const p = st.progress || {};
+    const parts = [el("div", { style: "margin-top:12px;font-weight:600" }, t("proton")), el("div", { class: "muted" }, t("protonHint"))];
+    if (!g.steam) {
+      parts.push(el("div", { class: "muted" }, t("protonNoSteam")));
+      box.replaceChildren(...parts);
+      return;
+    }
+    const mine = p.id === "ge-proton";
+    parts.push(el("div", { style: "margin-top:6px" }, g.version ? t("protonHave", { v: g.version }) : t("protonNone")));
+    if (st.running && mine) parts.push(el("div", { class: "msg" }, t("protonGetting", { p: p.percent || 0 })));
+    else if (mine && p.done && !p.error && g.version) parts.push(el("div", { class: "msg" }, t("protonDone")));
+    if (owner && st.persistent) {
+      const go = el("button", { class: g.version ? "" : "primary", disabled: !!st.running, onclick: async () => {
+        if (!g.version && !confirm(t("protonAsk"))) return;
+        go.disabled = true;
+        const r = await call({ cmd: "proton.update" });
+        if (!r.ok) { go.disabled = false; fail(r); return; }
+        again();
+      } }, g.version ? t("protonUpdate") : t("protonInstall"));
+      parts.push(el("div", { class: "row", style: "margin-top:6px" }, go));
+      const auto = el("input", { type: "checkbox", checked: !!g.auto, onchange: async () => {
+        auto.disabled = true;
+        const r = await call({ cmd: "proton.auto", on: auto.checked });
+        auto.disabled = false;
+        if (!r.ok) { auto.checked = !auto.checked; fail(r); }
+      } });
+      parts.push(el("label", { class: "row", style: "margin-top:6px" }, auto,
+        el("div", { class: "grow" }, el("div", {}, t("protonAuto")), el("div", { class: "muted" }, t("protonAutoHint")))));
+      if (g.version && !st.running) {
+        const rm = el("button", { onclick: async () => {
+          if (!confirm(t("protonRemoveAsk"))) return;
+          rm.disabled = true;
+          const r = await call({ cmd: "proton.remove" });
+          if (!r.ok) { rm.disabled = false; fail(r); return; }
+          again();
+        } }, t("protonRemove"));
+        parts.push(el("details", { style: "margin-top:6px" }, el("summary", {}, t("softMore")), el("div", { class: "row", style: "margin-top:6px" }, rm)));
+      }
+    }
+    box.replaceChildren(...parts);
+  }
 
   // Console mode (oros-system console.go): Steam's Big Picture in place of
   // orOS until Steam ends; the owner can make the computer start in it.

@@ -6,7 +6,9 @@
 #   - every add-on is on the Chrome Web Store and is a Manifest V3
 #     extension (Chromium no longer runs V2 ones);
 #   - every model is in Ollama's library, about as large as the catalog says,
-#     and so are the local AI's own models (aiModels in system/ai.go).
+#     and so are the local AI's own models (aiModels in system/ai.go);
+#   - GE-Proton's newest release still has the archive and checksum that
+#     oros-system proton --update takes (proton.go).
 #   scripts/check-catalog.sh [catalog.json] [ai.go]
 set -euo pipefail
 CAT="${1:-catalog/catalog.json}"
@@ -66,5 +68,20 @@ while read -r name mb; do
 		echo "ok model $name: $real MB"
 	fi
 done < "$T/models"
+
+auth=()
+[ -n "${OROS_GITHUB_TOKEN:-}" ] && auth=(-H "Authorization: Bearer $OROS_GITHUB_TOKEN")
+code="$(curl -sS -o "$T/ge.json" -w '%{http_code}' --retry 3 "${auth[@]}" -H 'Accept: application/vnd.github+json' \
+	https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest)"
+tag="$(jq -r '.tag_name // empty' "$T/ge.json" 2>/dev/null || true)"
+if [ "$code" = 200 ] && [[ "$tag" =~ ^GE-Proton[0-9]{1,3}-[0-9]{1,4}$ ]] \
+	&& jq -e --arg t "$tag" '[.assets[].name] | (index($t + "-x86_64.tar.gz") and index($t + "-x86_64.sha512sum")) or (index($t + ".tar.gz") and index($t + ".sha512sum"))' "$T/ge.json" > /dev/null; then
+	echo "ok GE-Proton $tag: $(jq -r '[.assets[].name] | join(", ")' "$T/ge.json")"
+elif [ "$code" = 403 ] || [ "$code" = 429 ]; then
+	echo "skip GE-Proton: GitHub's rate limit (HTTP $code)"
+else
+	fail "GE-Proton latest release: HTTP $code, tag '$tag', archive or checksum missing ($(jq -r '[.assets[]?.name] | join(", ")' "$T/ge.json" 2>/dev/null || true))"
+fi
+
 [ -f "$T/bad" ] && bad=1
 exit "$bad"

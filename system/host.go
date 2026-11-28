@@ -279,6 +279,20 @@ func handle(req request) reply {
 			return reply{"ok": false, "error": "owner only"}
 		}
 		return consoleSetBoot(req.On)
+	case "proton.status":
+		return protonStatus()
+	case "proton.update", "proton.auto", "proton.remove":
+		// Steam's tools, like the programs: the owner's (proton.go)
+		if !ownerOnly() {
+			return reply{"ok": false, "error": "owner only"}
+		}
+		switch req.Cmd {
+		case "proton.auto":
+			return protonSetAuto(req.On)
+		case "proton.remove":
+			return protonRemove()
+		}
+		return protonStart()
 	case "soft.list":
 		return softList()
 	case "soft.open":

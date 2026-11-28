@@ -562,18 +562,24 @@ func scanLinesCR(data []byte, atEOF bool) (int, []byte, error) {
 
 // softAuto (session start): once a day, with the network up, the apps
 // from the center update by themselves, with the Flathub filter of this
-// image. Nothing happens when nothing was installed.
+// image, and, when the owner switched it on, a new GE-Proton comes into
+// Steam (proton.go). Nothing happens when nothing was installed.
 func softAuto(home string) {
 	if err := gamesOverride(); err != nil {
 		logf("games: flatpak override: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(flatpakUserDir(home), "app")); err != nil {
-		return
-	}
-	if b, err := os.ReadFile(filepath.Join(softDir(home), "updated")); err == nil {
-		if t, err := time.Parse(time.RFC3339, strings.TrimSpace(string(b))); err == nil && time.Since(t) < 20*time.Hour {
-			return
+	appsDue := false
+	if _, err := os.Stat(filepath.Join(flatpakUserDir(home), "app")); err == nil {
+		appsDue = true
+		if b, err := os.ReadFile(filepath.Join(softDir(home), "updated")); err == nil {
+			if t, err := time.Parse(time.RFC3339, strings.TrimSpace(string(b))); err == nil && time.Since(t) < 20*time.Hour {
+				appsDue = false
+			}
 		}
+	}
+	protonDue := protonAutoDue(home) // proton.go: only when the owner switched it on
+	if !appsDue && !protonDue {
+		return
 	}
 	for i := 0; i < 60; i++ {
 		if out, _ := run("nmcli", "-t", "-f", "CONNECTIVITY", "general"); strings.TrimSpace(out) == "full" {
@@ -586,8 +592,15 @@ func softAuto(home string) {
 	if err != nil {
 		return
 	}
-	if out, err := run(self, "soft", "--update"); err != nil {
-		logf("soft: daily update: %v %s", err, lastLine(out))
+	if appsDue {
+		if out, err := run(self, "soft", "--update"); err != nil {
+			logf("soft: daily update: %v %s", err, lastLine(out))
+		}
+	}
+	if protonDue {
+		if out, err := run(self, "proton", "--update"); err != nil {
+			logf("proton: daily check: %v %s", err, lastLine(out))
+		}
 	}
 }
 
