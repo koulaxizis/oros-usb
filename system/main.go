@@ -53,6 +53,9 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "soft" {
 		os.Exit(softMain(os.Args[2:]))
 	}
+	if len(os.Args) > 1 && os.Args[1] == "keyring" {
+		os.Exit(keyringMain(os.Args[2:]))
+	}
 	if len(os.Args) > 1 && os.Args[1] == "proton" {
 		os.Exit(protonMain(os.Args[2:]))
 	}
@@ -103,6 +106,6 @@ func main() {
 		}
 		return
 	}
-	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | gpu [--apply] | nvidia [--install|--remove|--boot|--auto] | soft --install|--remove --id ID|--update|--auto | proton --update | addons --apply | ai --fetch [--model M] | ai --serve | claude --fetch | keyboard --layouts|--options | idle | screen --off|--on | display --apply | reader --enabled|--session  (or run by Chromium)")
+	fmt.Fprintln(os.Stderr, "usage: oros-system install --disk /dev/sdX [--yes] | update [--yes] | mount --dev /dev/sdX1 [--unmount] | disks | time --zone Area/City | time --apply | gpu [--apply] | nvidia [--install|--remove|--boot|--auto] | soft --install|--remove --id ID|--update|--auto|--session | keyring | proton --update | addons --apply | ai --fetch [--model M] | ai --serve | claude --fetch | keyboard --layouts|--options | idle | screen --off|--on | display --apply | reader --enabled|--session  (or run by Chromium)")
 	os.Exit(2)
 }

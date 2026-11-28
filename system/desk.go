@@ -652,6 +652,7 @@ func selftestDeskMain() int {
 	selftestGames(check, info)
 	selftestGPU(check, info)
 	selftestSoft(check, info)
+	selftestKeyring(check)
 
 	out, err = run("orca", "--version")
 	check("orca "+strings.TrimSpace(out), err)

@@ -62,6 +62,12 @@
       "licence": "GPL-3.0", "home": "https://github.com/Vysp3r/ProtonPlus"
     },
     {
+      "id": "ch.protonmail.protonmail-bridge", "kind": "flatpak", "section": "apps", "mb": 700,
+      "name": {"en": "Proton Mail Bridge", "el": "Proton Mail Bridge", "de": "Proton Mail Bridge"},
+      "summary": {"en": "Proton Mail in orOS Mail (paid Proton plans). Sign in once in its window; after that it runs in the background by itself.", "el": "Το Proton Mail στο orOS Mail (πληρωμένα πακέτα της Proton). Συνδέεσαι μία φορά στο παράθυρό του· μετά τρέχει μόνο του στο παρασκήνιο.", "de": "Proton Mail in orOS Mail (kostenpflichtige Proton-Tarife). Einmal in seinem Fenster anmelden, danach läuft es von selbst im Hintergrund."},
+      "licence": "GPL-3.0", "home": "https://proton.me/mail/bridge"
+    },
+    {
       "id": "jplgfhpmjnbigmhklmmbgecoobifkmpa", "kind": "addon", "section": "addons",
       "name": {"en": "Proton VPN", "el": "Proton VPN", "de": "Proton VPN"},
       "summary": {"en": "Proton's VPN for the Internet window. Free plan; needs a Proton account.", "el": "Το VPN της Proton για το παράθυρο Διαδικτύου. Δωρεάν πρόγραμμα, χρειάζεται λογαριασμό Proton.", "de": "Protons VPN für das Internetfenster. Kostenloser Tarif; braucht ein Proton-Konto."},

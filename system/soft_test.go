@@ -212,3 +212,26 @@ func TestCatalogModelsOffered(t *testing.T) {
 		t.Error("a model outside the catalog")
 	}
 }
+
+// Proton Mail Bridge is in the catalog as a program (not a game store),
+// and every program that starts with the session is a catalog app.
+func TestBackgroundApps(t *testing.T) {
+	c := repoCatalog(t)
+	it, ok := c.item("ch.protonmail.protonmail-bridge", "flatpak")
+	if !ok || it.Section != "apps" {
+		t.Fatalf("Proton Mail Bridge: %v %q", ok, it.Section)
+	}
+	for _, id := range backgroundIDs() {
+		if _, ok := c.item(id, "flatpak"); !ok {
+			t.Errorf("%s starts with the session but is not a catalog app", id)
+		}
+		for _, a := range backgroundApps[id] {
+			if !strings.HasPrefix(a, "--") {
+				t.Errorf("%s: argument %q", id, a)
+			}
+		}
+	}
+	if !strings.Contains(flathubFilter(c), "allow app/ch.protonmail.protonmail-bridge\n") {
+		t.Error("Bridge not allowed by the Flathub filter")
+	}
+}

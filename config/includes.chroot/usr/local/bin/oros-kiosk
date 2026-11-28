@@ -27,6 +27,10 @@ fi
 # with the session. Boot tests also check these parts from in here.
 /opt/oros/oros-system idle < /dev/null > /dev/null 2>&1 &
 /opt/oros/oros-system reader --session < /dev/null > /dev/null 2>&1 &
+# Programs from the software center that work in the background once
+# installed (Proton Mail Bridge for orOS Mail's Proton accounts), without
+# a window; they need this labwc's Wayland and end with it (soft.go).
+/opt/oros/oros-system soft --session < /dev/null > /dev/null 2>&1 &
 if [ -f /home/.oros-selftest ] && [ ! -f "$HOME/.oros-selftest-desk" ]; then
 	/opt/oros/oros-system selftest-desk < /dev/null > /dev/null 2>&1 &
 fi
